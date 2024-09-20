@@ -1,16 +1,19 @@
 #!/bin/bash
 # restore-postgresql-compressed.sh
-# Script to restore a PostgreSQL database from a compressed backup file
+# Script to restore a PostgreSQL database from a compressed backup
 
-# Configuration
-DB_NAME="your_database"            # Database name to restore
-DB_USER="your_username"            # Database user
-DB_PASSWORD="your_password"        # Database password
-COMPRESSED_BACKUP_FILE="/path/to/backup.sql.gz"  # Compressed backup file (e.g., gzip compressed)
-# COMPRESSED_BACKUP_FILE="/path/to/backup.dump.gz"  # Uncomment this line and comment out the above line if using custom format
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <db_name> <db_user> <db_password> <compressed_backup_file>"
+    exit 1
+fi
 
-# Temporary file for decompressed backup
-TEMP_BACKUP_FILE="/tmp/backup.sql"  # Temporary file to store decompressed SQL dump
+# Get the database name, user, password, and compressed backup file from the arguments
+DB_NAME="$1"
+DB_USER="$2"
+DB_PASSWORD="$3"
+COMPRESSED_BACKUP_FILE="$4"
+TEMP_BACKUP_FILE="/tmp/$(basename "$COMPRESSED_BACKUP_FILE" .gz)"
 
 # Export the database password to avoid prompt
 export PGPASSWORD="$DB_PASSWORD"

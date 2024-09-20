@@ -2,9 +2,15 @@
 # monitor-network.sh
 # Script to monitor network traffic on a specified interface
 
-# Configuration
-INTERFACE="eth0"    # Network interface to monitor
-LOG_FILE="/path/to/network_traffic.log"  # Log file to record traffic
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <interface> <log_file>"
+    exit 1
+fi
+
+# Get the network interface and log file from the arguments
+INTERFACE="$1"
+LOG_FILE="$2"
 
 # Monitor network traffic
 tcpdump -i "$INTERFACE" -w "$LOG_FILE"

@@ -2,8 +2,14 @@
 # monitor-resources.sh
 # Script to monitor and log CPU and memory usage
 
-# Configuration
-LOG_FILE="/path/to/resource_log.txt"  # File to log resource usage
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <log_file>"
+    exit 1
+fi
+
+# Get the log file from the argument
+LOG_FILE="$1"
 
 # Record current date and time
 echo "Resource usage at $(date)" >> "$LOG_FILE"

@@ -2,12 +2,17 @@
 # restore-postgresql.sh
 # Script to restore a PostgreSQL database from a backup file
 
-# Configuration
-DB_NAME="your_database"            # Database name to restore
-DB_USER="your_username"            # Database user
-DB_PASSWORD="your_password"        # Database password
-BACKUP_FILE="/path/to/backup.sql"  # Path to the SQL dump file
-# BACKUP_FILE="/path/to/backup.dump"  # Uncomment this line and comment out the above line if using custom format
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <db_name> <db_user> <db_password> <backup_file>"
+    exit 1
+fi
+
+# Get the database name, user, password, and backup file from the arguments
+DB_NAME="$1"
+DB_USER="$2"
+DB_PASSWORD="$3"
+BACKUP_FILE="$4"
 
 # Export the database password to avoid prompt
 export PGPASSWORD="$DB_PASSWORD"

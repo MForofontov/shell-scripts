@@ -2,8 +2,14 @@
 # check-process.sh
 # Script to check if a specific process is running
 
-# Configuration
-PROCESS_NAME="process_name"  # Name of the process to check
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <process_name>"
+    exit 1
+fi
+
+# Get the process name from the argument
+PROCESS_NAME="$1"
 
 # Check if the process is running
 if pgrep "$PROCESS_NAME" > /dev/null

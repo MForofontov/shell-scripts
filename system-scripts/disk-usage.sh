@@ -2,9 +2,15 @@
 # disk-usage.sh
 # Script to check disk usage and alert if it exceeds a threshold
 
-# Configuration
-THRESHOLD=80                # Usage percentage threshold for alert
-EMAIL="your-email@example.com"  # Email address for alert
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <threshold> <email>"
+    exit 1
+fi
+
+# Get the threshold and email address from the arguments
+THRESHOLD="$1"
+EMAIL="$2"
 
 # Get disk usage percentage for the root filesystem
 USAGE=$(df / | grep / | awk '{ print $5 }' | sed 's/%//g')
