@@ -2,9 +2,15 @@
 # compress-tar-directory.sh
 # Script to compress a directory into a tar.gz file
 
-# Configuration
-SOURCE_DIR="/path/to/directory"  # Directory to compress
-OUTPUT_FILE="/path/to/output.tar.gz"  # Output file name
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <source_directory> <output_file>"
+    exit 1
+fi
+
+# Get the source directory and output file from the arguments
+SOURCE_DIR="$1"
+OUTPUT_FILE="$2"
 
 # Compress the directory
 tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"

@@ -2,9 +2,15 @@
 # find-large-files.sh
 # Script to find and list files larger than a specified size
 
-# Configuration
-DIRECTORY="/path/to/directory"  # Directory to search in
-SIZE="+100M"                    # Minimum size of files to find (e.g., 100MB)
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <directory> <size>"
+    exit 1
+fi
+
+# Get the directory and size from the arguments
+DIRECTORY="$1"
+SIZE="$2"
 
 # Find files larger than the specified size
 find "$DIRECTORY" -type f -size "$SIZE" -exec ls -lh {} \;

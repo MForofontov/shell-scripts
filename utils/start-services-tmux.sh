@@ -2,9 +2,16 @@
 # start-services-tmux.sh
 # Script to start PostgreSQL, React, and Django services in separate tmux windows, and check if they are running
 
-# Configuration
-REACT_DIR="/path/to/react-app"       # Path to your React application directory
-DJANGO_DIR="/path/to/django-app"     # Path to your Django application directory
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <react_dir> <django_dir> <tmux_session_name>"
+    exit 1
+fi
+
+# Get the React directory, Django directory, and tmux session name from the arguments
+REACT_DIR="$1"
+DJANGO_DIR="$2"
+SESSION="$3"
 
 # Function to check if a service is running
 is_running() {
@@ -21,9 +28,6 @@ is_running() {
 }
 
 # Start tmux session
-SESSION="dev-session"
-
-# Create a new tmux session
 tmux new-session -d -s "$SESSION"
 
 # Check and start PostgreSQL
@@ -48,9 +52,12 @@ if is_running "react-scripts"; then
     echo "React application is already running."
 else
     echo "Starting React application..."
-    cd "$REACT_DIR" || { echo "Error: React directory not found."; exit 1; }
-    tmux send-keys -t "$SESSION:1" 'npm start' C-m
-    echo "React application started."
+    tmux send-keys -t "$SESSION:1" "cd $REACT_DIR && npm start" C-m
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to start React application."
+        exit 1
+    fi
+    echo "React application started successfully."
 fi
 
 # Create a new window for Django
@@ -60,10 +67,13 @@ if is_running "manage.py runserver"; then
     echo "Django application is already running."
 else
     echo "Starting Django application..."
-    cd "$DJANGO_DIR" || { echo "Error: Django directory not found."; exit 1; }
-    tmux send-keys -t "$SESSION:2" 'python manage.py runserver' C-m
-    echo "Django application started."
+    tmux send-keys -t "$SESSION:2" "cd $DJANGO_DIR && python manage.py runserver" C-m
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to start Django application."
+        exit 1
+    fi
+    echo "Django application started successfully."
 fi
 
-# Attach to tmux session
-tmux attach -t "$SESSION"
+# Attach to the tmux session
+tmux attach-session -t "$SESSION"

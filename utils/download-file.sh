@@ -2,9 +2,15 @@
 # download-file.sh
 # Script to download a file using curl
 
-# Configuration
-URL="https://example.com/file.txt"  # URL of the file to download
-DEST_FILE="/path/to/downloaded_file.txt"  # Destination file
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <url> <destination_file>"
+    exit 1
+fi
+
+# Get the URL and destination file from the arguments
+URL="$1"
+DEST_FILE="$2"
 
 # Download file using curl
 curl -o "$DEST_FILE" "$URL"

@@ -2,8 +2,14 @@
 # system-report.sh
 # Script to generate a system report
 
-# Configuration
-REPORT_FILE="/path/to/system_report.txt"  # File to save the report
+# Check if the correct number of arguments is provided
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <report_file>"
+    exit 1
+fi
+
+# Get the report file path from the argument
+REPORT_FILE="$1"
 
 # Generate system report
 echo "System Report - $(date)" > "$REPORT_FILE"
