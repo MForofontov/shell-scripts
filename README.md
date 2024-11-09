@@ -14,10 +14,6 @@ This repository, **MForofontov/shell-scripts**, contains a collection of shell s
 
 Each script is documented with its purpose, input parameters, and usage instructions. Examples are provided to demonstrate how to execute the scripts effectively.
 
-## Unit Tests
-
-This repository includes unit tests using `pytest` to ensure the reliability and correctness of the scripts. The tests are organized by the type of script they cover. To run the tests, use the following command:
-
 ```sh
 pytest
 ```
