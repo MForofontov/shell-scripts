@@ -14,10 +14,6 @@ This repository, **MForofontov/shell-scripts**, contains a collection of shell s
 
 Each script is documented with its purpose, input parameters, and usage instructions. Examples are provided to demonstrate how to execute the scripts effectively.
 
-```sh
-pytest
-```
-
 ## Contribution
 
 Contributions are welcome! Please fork the repository and create a pull request with your additions or improvements.
