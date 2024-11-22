@@ -12,11 +12,22 @@ fi
 DIRECTORY="$1"  # Directory containing files to rename
 PREFIX="$2"     # Prefix to add to filenames
 
+# Check if the directory exists
+if [ ! -d "$DIRECTORY" ]; then
+    echo "Error: Directory $DIRECTORY does not exist."
+    exit 1
+fi
+
 # Rename files by adding the prefix
 for FILE in "$DIRECTORY"/*; do
     if [ -f "$FILE" ]; then
         BASENAME=$(basename "$FILE")
-        mv "$FILE" "$DIRECTORY/${PREFIX}${BASENAME}"
+        NEW_NAME="$DIRECTORY/${PREFIX}${BASENAME}"
+        if mv "$FILE" "$NEW_NAME"; then
+            echo "Renamed $FILE to $NEW_NAME"
+        else
+            echo "Error: Failed to rename $FILE"
+        fi
     fi
 done
 
