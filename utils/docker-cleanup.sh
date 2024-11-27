@@ -1,17 +1,37 @@
 #!/bin/bash
 # docker-cleanup.sh
-# Cleans up unused Docker containers, images, volumes, and networks
+# Script to clean up all Docker containers, images, volumes, and networks
 
-echo "Cleaning up unused Docker containers..."
-docker container prune -f
+# Confirm before proceeding
+read -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (y/N): " confirm
+if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+    echo "Cleanup canceled."
+    exit 1
+fi
 
-echo "Cleaning up unused Docker images..."
-docker image prune -a -f
+# Stop all running containers
+echo "Stopping all running containers..."
+docker stop $(docker ps -q) 2>/dev/null
 
-echo "Cleaning up unused Docker volumes..."
-docker volume prune -f
+# Remove all containers
+echo "Removing all containers..."
+docker rm $(docker ps -aq) 2>/dev/null
 
-echo "Cleaning up unused Docker networks..."
-docker network prune -f
+# Remove all images
+echo "Removing all images..."
+docker rmi $(docker images -q) -f 2>/dev/null
 
-echo "Docker cleanup completed."
+# Remove all volumes
+echo "Removing all volumes..."
+docker volume rm $(docker volume ls -q) 2>/dev/null
+
+# Remove all networks
+echo "Removing all networks..."
+docker network rm $(docker network ls -q) 2>/dev/null
+
+# Prune all unused resources (containers, images, volumes, networks)
+echo "Pruning all unused resources..."
+docker system prune -a --volumes -f
+
+# Notify user that cleanup is complete
+echo "Docker cleanup complete."
