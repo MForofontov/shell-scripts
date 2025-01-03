@@ -3,7 +3,7 @@
 # Script to clean up all Docker containers, images, volumes, and networks
 
 # Confirm before proceeding
-read -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (y/N): " confirm
+read -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (Y/N): " confirm
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "Cleanup canceled."
     exit 1
