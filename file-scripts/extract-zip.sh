@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/file-scripts/extract-zip.sh
 # extract-zip.sh
 # Script to extract a zip archive
 
