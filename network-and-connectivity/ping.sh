@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/ping.sh
 # ping.sh
 # Script to ping a list of servers/websites and check their reachability
 

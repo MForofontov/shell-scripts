@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/arp-table-viewer.sh
 # arp-table-viewer.sh
 # Script to view and log the ARP table
 

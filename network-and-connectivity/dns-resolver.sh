@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/dns-resolver.sh
 # dns-resolver.sh
 # Script to test DNS resolution for a list of domains
 

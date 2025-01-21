@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/network-speed-test.sh
 # network-speed-test.sh
 # Script to run a network speed test using speedtest-cli
 

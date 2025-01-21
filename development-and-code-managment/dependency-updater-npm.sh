@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/dependency-updater-npm.sh
 # Script to update npm dependencies
 
 # Function to display usage instructions

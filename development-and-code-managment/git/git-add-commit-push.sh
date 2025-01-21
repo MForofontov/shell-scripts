@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-add-commit-push.sh
 # Script to automate Git operations: add, commit, and push
 
 # Function to display usage instructions

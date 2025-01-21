@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/ip-extractor-from-log-file.sh
 # ip-extractor-from-log-file.sh
 # Script to extract unique IP addresses from a log file
 

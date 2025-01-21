@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/port-scanner.sh
 # port-scanner.sh
 # Script to scan open ports on a specified server
 

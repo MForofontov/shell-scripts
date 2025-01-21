@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-commit-validator.sh
 # Git Commit Validator
 
 # Function to display usage instructions

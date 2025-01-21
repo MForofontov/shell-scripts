@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/http-status-code-checker.sh
 # http-status-code-checker.sh
 # Script to check HTTP status codes for a list of URLs
 

@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/bandwidth-monitor.sh
 # bandwidth-monitor.sh
 # Script to monitor bandwidth usage on a specified network interface
 

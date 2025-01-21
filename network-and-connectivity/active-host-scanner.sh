@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/active-host-scanner.sh
 # active-host-scanner.sh
 # Script to scan a network for active hosts
 
