@@ -1,25 +1,70 @@
 #!/bin/bash
-# dependency-updater.sh
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/dependency-updater-python.sh
+# dependency-updater-python.sh
 # Script to update Python dependencies
 
-# Default requirements file and log file
-REQUIREMENTS_FILE=${1:-"requirements.txt"}
-LOG_FILE="dependency_update.log"
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 <requirements_file> [log_file]"
+  echo "Example: $0 requirements.txt custom_log.log"
+  exit 1
+}
 
-# Check if the requirements file exists
+# Check if at least one argument is provided
+if [ "$#" -lt 1 ]; then
+  usage
+fi
+
+# Get the requirements file from the first argument
+REQUIREMENTS_FILE=$1
+
+# Check if a log file is provided as a second argument
+LOG_FILE=""
+if [ "$#" -ge 2 ]; then
+  LOG_FILE="$2"
+fi
+
+# Validate requirements file
 if [ ! -f "$REQUIREMENTS_FILE" ]; then
   echo "Error: Requirements file $REQUIREMENTS_FILE does not exist."
   exit 1
 fi
 
-echo "Updating Python dependencies from $REQUIREMENTS_FILE..."
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
+fi
+
+# Function to log messages
+log_message() {
+  local MESSAGE=$1
+  if [ -n "$LOG_FILE" ]; then
+    echo "$MESSAGE" | tee -a "$LOG_FILE"
+  else
+    echo "$MESSAGE"
+  fi
+}
+
+log_message "Updating Python dependencies from $REQUIREMENTS_FILE..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-echo "$TIMESTAMP: Updating Python dependencies from $REQUIREMENTS_FILE..." | tee -a "$LOG_FILE"
+log_message "$TIMESTAMP: Updating Python dependencies from $REQUIREMENTS_FILE..."
 
 # Update Python dependencies
-if pip install --upgrade -r "$REQUIREMENTS_FILE" >> "$LOG_FILE" 2>&1; then
-  echo "Dependencies updated successfully!" | tee -a "$LOG_FILE"
+if [ -n "$LOG_FILE" ]; then
+  if pip install --upgrade -r "$REQUIREMENTS_FILE" >> "$LOG_FILE" 2>&1; then
+    log_message "Dependencies updated successfully!"
+  else
+    log_message "Failed to update dependencies!"
+    exit 1
+  fi
 else
-  echo "Failed to update dependencies!" | tee -a "$LOG_FILE"
-  exit 1
+  if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
+    log_message "Dependencies updated successfully!"
+  else
+    log_message "Failed to update dependencies!"
+    exit 1
+  fi
 fi
