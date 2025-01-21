@@ -1,11 +1,11 @@
 #!/bin/bash
-# count-files.sh
-# Script to count the number of files and directories in a given path
+# check-network.sh
+# Script to check network connectivity to a specific host
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 <directory> [log_file]"
-    echo "Example: $0 /path/to/directory custom_log.log"
+    echo "Usage: $0 <host> [log_file]"
+    echo "Example: $0 example.com custom_log.log"
     exit 1
 }
 
@@ -14,19 +14,13 @@ if [ "$#" -lt 1 ]; then
     usage
 fi
 
-# Get the directory path and log file from the arguments
-DIRECTORY="$1"
+# Get the host and log file from the arguments
+HOST="$1"
 LOG_FILE=""
 
 # Check if a log file is provided as a second argument
 if [ "$#" -eq 2 ]; then
     LOG_FILE="$2"
-fi
-
-# Check if the directory exists
-if [ ! -d "$DIRECTORY" ]; then
-    echo "Error: Directory $DIRECTORY does not exist."
-    exit 1
 fi
 
 # Validate log file if provided
@@ -49,10 +43,10 @@ log_message() {
     fi
 }
 
-# Count files and directories
-FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
-DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
-
-# Log and print counts
-log_message "Number of files in $DIRECTORY: $FILE_COUNT"
-log_message "Number of directories in $DIRECTORY: $DIR_COUNT"
+# Check network connectivity
+log_message "Checking network connectivity to $HOST..."
+if ping -c 4 "$HOST" > /dev/null; then
+    log_message "Network connectivity to $HOST is working."
+else
+    log_message "Network connectivity to $HOST failed."
+fi

@@ -1,35 +1,69 @@
 #!/bin/bash
-# add-prefix-to-files.sh
-# Script to rename all files in a directory by adding a prefix
+# backup.sh
+# Script to back up a directory
+
+# Function to display usage instructions
+usage() {
+    echo "Usage: $0 SOURCE_DIR BACKUP_DIR [log_file]"
+    echo "Example: $0 /path/to/source /path/to/backup custom_log.log"
+    exit 1
+}
 
 # Check if the correct number of arguments is provided
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 DIRECTORY PREFIX"
-    exit 1
+if [ "$#" -lt 2 ]; then
+    usage
 fi
 
 # Configuration
-DIRECTORY="$1"  # Directory containing files to rename
-PREFIX="$2"     # Prefix to add to filenames
+SOURCE_DIR="$1"   # Directory to back up
+BACKUP_DIR="$2"   # Directory where backup will be stored
+LOG_FILE=""
 
-# Check if the directory exists
-if [ ! -d "$DIRECTORY" ]; then
-    echo "Error: Directory $DIRECTORY does not exist."
+# Check if a log file is provided as a third argument
+if [ "$#" -eq 3 ]; then
+    LOG_FILE="$3"
+fi
+
+# Check if the source directory exists
+if [ ! -d "$SOURCE_DIR" ]; then
+    echo "Error: Source directory $SOURCE_DIR does not exist."
     exit 1
 fi
 
-# Rename files by adding the prefix
-for FILE in "$DIRECTORY"/*; do
-    if [ -f "$FILE" ]; then
-        BASENAME=$(basename "$FILE")
-        NEW_NAME="$DIRECTORY/${PREFIX}${BASENAME}"
-        if mv "$FILE" "$NEW_NAME"; then
-            echo "Renamed $FILE to $NEW_NAME"
+# Check if the backup directory exists
+if [ ! -d "$BACKUP_DIR" ]; then
+    echo "Error: Backup directory $BACKUP_DIR does not exist."
+    exit 1
+fi
+
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+        echo "Error: Cannot write to log file $LOG_FILE"
+        exit 1
+    fi
+fi
+
+# Function to log messages
+log_message() {
+    local MESSAGE=$1
+    if [ -n "$MESSAGE" ]; then
+        if [ -n "$LOG_FILE" ]; then
+            echo "$MESSAGE" | tee -a "$LOG_FILE"
         else
-            echo "Error: Failed to rename $FILE"
+            echo "$MESSAGE"
         fi
     fi
-done
+}
 
-# Notify user
-echo "Files renamed successfully."
+# Create a compressed backup of the source directory
+DATE=$(date +%Y%m%d%H%M%S)     # Current date and time for backup file name
+BACKUP_FILE="${BACKUP_DIR}/backup_${DATE}.tar.gz"  # Backup file name
+
+log_message "Creating backup of $SOURCE_DIR at $BACKUP_FILE..."
+if tar -czf "$BACKUP_FILE" -C "$SOURCE_DIR" .; then
+    log_message "Backup created at $BACKUP_FILE"
+else
+    log_message "Error: Failed to create backup."
+    exit 1
+fi
