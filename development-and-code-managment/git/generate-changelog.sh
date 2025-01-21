@@ -23,16 +23,6 @@ if [ "$#" -ge 2 ]; then
   LOG_FILE="$2"
 fi
 
-# Function to log messages
-log_message() {
-  local MESSAGE=$1
-  if [ -n "$LOG_FILE" ]; then
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$MESSAGE"
-  fi
-}
-
 # Validate output file
 if ! touch "$OUTPUT_FILE" 2>/dev/null; then
   echo "Error: Cannot write to output file $OUTPUT_FILE"
@@ -46,6 +36,16 @@ if [ -n "$LOG_FILE" ]; then
     exit 1
   fi
 fi
+
+# Function to log messages
+log_message() {
+  local MESSAGE=$1
+  if [ -n "$LOG_FILE" ]; then
+    echo "$MESSAGE" | tee -a "$LOG_FILE"
+  else
+    echo "$MESSAGE"
+  fi
+}
 
 # Get the project name from the current directory
 PROJECT_NAME=$(basename "$(pwd)")
