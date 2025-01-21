@@ -1,11 +1,11 @@
 #!/bin/bash
-# check-process.sh
-# Script to check if a specific process is running
+# check-network.sh
+# Script to check network connectivity to a specific host
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 <process_name> [log_file]"
-    echo "Example: $0 process_name custom_log.log"
+    echo "Usage: $0 <host> [log_file]"
+    echo "Example: $0 example.com custom_log.log"
     exit 1
 }
 
@@ -14,8 +14,8 @@ if [ "$#" -lt 1 ]; then
     usage
 fi
 
-# Get the process name and log file from the arguments
-PROCESS_NAME="$1"
+# Get the host and log file from the arguments
+HOST="$1"
 LOG_FILE=""
 
 # Check if a log file is provided as a second argument
@@ -43,10 +43,10 @@ log_message() {
     fi
 }
 
-# Check if the process is running
-log_message "Checking if process $PROCESS_NAME is running..."
-if pgrep "$PROCESS_NAME" > /dev/null; then
-    log_message "$PROCESS_NAME is running."
+# Check network connectivity
+log_message "Checking network connectivity to $HOST..."
+if ping -c 4 "$HOST" > /dev/null; then
+    log_message "Network connectivity to $HOST is working."
 else
-    log_message "$PROCESS_NAME is not running."
+    log_message "Network connectivity to $HOST failed."
 fi

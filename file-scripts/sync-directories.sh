@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/file-scripts/sync-directories.sh
 # sync-directories.sh
 # Script to synchronize two directories using rsync
 
