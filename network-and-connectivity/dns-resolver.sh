@@ -1,23 +1,50 @@
 #!/bin/bash
+# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/dns-resolver.sh
 # dns-resolver.sh
 # Script to test DNS resolution for a list of domains
 
-# Default domains and log file
+# Function to display usage instructions
+usage() {
+    echo "Usage: $0 <domain1> <domain2> ... [log_file]"
+    echo "Example: $0 google.com github.com custom_log.log"
+    exit 1
+}
+
+# Default domains
 DOMAINS=("google.com" "github.com" "example.com")
-LOG_FILE="dns_resolution.log"
 
 # Check if domains are provided as arguments
+LOG_FILE=""
 if [ "$#" -ge 1 ]; then
-    DOMAINS=("$@")
+    if [[ "${!#}" != *"."* ]]; then
+        LOG_FILE="${!#}"
+        DOMAINS=("${@:1:$#-1}")
+    else
+        DOMAINS=("$@")
+    fi
 fi
 
-# Check if a log file is provided as the last argument
-if [ -n "${!#}" ]; then
-    LOG_FILE="${!#}"
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+        echo "Error: Cannot write to log file $LOG_FILE"
+        exit 1
+    fi
 fi
 
-echo "Testing DNS resolution..."
-echo "Results logged in $LOG_FILE"
+# Function to log messages
+log_message() {
+    local MESSAGE=$1
+    if [ -n "$MESSAGE" ]; then
+        if [ -n "$LOG_FILE" ]; then
+            echo "$MESSAGE" | tee -a "$LOG_FILE"
+        else
+            echo "$MESSAGE"
+        fi
+    fi
+}
+
+log_message "Testing DNS resolution..."
 
 # Function to resolve domains
 resolve_domains() {
@@ -25,17 +52,17 @@ resolve_domains() {
         TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
         IP=$(dig +short "$DOMAIN" | head -n 1)
         if [ -z "$IP" ]; then
-            echo "$TIMESTAMP: $DOMAIN: DNS resolution failed" | tee -a "$LOG_FILE"
+            log_message "$TIMESTAMP: $DOMAIN: DNS resolution failed"
         else
-            echo "$TIMESTAMP: $DOMAIN: Resolved to $IP" | tee -a "$LOG_FILE"
+            log_message "$TIMESTAMP: $DOMAIN: Resolved to $IP"
         fi
     done
 }
 
 # Resolve domains and handle errors
 if ! resolve_domains; then
-    echo "Error: Failed to resolve domains."
+    log_message "Error: Failed to resolve domains."
     exit 1
 fi
 
-echo "DNS resolution complete. Results logged in $LOG_FILE"
+log_message "DNS resolution complete."
