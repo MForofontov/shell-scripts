@@ -1,11 +1,26 @@
 #!/bin/bash
 
-# Git Stash Manager
+# Generate Changelog
 
-# Check if a log file is provided as an argument
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 <output_file> [log_file]"
+  echo "Example: $0 CHANGELOG.md custom_log.log"
+  exit 1
+}
+
+# Check if at least one argument is provided
+if [ "$#" -lt 1 ]; then
+  usage
+fi
+
+# Get the output file from the first argument
+OUTPUT_FILE=$1
+
+# Check if a log file is provided as a second argument
 LOG_FILE=""
-if [ "$#" -eq 1 ]; then
-  LOG_FILE="$1"
+if [ "$#" -ge 2 ]; then
+  LOG_FILE="$2"
 fi
 
 # Function to log messages
@@ -18,39 +33,39 @@ log_message() {
   fi
 }
 
-# Display available stashes
-log_message "Available stashes:"
-git stash list | tee -a "$LOG_FILE"
-
-# Prompt user for stash index
-log_message "Enter stash index to apply or drop (e.g., stash@{0}):"
-read -r STASH_INDEX
-
-# Prompt user for action
-log_message "Choose an action: [apply/drop]"
-read -r ACTION
-
-# Get the current timestamp
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-
-# Perform the chosen action
-if [ "$ACTION" == "apply" ]; then
-  log_message "$TIMESTAMP: Applying stash $STASH_INDEX..."
-  if git stash apply "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "Stash $STASH_INDEX applied successfully."
-  else
-    log_message "Error: Failed to apply stash $STASH_INDEX."
-    exit 1
-  fi
-elif [ "$ACTION" == "drop" ]; then
-  log_message "$TIMESTAMP: Dropping stash $STASH_INDEX..."
-  if git stash drop "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "Stash $STASH_INDEX dropped successfully."
-  else
-    log_message "Error: Failed to drop stash $STASH_INDEX."
-    exit 1
-  fi
-else
-  log_message "Invalid action!"
+# Validate output file
+if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+  echo "Error: Cannot write to output file $OUTPUT_FILE"
   exit 1
 fi
+
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
+fi
+
+# Get the project name from the current directory
+PROJECT_NAME=$(basename "$(pwd)")
+
+# Get the current date
+CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+
+log_message "Generating changelog for $PROJECT_NAME..."
+
+# Add a header to the changelog
+{
+  echo "# Changelog for $PROJECT_NAME"
+  echo "Generated on $CURRENT_DATE"
+  echo
+} > "$OUTPUT_FILE"
+
+# Append the git log to the changelog
+if ! git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
+  log_message "Error: Failed to generate changelog."
+  exit 1
+fi
+
+log_message "Changelog saved to $OUTPUT_FILE"
