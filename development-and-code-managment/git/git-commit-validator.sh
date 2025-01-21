@@ -2,10 +2,27 @@
 
 # Git Commit Validator
 
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 [log_file]"
+  echo "Example: $0 custom_log.log"
+  exit 1
+}
+
 # Check if a log file is provided as an argument
 LOG_FILE=""
-if [ "$#" -eq 1 ]; then
+if [ "$#" -gt 1 ]; then
+  usage
+elif [ "$#" -eq 1 ]; then
   LOG_FILE="$1"
+fi
+
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
 fi
 
 # Function to log messages
