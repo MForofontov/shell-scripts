@@ -1,5 +1,5 @@
 #!/bin/bash
-# git-add-commit-push.sh
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-add-commit-push.sh
 # Script to automate Git operations: add, commit, and push
 
 # Function to display usage instructions
@@ -34,10 +34,12 @@ fi
 # Function to log messages
 log_message() {
   local MESSAGE=$1
-  if [ -n "$LOG_FILE" ]; then
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$MESSAGE"
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
   fi
 }
 
@@ -47,23 +49,44 @@ log_message "$TIMESTAMP: Starting Git operations..."
 
 # Add all changes
 log_message "Adding all changes..."
-if ! git add . >> "$LOG_FILE" 2>&1; then
-  log_message "Error: Failed to add changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  if ! git add . >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to add changes."
+    exit 1
+  fi
+else
+  if ! git add .; then
+    log_message "Error: Failed to add changes."
+    exit 1
+  fi
 fi
 
 # Commit changes
 log_message "Committing changes..."
-if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "Error: Failed to commit changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
+else
+  if ! git commit -m "$COMMIT_MESSAGE"; then
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
 fi
 
 # Push changes
 log_message "Pushing changes..."
-if ! git push >> "$LOG_FILE" 2>&1; then
-  log_message "Error: Failed to push changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  if ! git push >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to push changes."
+    exit 1
+  fi
+else
+  if ! git push; then
+    log_message "Error: Failed to push changes."
+    exit 1
+  fi
 fi
 
 log_message "$TIMESTAMP: Git operations completed successfully."

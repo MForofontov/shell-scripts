@@ -1,5 +1,5 @@
 #!/bin/bash
-# dependency-updater-npm.sh
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/dependency-updater-npm.sh
 # Script to update npm dependencies
 
 # Function to display usage instructions
@@ -28,14 +28,16 @@ fi
 # Function to log messages
 log_message() {
   local MESSAGE=$1
-  if [ -n "$LOG_FILE" ]; then
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$MESSAGE"
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
   fi
 }
 
-log_message "Updating npm dependencies..."
+log_message "Starting npm dependency update..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 log_message "$TIMESTAMP: Updating npm dependencies..."
 
@@ -61,7 +63,11 @@ log_message "Generating summary of updated packages..."
 UPDATED_PACKAGES=$(npm outdated --json)
 if [ -n "$UPDATED_PACKAGES" ]; then
   log_message "Summary of updated packages:"
-  echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
+  if [ -n "$LOG_FILE" ]; then
+    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
+  else
+    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
+  fi
 else
   log_message "No packages were updated."
 fi

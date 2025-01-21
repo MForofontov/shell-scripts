@@ -1,6 +1,5 @@
 #!/bin/bash
 # filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/dependency-updater-python.sh
-# dependency-updater-python.sh
 # Script to update Python dependencies
 
 # Function to display usage instructions
@@ -41,10 +40,12 @@ fi
 # Function to log messages
 log_message() {
   local MESSAGE=$1
-  if [ -n "$LOG_FILE" ]; then
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$MESSAGE"
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
   fi
 }
 

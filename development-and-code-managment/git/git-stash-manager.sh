@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-stash-manager.sh
 # Git Stash Manager
 
 # Function to display usage instructions
@@ -11,8 +11,18 @@ usage() {
 
 # Check if a log file is provided as an argument
 LOG_FILE=""
-if [ "$#" -eq 1 ]; then
+if [ "$#" -gt 1 ]; then
+  usage
+elif [ "$#" -eq 1 ]; then
   LOG_FILE="$1"
+fi
+
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
 fi
 
 # Function to log messages
@@ -49,19 +59,37 @@ TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 # Perform the chosen action
 if [ "$ACTION" == "apply" ]; then
   log_message "$TIMESTAMP: Applying stash $STASH_INDEX..."
-  if git stash apply "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "Stash $STASH_INDEX applied successfully."
+  if [ -n "$LOG_FILE" ]; then
+    if git stash apply "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
+      log_message "Stash $STASH_INDEX applied successfully."
+    else
+      log_message "Error: Failed to apply stash $STASH_INDEX."
+      exit 1
+    fi
   else
-    log_message "Error: Failed to apply stash $STASH_INDEX."
-    exit 1
+    if git stash apply "$STASH_INDEX"; then
+      log_message "Stash $STASH_INDEX applied successfully."
+    else
+      log_message "Error: Failed to apply stash $STASH_INDEX."
+      exit 1
+    fi
   fi
 elif [ "$ACTION" == "drop" ]; then
   log_message "$TIMESTAMP: Dropping stash $STASH_INDEX..."
-  if git stash drop "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "Stash $STASH_INDEX dropped successfully."
+  if [ -n "$LOG_FILE" ]; then
+    if git stash drop "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
+      log_message "Stash $STASH_INDEX dropped successfully."
+    else
+      log_message "Error: Failed to drop stash $STASH_INDEX."
+      exit 1
+    fi
   else
-    log_message "Error: Failed to drop stash $STASH_INDEX."
-    exit 1
+    if git stash drop "$STASH_INDEX"; then
+      log_message "Stash $STASH_INDEX dropped successfully."
+    else
+      log_message "Error: Failed to drop stash $STASH_INDEX."
+      exit 1
+    fi
   fi
 else
   log_message "Invalid action!"

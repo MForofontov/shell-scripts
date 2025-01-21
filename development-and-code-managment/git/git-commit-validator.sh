@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-commit-validator.sh
 # Git Commit Validator
 
 # Function to display usage instructions
@@ -63,9 +63,18 @@ TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Commit the changes
 log_message "$TIMESTAMP: Committing changes..."
-if git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "Commit successful!"
+if [ -n "$LOG_FILE" ]; then
+  if git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
+    log_message "Commit successful!"
+  else
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
 else
-  log_message "Error: Failed to commit changes."
-  exit 1
+  if git commit -m "$COMMIT_MESSAGE"; then
+    log_message "Commit successful!"
+  else
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
 fi

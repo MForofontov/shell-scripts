@@ -40,10 +40,12 @@ fi
 # Function to log messages
 log_message() {
   local MESSAGE=$1
-  if [ -n "$LOG_FILE" ]; then
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$MESSAGE"
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
   fi
 }
 

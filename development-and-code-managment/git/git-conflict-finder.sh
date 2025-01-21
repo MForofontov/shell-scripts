@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-conflict-finder.sh
 # Git Conflict Finder
 
 # Function to display usage instructions
