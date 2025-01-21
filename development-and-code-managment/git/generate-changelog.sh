@@ -1,7 +1,53 @@
 #!/bin/bash
 
 # Generate Changelog
-OUTPUT_FILE=${1:-"CHANGELOG.md"}
+
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 <output_file> [log_file]"
+  echo "Example: $0 CHANGELOG.md custom_log.log"
+  exit 1
+}
+
+# Check if at least one argument is provided
+if [ "$#" -lt 1 ]; then
+  usage
+fi
+
+# Get the output file from the first argument
+OUTPUT_FILE=$1
+
+# Check if a log file is provided as a second argument
+LOG_FILE=""
+if [ "$#" -ge 2 ]; then
+  LOG_FILE="$2"
+fi
+
+# Validate output file
+if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+  echo "Error: Cannot write to output file $OUTPUT_FILE"
+  exit 1
+fi
+
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
+fi
+
+# Function to log messages
+log_message() {
+  local MESSAGE=$1
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
+  fi
+}
 
 # Get the project name from the current directory
 PROJECT_NAME=$(basename "$(pwd)")
@@ -9,7 +55,7 @@ PROJECT_NAME=$(basename "$(pwd)")
 # Get the current date
 CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-echo "Generating changelog for $PROJECT_NAME..."
+log_message "Generating changelog for $PROJECT_NAME..."
 
 # Add a header to the changelog
 {
@@ -20,8 +66,8 @@ echo "Generating changelog for $PROJECT_NAME..."
 
 # Append the git log to the changelog
 if ! git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
-  echo "Error: Failed to generate changelog."
+  log_message "Error: Failed to generate changelog."
   exit 1
 fi
 
-echo "Changelog saved to $OUTPUT_FILE"
+log_message "Changelog saved to $OUTPUT_FILE"

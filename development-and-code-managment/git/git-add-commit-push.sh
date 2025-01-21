@@ -1,46 +1,91 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/development-and-code-managment/git/git-add-commit-push.sh
-# git-add-commit-push.sh
 # Script to automate Git operations: add, commit, and push
 
-# Check if a commit message is provided
-COMMIT_MESSAGE=$1
-if [ -z "$COMMIT_MESSAGE" ]; then
-  echo "Usage: $0 <commit_message>"
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 <commit_message> [log_file]"
+  echo "Example: $0 'Initial commit' custom_log.log"
   exit 1
+}
+
+# Check if a commit message is provided
+if [ "$#" -lt 1 ]; then
+  usage
 fi
 
-# Default log file
-LOG_FILE="git_operations.log"
+# Get the commit message from the first argument
+COMMIT_MESSAGE=$1
 
-# Check if a log file is provided as an argument
+# Check if a log file is provided as a second argument
+LOG_FILE=""
 if [ "$#" -eq 2 ]; then
   LOG_FILE="$2"
 fi
 
-echo "Starting Git operations..."
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
+fi
+
+# Function to log messages
+log_message() {
+  local MESSAGE=$1
+  if [ -n "$MESSAGE" ]; then
+    if [ -n "$LOG_FILE" ]; then
+      echo "$MESSAGE" | tee -a "$LOG_FILE"
+    else
+      echo "$MESSAGE"
+    fi
+  fi
+}
+
+log_message "Starting Git operations..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-echo "$TIMESTAMP: Starting Git operations..." | tee -a "$LOG_FILE"
+log_message "$TIMESTAMP: Starting Git operations..."
 
 # Add all changes
-echo "Adding all changes..."
-if ! git add . >> "$LOG_FILE" 2>&1; then
-  echo "Error: Failed to add changes." | tee -a "$LOG_FILE"
-  exit 1
+log_message "Adding all changes..."
+if [ -n "$LOG_FILE" ]; then
+  if ! git add . >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to add changes."
+    exit 1
+  fi
+else
+  if ! git add .; then
+    log_message "Error: Failed to add changes."
+    exit 1
+  fi
 fi
 
 # Commit changes
-echo "Committing changes..."
-if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  echo "Error: Failed to commit changes." | tee -a "$LOG_FILE"
-  exit 1
+log_message "Committing changes..."
+if [ -n "$LOG_FILE" ]; then
+  if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
+else
+  if ! git commit -m "$COMMIT_MESSAGE"; then
+    log_message "Error: Failed to commit changes."
+    exit 1
+  fi
 fi
 
 # Push changes
-echo "Pushing changes..."
-if ! git push >> "$LOG_FILE" 2>&1; then
-  echo "Error: Failed to push changes." | tee -a "$LOG_FILE"
-  exit 1
+log_message "Pushing changes..."
+if [ -n "$LOG_FILE" ]; then
+  if ! git push >> "$LOG_FILE" 2>&1; then
+    log_message "Error: Failed to push changes."
+    exit 1
+  fi
+else
+  if ! git push; then
+    log_message "Error: Failed to push changes."
+    exit 1
+  fi
 fi
 
-echo "$TIMESTAMP: Git operations completed successfully." | tee -a "$LOG_FILE"
+log_message "$TIMESTAMP: Git operations completed successfully."

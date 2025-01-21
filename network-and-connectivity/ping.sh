@@ -9,35 +9,61 @@ WEBSITES=("google.com" "github.com" "stackoverflow.com")
 PING_COUNT=3
 TIMEOUT=5
 
-# Check if an output file is provided
-if [ "$#" -eq 1 ]; then
+# Function to display usage instructions
+usage() {
+    echo "Usage: $0 [output_file]"
+    echo "Example: $0 ping_results.txt"
+    exit 1
+}
+
+# Check if an output file is provided as an argument
+OUTPUT_FILE=""
+if [ "$#" -gt 1 ]; then
+    usage
+elif [ "$#" -eq 1 ]; then
     OUTPUT_FILE="$1"
-    exec > "$OUTPUT_FILE" 2>&1
-    echo "Writing ping results to $OUTPUT_FILE"
-else
-    OUTPUT_FILE=""
 fi
+
+# Validate output file if provided
+if [ -n "$OUTPUT_FILE" ]; then
+    if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+        echo "Error: Cannot write to output file $OUTPUT_FILE"
+        exit 1
+    fi
+fi
+
+# Function to log messages
+log_message() {
+    local MESSAGE=$1
+    if [ -n "$MESSAGE" ]; then
+        if [ -n "$OUTPUT_FILE" ]; then
+            echo "$MESSAGE" | tee -a "$OUTPUT_FILE"
+        else
+            echo "$MESSAGE"
+        fi
+    fi
+}
 
 # Function to ping websites
 ping_websites() {
     for SITE in "${WEBSITES[@]}"; do
-        echo "Pinging $SITE..."
+        log_message "Pinging $SITE..."
         if ping -c "$PING_COUNT" -W "$TIMEOUT" "$SITE" &> /dev/null; then
-            echo "$SITE is reachable."
+            log_message "$SITE is reachable."
         else
-            echo "$SITE is unreachable."
+            log_message "$SITE is unreachable."
         fi
     done
 }
 
 # Ping websites and handle errors
 if ! ping_websites; then
-    echo "Error: Failed to ping websites."
+    log_message "Error: Failed to ping websites."
     exit 1
 fi
 
 if [ -n "$OUTPUT_FILE" ]; then
-    echo "Ping results have been written to $OUTPUT_FILE"
+    log_message "Ping results have been written to $OUTPUT_FILE"
 else
-    echo "Ping results displayed on the console"
+    log_message "Ping results displayed on the console"
 fi
