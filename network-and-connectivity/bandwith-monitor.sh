@@ -1,39 +1,68 @@
 #!/bin/bash
-# bandwidth-monitor.sh
-# Script to monitor bandwidth usage on a specified network interface
+# filepath: /home/ummi/Documents/github/shell-scripts/network-and-connectivity/dns-resolver.sh
+# dns-resolver.sh
+# Script to test DNS resolution for a list of domains
 
-# Default network interface and log file
-INTERFACE=${1:-eth0}
-LOG_FILE=${2:-bandwidth_usage.log}
-
-# Check if the network interface exists
-if [ ! -d "/sys/class/net/$INTERFACE" ]; then
-    echo "Error: Network interface $INTERFACE does not exist."
+# Function to display usage instructions
+usage() {
+    echo "Usage: $0 <domain1> <domain2> ... [log_file]"
+    echo "Example: $0 google.com github.com custom_log.log"
     exit 1
+}
+
+# Default domains
+DOMAINS=("google.com" "github.com" "example.com")
+
+# Check if domains are provided as arguments
+LOG_FILE=""
+if [ "$#" -ge 1 ]; then
+    if [[ "${!#}" != *"."* ]]; then
+        LOG_FILE="${!#}"
+        DOMAINS=("${@:1:$#-1}")
+    else
+        DOMAINS=("$@")
+    fi
 fi
 
-echo "Monitoring bandwidth usage on interface $INTERFACE..."
-echo "Press Ctrl+C to stop."
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+        echo "Error: Cannot write to log file $LOG_FILE"
+        exit 1
+    fi
+fi
 
-# Function to monitor bandwidth usage
-monitor_bandwidth() {
-    while true; do
-        RX1=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-        TX1=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
-        sleep 1
-        RX2=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-        TX2=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
+# Function to log messages
+log_message() {
+    local MESSAGE=$1
+    if [ -n "$MESSAGE" ]; then
+        if [ -n "$LOG_FILE" ]; then
+            echo "$MESSAGE" | tee -a "$LOG_FILE"
+        else
+            echo "$MESSAGE"
+        fi
+    fi
+}
 
-        RX_RATE=$((RX2 - RX1))
-        TX_RATE=$((TX2 - TX1))
+log_message "Testing DNS resolution..."
 
+# Function to resolve domains
+resolve_domains() {
+    for DOMAIN in "${DOMAINS[@]}"; do
         TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-        echo "$TIMESTAMP: Download: $((RX_RATE / 1024)) KB/s, Upload: $((TX_RATE / 1024)) KB/s" | tee -a "$LOG_FILE"
+        IP=$(dig +short "$DOMAIN" | head -n 1)
+        if [ -z "$IP" ]; then
+            log_message "$TIMESTAMP: $DOMAIN: DNS resolution failed"
+        else
+            log_message "$TIMESTAMP: $DOMAIN: Resolved to $IP"
+        fi
     done
 }
 
-# Monitor bandwidth usage and handle errors
-if ! monitor_bandwidth; then
-    echo "Error: Failed to monitor bandwidth usage on interface $INTERFACE."
+# Resolve domains and handle errors
+if ! resolve_domains; then
+    log_message "Error: Failed to resolve domains."
     exit 1
 fi
+
+log_message "DNS resolution complete."
