@@ -2,34 +2,68 @@
 # dependency-updater-npm.sh
 # Script to update npm dependencies
 
-# Default log file
-LOG_FILE="npm_dependency_update.log"
+# Function to display usage instructions
+usage() {
+  echo "Usage: $0 [log_file]"
+  echo "Example: $0 custom_log.log"
+  exit 1
+}
 
 # Check if a log file is provided as an argument
-if [ "$#" -eq 1 ]; then
+LOG_FILE=""
+if [ "$#" -gt 1 ]; then
+  usage
+elif [ "$#" -eq 1 ]; then
   LOG_FILE="$1"
 fi
 
-echo "Updating npm dependencies..."
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo "Error: Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
+fi
+
+# Function to log messages
+log_message() {
+  local MESSAGE=$1
+  if [ -n "$LOG_FILE" ]; then
+    echo "$MESSAGE" | tee -a "$LOG_FILE"
+  else
+    echo "$MESSAGE"
+  fi
+}
+
+log_message "Updating npm dependencies..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-echo "$TIMESTAMP: Updating npm dependencies..." | tee -a "$LOG_FILE"
+log_message "$TIMESTAMP: Updating npm dependencies..."
 
 # Update npm dependencies
-if npm update >> "$LOG_FILE" 2>&1; then
-  echo "Dependencies updated successfully!" | tee -a "$LOG_FILE"
+if [ -n "$LOG_FILE" ]; then
+  if npm update >> "$LOG_FILE" 2>&1; then
+    log_message "Dependencies updated successfully!"
+  else
+    log_message "Failed to update dependencies!"
+    exit 1
+  fi
 else
-  echo "Failed to update dependencies!" | tee -a "$LOG_FILE"
-  exit 1
+  if npm update; then
+    log_message "Dependencies updated successfully!"
+  else
+    log_message "Failed to update dependencies!"
+    exit 1
+  fi
 fi
 
 # Generate a summary of updated packages
-echo "Generating summary of updated packages..."
+log_message "Generating summary of updated packages..."
 UPDATED_PACKAGES=$(npm outdated --json)
 if [ -n "$UPDATED_PACKAGES" ]; then
-  echo "Summary of updated packages:" | tee -a "$LOG_FILE"
+  log_message "Summary of updated packages:"
   echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
 else
-  echo "No packages were updated." | tee -a "$LOG_FILE"
+  log_message "No packages were updated."
 fi
 
-echo "$TIMESTAMP: npm dependency update process completed." | tee -a "$LOG_FILE"
+log_message "$TIMESTAMP: npm dependency update process completed."
