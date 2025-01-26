@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /home/ummi/Documents/github/shell-scripts/system-scripts/system-report.sh
 # system-report.sh
 # Script to generate a system report
 
