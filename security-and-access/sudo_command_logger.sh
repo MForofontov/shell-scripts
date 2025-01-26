@@ -1,38 +1,43 @@
 #!/bin/bash
-# Script: sudo_command_logger.sh
-# Description: Log all commands run with sudo.
+# Script: secure_file_permissions.sh
+# Description: Set secure permissions for sensitive files.
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [log_file]"
-    echo "Example: $0 /var/log/custom_sudo_command.log"
+    echo "Usage: $0 [additional_files...]"
+    echo "Example: $0 /path/to/file1 /path/to/file2"
     exit 1
 }
 
-# Check if the correct number of arguments is provided
-if [ "$#" -gt 1 ]; then
-    usage
+# Default list of sensitive files
+FILES=(
+  "/etc/passwd"
+  "/etc/shadow"
+  "/etc/ssh/sshd_config"
+)
+
+# Add additional files from arguments
+if [ "$#" -gt 0 ]; then
+    for file in "$@"; do
+        FILES+=("$file")
+    done
 fi
 
-# Get the log file from the arguments or use the default
-LOG_FILE="/var/log/sudo_command.log"
-if [ "$#" -eq 1 ]; then
-    LOG_FILE="$1"
-fi
-
-# Validate log file
-if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo "Error: Cannot write to log file $LOG_FILE"
-    exit 1
-fi
-
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    echo "$MESSAGE" | tee -a "$LOG_FILE"
+# Function to secure file permissions
+secure_file() {
+    local file=$1
+    if [ -f "$file" ]; then
+        echo "Securing permissions for $file..."
+        chmod 600 "$file"
+        chown root:root "$file"
+    else
+        echo "Warning: $file does not exist."
+    fi
 }
 
-# Monitor sudo commands
-log_message "Monitoring sudo commands..."
-tail -f /var/log/auth.log | grep --line-buffered "COMMAND" >> "$LOG_FILE" &
-log_message "Logging sudo commands to $LOG_FILE"
+# Secure permissions for each file
+for file in "${FILES[@]}"; do
+    secure_file "$file"
+done
+
+echo "Secure file permissions enforced."
