@@ -33,7 +33,8 @@ log_message() {
 }
 
 # Audit user access
-log_message "Listing system users..."
-cat /etc/passwd | awk -F: '{ print $1 }' | tee -a "$LOG_FILE"
+log_message "Listing system users and their details..."
+log_message "Username:Home Directory:Shell"
+cat /etc/passwd | awk -F: '{ print $1 ":" $6 ":" $7 }' | tee -a "$LOG_FILE"
 
 log_message "User access audit completed. Log saved to $LOG_FILE."
