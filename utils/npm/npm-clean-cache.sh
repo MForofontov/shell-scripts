@@ -42,10 +42,12 @@ if ! command -v npm &> /dev/null; then
 fi
 
 # Clean the NPM cache
-log_message "Cleaning NPM cache..."
+log_message "Starting NPM cache cleaning process..."
 if npm cache clean --force; then
     log_message "NPM cache has been cleaned successfully."
 else
     log_message "Error: Failed to clean NPM cache."
     exit 1
 fi
+
+log_message "NPM cache cleaning process completed."
