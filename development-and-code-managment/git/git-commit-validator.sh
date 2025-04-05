@@ -72,7 +72,7 @@ log_message() {
 }
 
 # Prompt user for commit message
-log_message "\033[1;34mEnter commit message:\033[0m"
+log_message "Enter commit message:"
 read -r COMMIT_MESSAGE
 
 # Check if commit message is empty
@@ -88,7 +88,7 @@ if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
 fi
 
 # Check if there are changes staged for commit
-log_message "\033[1;34mValidating staged changes...\033[0m"
+log_message "Validating staged changes..."
 if git diff --cached --quiet; then
   log_message "\033[1;31mError:\033[0m No changes staged for commit!"
   exit 1
@@ -98,7 +98,7 @@ fi
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Commit the changes
-log_message "\033[1;34m$TIMESTAMP: Committing changes...\033[0m"
+log_message "$TIMESTAMP: Committing changes..."
 if git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
   log_message "\033[1;32mCommit successful!\033[0m"
 else
