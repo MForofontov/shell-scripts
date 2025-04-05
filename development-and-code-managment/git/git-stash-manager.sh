@@ -18,8 +18,32 @@ fi
 
 # Function to display usage instructions
 usage() {
-  echo "Usage: $0 [log_file]"
-  echo "Example: $0 custom_log.log"
+  # Get the terminal width
+  TERMINAL_WIDTH=$(tput cols)
+  # Generate a separator line based on the terminal width
+  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
+
+  echo
+  echo "$SEPARATOR"
+  echo -e "\033[1;34mGit Stash Manager\033[0m"
+  echo
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script helps you manage Git stashes. It allows you to:"
+  echo "    - List all available stashes"
+  echo "    - Apply a specific stash"
+  echo "    - Drop a specific stash"
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 [log_file]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;33mlog_file\033[0m    (Optional) Specify a log file to save the output."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0                  # Run the script without logging to a file"
+  echo "  $0 custom_log.log   # Run the script and log output to 'custom_log.log'"
+  echo "$SEPARATOR"
+  echo
   exit 1
 }
 
