@@ -8,19 +8,21 @@ DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
 # Default number of ping attempts and timeout
 PING_COUNT=3
 TIMEOUT=5
+OUTPUT_FILE=""
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [options] [output_file]"
+    echo "Usage: $0 [options]"
     echo
     echo "Options:"
     echo "  --websites <site1,site2,...>   Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
     echo "  --count <number>               Number of ping attempts (default: $PING_COUNT)"
     echo "  --timeout <seconds>            Timeout for each ping attempt (default: $TIMEOUT)"
+    echo "  --log <file>                   Log output to the specified file"
     echo "  --help                         Display this help message"
     echo
     echo "Example:"
-    echo "  $0 --websites google.com,example.com --count 5 --timeout 3 ping_results.txt"
+    echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
     exit 0
 }
 
@@ -40,20 +42,24 @@ while [[ "$#" -gt 0 ]]; do
             TIMEOUT="$2"
             shift 2
             ;;
+        --log)
+            OUTPUT_FILE="$2"
+            shift 2
+            ;;
         --help)
             usage
             ;;
         *)
-            OUTPUT_FILE="$1"
-            shift
+            echo "Unknown option: $1"
+            usage
             ;;
     esac
 done
 
-# Validate output file if provided
+# Validate log file if provided
 if [ -n "$OUTPUT_FILE" ]; then
     if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to output file $OUTPUT_FILE"
+        echo "Error: Cannot write to log file $OUTPUT_FILE"
         exit 1
     fi
 fi
@@ -61,12 +67,10 @@ fi
 # Function to log messages
 log_message() {
     local MESSAGE=$1
-    if [ -n "$MESSAGE" ]; then
-        if [ -n "$OUTPUT_FILE" ]; then
-            echo "$MESSAGE" | tee -a "$OUTPUT_FILE"
-        else
-            echo "$MESSAGE"
-        fi
+    if [ -n "$OUTPUT_FILE" ]; then
+        echo "$MESSAGE" | tee -a "$OUTPUT_FILE"
+    else
+        echo "$MESSAGE"
     fi
 }
 
