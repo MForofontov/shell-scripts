@@ -2,6 +2,20 @@
 # Git Conflict Finder
 # Script to identify unresolved merge conflicts in a Git repository
 
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger file relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
   # Get the terminal width
@@ -46,33 +60,22 @@ if [ -n "$LOG_FILE" ]; then
   fi
 fi
 
-# Function to log messages
-log_message() {
-  local MESSAGE=$1
-  # Remove color codes for the log file
-  local PLAIN_MESSAGE=$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
-  if [ -n "$LOG_FILE" ]; then
-    echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo -e "$MESSAGE"
-  fi
-}
-
-log_message "\033[1;34mChecking for unresolved conflicts...\033[0m"
+# Log the start of the conflict check
+log_message "INFO" "Checking for unresolved conflicts..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "\033[1;34m$TIMESTAMP: Checking for unresolved conflicts...\033[0m"
+log_message "INFO" "$TIMESTAMP: Checking for unresolved conflicts..."
 
 # Find merge conflicts
 CONFLICTS=$(git diff --name-only --diff-filter=U)
 
 if [ $? -eq 0 ]; then
   if [ -n "$CONFLICTS" ]; then
-    log_message "\033[1;33mConflicted files:\033[0m"
-    log_message "$CONFLICTS"
+    log_message "WARNING" "Conflicted files found:"
+    log_message "DEBUG" "$CONFLICTS"
   else
-    log_message "\033[1;32mNo conflicts found!\033[0m"
+    log_message "SUCCESS" "No conflicts found!"
   fi
 else
-  log_message "\033[1;31mError:\033[0m Failed to check for conflicts."
+  log_message "ERROR" "Failed to check for conflicts."
   exit 1
 fi
