@@ -14,6 +14,7 @@ usage() {
   echo
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script automates the process of adding, committing, and pushing changes to a Git repository."
+  echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 <commit_message> [--log <log_file>] [--help]"
