@@ -19,7 +19,7 @@ usage() {
     echo "  --count <number>               (Optional) Number of ping attempts (default: $PING_COUNT)"
     echo "  --timeout <seconds>            (Optional) Timeout for each ping attempt (default: $TIMEOUT)"
     echo "  --log <file>                   (Optional) Log output to the specified file"
-    echo "  --help                         Display this help message"
+    echo "  --help                         (Optional) Display this help message"
     echo
     echo "Example:"
     echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
