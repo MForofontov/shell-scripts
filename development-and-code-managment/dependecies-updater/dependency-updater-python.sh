@@ -3,37 +3,84 @@
 
 # Function to display usage instructions
 usage() {
-  echo "Usage: $0 <requirements_file> [log_file]"
-  echo "Example: $0 requirements.txt custom_log.log"
+  # Get the terminal width
+  TERMINAL_WIDTH=$(tput cols)
+  # Generate a separator line based on the terminal width
+  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
+
+  echo
+  echo "$SEPARATOR"
+  echo -e "\033[1;34mPython Dependency Updater\033[0m"
+  echo
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script updates Python dependencies listed in a requirements file."
+  echo "  It must be run in an environment where 'pip' is installed and accessible."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <requirements_file> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<requirements_file>\033[0m       (Required) Path to the requirements file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 requirements.txt               # Update dependencies without logging."
+  echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
+  echo "$SEPARATOR"
+  echo
   exit 1
 }
 
-# Check if at least one argument is provided
-if [ "$#" -lt 1 ]; then
+# Initialize variables
+REQUIREMENTS_FILE=""
+LOG_FILE=""
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      if [ -z "$REQUIREMENTS_FILE" ]; then
+        REQUIREMENTS_FILE="$1"
+        shift
+      else
+        echo "Error: Unknown option or multiple requirements files provided: $1"
+        usage
+      fi
+      ;;
+  esac
+done
+
+# Validate requirements file
+if [ -z "$REQUIREMENTS_FILE" ]; then
+  echo "Error: Requirements file is required."
   usage
 fi
 
-# Get the requirements file from the first argument
-REQUIREMENTS_FILE=$1
-
-# Check if a log file is provided as a second argument
-LOG_FILE=""
-if [ "$#" -ge 2 ]; then
-  LOG_FILE="$2"
-fi
-
-# Validate requirements file
 if [ ! -f "$REQUIREMENTS_FILE" ]; then
-  echo "Error: Requirements file $REQUIREMENTS_FILE does not exist."
+  echo "Error: Requirements file '$REQUIREMENTS_FILE' does not exist."
   exit 1
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo "Error: Cannot write to log file $LOG_FILE"
+    echo "Error: Cannot write to log file '$LOG_FILE'."
     exit 1
   fi
+fi
+
+# Validate if pip is installed
+if ! command -v pip &> /dev/null; then
+  echo "Error: pip is not installed or not available in the PATH. Please install pip and try again."
+  exit 1
 fi
 
 # Function to log messages
@@ -48,9 +95,10 @@ log_message() {
   fi
 }
 
-log_message "Updating Python dependencies from $REQUIREMENTS_FILE..."
+# Log the start of the update process
+log_message "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "$TIMESTAMP: Updating Python dependencies from $REQUIREMENTS_FILE..."
+log_message "$TIMESTAMP: Starting dependency update process..."
 
 # Update Python dependencies
 if [ -n "$LOG_FILE" ]; then
@@ -68,3 +116,5 @@ else
     exit 1
   fi
 fi
+
+log_message "$TIMESTAMP: Dependency update process completed."
