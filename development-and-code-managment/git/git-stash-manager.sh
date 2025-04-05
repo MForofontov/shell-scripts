@@ -32,6 +32,7 @@ usage() {
   echo "    - List all available stashes"
   echo "    - Apply a specific stash"
   echo "    - Drop a specific stash"
+  echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [--log <log_file>] [--help]"
