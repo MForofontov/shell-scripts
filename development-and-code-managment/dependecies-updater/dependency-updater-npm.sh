@@ -28,6 +28,8 @@ usage() {
   echo
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script updates npm dependencies and generates a summary of updated packages."
+  echo "  It must be run in a directory containing a 'package.json' file."
+  echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [--log <log_file>] [--help]"
