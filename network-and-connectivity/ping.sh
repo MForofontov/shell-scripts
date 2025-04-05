@@ -2,8 +2,8 @@
 # ping.sh
 # Script to ping a list of servers/websites and check their reachability
 
-# List of servers/websites to ping
-WEBSITES=("google.com" "github.com" "stackoverflow.com")
+# Default list of servers/websites to ping
+DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
 
 # Default number of ping attempts and timeout
 PING_COUNT=3
@@ -11,18 +11,44 @@ TIMEOUT=5
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [output_file]"
-    echo "Example: $0 ping_results.txt"
-    exit 1
+    echo "Usage: $0 [options] [output_file]"
+    echo
+    echo "Options:"
+    echo "  --websites <site1,site2,...>   Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
+    echo "  --count <number>               Number of ping attempts (default: $PING_COUNT)"
+    echo "  --timeout <seconds>            Timeout for each ping attempt (default: $TIMEOUT)"
+    echo "  --help                         Display this help message"
+    echo
+    echo "Example:"
+    echo "  $0 --websites google.com,example.com --count 5 --timeout 3 ping_results.txt"
+    exit 0
 }
 
-# Check if an output file is provided as an argument
-OUTPUT_FILE=""
-if [ "$#" -gt 1 ]; then
-    usage
-elif [ "$#" -eq 1 ]; then
-    OUTPUT_FILE="$1"
-fi
+# Parse input arguments
+WEBSITES=("${DEFAULT_WEBSITES[@]}")
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --websites)
+            IFS=',' read -r -a WEBSITES <<< "$2"
+            shift 2
+            ;;
+        --count)
+            PING_COUNT="$2"
+            shift 2
+            ;;
+        --timeout)
+            TIMEOUT="$2"
+            shift 2
+            ;;
+        --help)
+            usage
+            ;;
+        *)
+            OUTPUT_FILE="$1"
+            shift
+            ;;
+    esac
+done
 
 # Validate output file if provided
 if [ -n "$OUTPUT_FILE" ]; then
