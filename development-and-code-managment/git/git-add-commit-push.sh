@@ -3,23 +3,53 @@
 
 # Function to display usage instructions
 usage() {
-  echo "Usage: $0 <commit_message> [log_file]"
-  echo "Example: $0 'Initial commit' custom_log.log"
-  exit 1
+  echo "Usage: $0 <commit_message> [--log <log_file>] [--help]"
+  echo
+  echo "Options:"
+  echo "  <commit_message>    (Required) The commit message for the changes."
+  echo "  --log <log_file>    (Optional) Log output to the specified file."
+  echo "  --help              (Optional) Display this help message."
+  echo
+  echo "Example:"
+  echo "  $0 'Initial commit' --log git_operations.log"
+  exit 0
 }
 
-# Check if a commit message is provided
+# Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
   usage
 fi
 
-# Get the commit message from the first argument
-COMMIT_MESSAGE=$1
-
-# Check if a log file is provided as a second argument
+# Initialize variables
+COMMIT_MESSAGE=""
 LOG_FILE=""
-if [ "$#" -eq 2 ]; then
-  LOG_FILE="$2"
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      if [ -z "$COMMIT_MESSAGE" ]; then
+        COMMIT_MESSAGE="$1"
+        shift
+      else
+        echo "Unknown option: $1"
+        usage
+      fi
+      ;;
+  esac
+done
+
+# Validate required arguments
+if [ -z "$COMMIT_MESSAGE" ]; then
+  echo "Error: <commit_message> is required."
+  usage
 fi
 
 # Validate log file if provided
@@ -48,44 +78,23 @@ log_message "$TIMESTAMP: Starting Git operations..."
 
 # Add all changes
 log_message "Adding all changes..."
-if [ -n "$LOG_FILE" ]; then
-  if ! git add . >> "$LOG_FILE" 2>&1; then
-    log_message "Error: Failed to add changes."
-    exit 1
-  fi
-else
-  if ! git add .; then
-    log_message "Error: Failed to add changes."
-    exit 1
-  fi
+if ! git add . >> "$LOG_FILE" 2>&1; then
+  log_message "Error: Failed to add changes."
+  exit 1
 fi
 
 # Commit changes
 log_message "Committing changes..."
-if [ -n "$LOG_FILE" ]; then
-  if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-    log_message "Error: Failed to commit changes."
-    exit 1
-  fi
-else
-  if ! git commit -m "$COMMIT_MESSAGE"; then
-    log_message "Error: Failed to commit changes."
-    exit 1
-  fi
+if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
+  log_message "Error: Failed to commit changes."
+  exit 1
 fi
 
 # Push changes
 log_message "Pushing changes..."
-if [ -n "$LOG_FILE" ]; then
-  if ! git push >> "$LOG_FILE" 2>&1; then
-    log_message "Error: Failed to push changes."
-    exit 1
-  fi
-else
-  if ! git push; then
-    log_message "Error: Failed to push changes."
-    exit 1
-  fi
+if ! git push >> "$LOG_FILE" 2>&1; then
+  log_message "Error: Failed to push changes."
+  exit 1
 fi
 
 log_message "$TIMESTAMP: Git operations completed successfully."
