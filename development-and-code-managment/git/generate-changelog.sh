@@ -5,15 +5,31 @@
 
 # Function to display usage instructions
 usage() {
-  echo "Usage: $0 <output_file> [--log <log_file>] [--help]"
+  # Get the terminal width
+  TERMINAL_WIDTH=$(tput cols)
+  # Generate a separator line based on the terminal width
+  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
+
   echo
-  echo "Options:"
-  echo "  <output_file>       (Required) The file where the changelog will be saved."
-  echo "  --log <log_file>    (Optional) Log output to the specified file."
-  echo "  --help              (Optional) Display this help message."
+  echo "$SEPARATOR"
+  echo -e "\033[1;34mGenerate Changelog Script\033[0m"
   echo
-  echo "Example:"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script generates a changelog file from the Git log of the current repository."
+  echo "  It includes commit hashes, messages, authors, and relative commit times."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <output_file> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<output_file>\033[0m       (Required) The file where the changelog will be saved."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 CHANGELOG.md --log changelog.log"
+  echo "$SEPARATOR"
+  echo
   exit 0
 }
 
@@ -41,7 +57,7 @@ while [[ "$#" -gt 0 ]]; do
         OUTPUT_FILE="$1"
         shift
       else
-        echo "Unknown option: $1"
+        echo -e "\033[1;31mError:\033[0m Unknown option: $1"
         usage
       fi
       ;;
@@ -50,20 +66,20 @@ done
 
 # Validate required arguments
 if [ -z "$OUTPUT_FILE" ]; then
-  echo "Error: <output_file> is required."
+  echo -e "\033[1;31mError:\033[0m <output_file> is required."
   usage
 fi
 
 # Validate output file
 if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-  echo "Error: Cannot write to output file $OUTPUT_FILE"
+  echo -e "\033[1;31mError:\033[0m Cannot write to output file $OUTPUT_FILE"
   exit 1
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo "Error: Cannot write to log file $LOG_FILE"
+    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE"
     exit 1
   fi
 fi
