@@ -74,6 +74,18 @@ if [ -n "$LOG_FILE" ]; then
   fi
 fi
 
+# Validate if npm is installed
+if ! command -v npm &> /dev/null; then
+  log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
+  exit 1
+fi
+
+# Validate if the script is run in a directory with a package.json file
+if [ ! -f "package.json" ]; then
+  log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
+  exit 1
+fi
+
 # Log the start of the update process
 log_message "INFO" "Starting npm dependency update..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
