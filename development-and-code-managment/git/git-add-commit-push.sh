@@ -1,6 +1,16 @@
 #!/bin/bash
 # Script to automate Git operations: add, commit, and push
 
+# Import the log_message function from log_with_levels.sh
+LOGGER_FILE="/Users/mykfor1/Documents/git/github/shell-scripts/utils/log/log_with_levels.sh"
+
+if [ -f "$LOGGER_FILE" ]; then
+  source "$LOGGER_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOGGER_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
   # Get the terminal width
@@ -55,7 +65,7 @@ while [[ "$#" -gt 0 ]]; do
         COMMIT_MESSAGE="$1"
         shift
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option: $1"
+        log_message "ERROR" "Unknown option: $1"
         usage
       fi
       ;;
@@ -64,58 +74,41 @@ done
 
 # Validate required arguments
 if [ -z "$COMMIT_MESSAGE" ]; then
-  echo -e "\033[1;31mError:\033[0m <commit_message> is required."
+  log_message "ERROR" "<commit_message> is required."
   usage
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE"
+    log_message "ERROR" "Cannot write to log file $LOG_FILE"
     exit 1
   fi
 fi
 
-# Function to log messages
-log_message() {
-  local MESSAGE=$1
-  # Remove color codes for the log file
-  local PLAIN_MESSAGE=$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
-  
-  if [ -n "$MESSAGE" ]; then
-    if [ -n "$LOG_FILE" ]; then
-      # Write plain text to the log file
-      echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
-    else
-      # Print colored message to the console
-      echo -e "$MESSAGE"
-    fi
-  fi
-}
-
-log_message "Starting Git operations..."
+log_message "INFO" "Starting Git operations..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "$TIMESTAMP: Starting Git operations..."
+log_message "INFO" "$TIMESTAMP: Starting Git operations..."
 
 # Add all changes
-log_message "Adding all changes..."
+log_message "INFO" "Adding all changes..."
 if ! git add . >> "$LOG_FILE" 2>&1; then
-  log_message "\033[1;31mError:\033[0m Failed to add changes."
+  log_message "ERROR" "Failed to add changes."
   exit 1
 fi
 
 # Commit changes
-log_message "Committing changes..."
+log_message "INFO" "Committing changes..."
 if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "\033[1;31mError:\033[0m Failed to commit changes."
+  log_message "ERROR" "Failed to commit changes."
   exit 1
 fi
 
 # Push changes
-log_message "Pushing changes..."
+log_message "INFO" "Pushing changes..."
 if ! git push >> "$LOG_FILE" 2>&1; then
-  log_message "\033[1;31mError:\033[0m Failed to push changes."
+  log_message "ERROR" "Failed to push changes."
   exit 1
 fi
 
-log_message "\033[1;32m$TIMESTAMP: Git operations completed successfully.\033[0m"
+log_message "SUCCESS" "$TIMESTAMP: Git operations completed successfully."

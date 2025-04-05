@@ -19,10 +19,10 @@ usage() {
   echo "  $0 --level <log_level> --message <message> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m--level <log_level>\033[0m    The log level (e.g., ERROR, INFO, DEBUG, SUCCESS)."
-  echo -e "  \033[1;33m--message <message>\033[0m    The message to log or echo."
+  echo -e "  \033[1;36m--level <log_level>\033[0m    (Required) The log level (e.g., ERROR, INFO, DEBUG, SUCCESS)."
+  echo -e "  \033[1;36m--message <message>\033[0m    (Required) The message to log or echo."
   echo -e "  \033[1;33m--log <log_file>\033[0m       (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m                 Display this help message."
+  echo -e "  \033[1;33m--help\033[0m                 (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 --level INFO --message 'Operation started' --log operations.log"
