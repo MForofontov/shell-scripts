@@ -83,38 +83,39 @@ if ! command -v pip &> /dev/null; then
   exit 1
 fi
 
-# Function to log messages
+# Function to log messages with levels
 log_message() {
-  local MESSAGE=$1
-  if [ -n "$MESSAGE" ]; then
-    if [ -n "$LOG_FILE" ]; then
-      echo "$MESSAGE" | tee -a "$LOG_FILE"
-    else
-      echo "$MESSAGE"
-    fi
+  local LEVEL=$1
+  local MESSAGE=$2
+  local TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+  local FORMATTED_MESSAGE="[$TIMESTAMP] [$LEVEL] $MESSAGE"
+
+  if [ -n "$LOG_FILE" ]; then
+    echo "$FORMATTED_MESSAGE" | tee -a "$LOG_FILE"
+  else
+    echo "$FORMATTED_MESSAGE"
   fi
 }
 
 # Log the start of the update process
-log_message "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "$TIMESTAMP: Starting dependency update process..."
+log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
+log_message "INFO" "Starting dependency update process..."
 
 # Update Python dependencies
 if [ -n "$LOG_FILE" ]; then
   if pip install --upgrade -r "$REQUIREMENTS_FILE" >> "$LOG_FILE" 2>&1; then
-    log_message "Dependencies updated successfully!"
+    log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "Failed to update dependencies!"
+    log_message "ERROR" "Failed to update dependencies!"
     exit 1
   fi
 else
   if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
-    log_message "Dependencies updated successfully!"
+    log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "Failed to update dependencies!"
+    log_message "ERROR" "Failed to update dependencies!"
     exit 1
   fi
 fi
 
-log_message "$TIMESTAMP: Dependency update process completed."
+log_message "INFO" "Dependency update process completed."
