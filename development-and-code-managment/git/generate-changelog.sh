@@ -1,12 +1,20 @@
 #!/bin/bash
 
-# Generate Changelog
+# generate-changelog.sh
+# Script to generate a changelog from the Git log
 
 # Function to display usage instructions
 usage() {
-  echo "Usage: $0 <output_file> [log_file]"
-  echo "Example: $0 CHANGELOG.md custom_log.log"
-  exit 1
+  echo "Usage: $0 <output_file> [--log <log_file>] [--help]"
+  echo
+  echo "Options:"
+  echo "  <output_file>       The file where the changelog will be saved."
+  echo "  --log <log_file>    Optional. Log output to the specified file."
+  echo "  --help              Display this help message."
+  echo
+  echo "Example:"
+  echo "  $0 CHANGELOG.md --log changelog.log"
+  exit 0
 }
 
 # Check if at least one argument is provided
@@ -14,13 +22,36 @@ if [ "$#" -lt 1 ]; then
   usage
 fi
 
-# Get the output file from the first argument
-OUTPUT_FILE=$1
-
-# Check if a log file is provided as a second argument
+# Initialize variables
+OUTPUT_FILE=""
 LOG_FILE=""
-if [ "$#" -ge 2 ]; then
-  LOG_FILE="$2"
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      if [ -z "$OUTPUT_FILE" ]; then
+        OUTPUT_FILE="$1"
+        shift
+      else
+        echo "Unknown option: $1"
+        usage
+      fi
+      ;;
+  esac
+done
+
+# Validate required arguments
+if [ -z "$OUTPUT_FILE" ]; then
+  echo "Error: <output_file> is required."
+  usage
 fi
 
 # Validate output file

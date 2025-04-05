@@ -12,7 +12,7 @@ OUTPUT_FILE=""
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [options]"
+    echo "Usage: $0 [--websites <site1,site2,...>] [--count <number>] [--timeout <seconds>] [--log <file>] [--help]"
     echo
     echo "Options:"
     echo "  --websites <site1,site2,...>   Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
@@ -30,6 +30,9 @@ usage() {
 WEBSITES=("${DEFAULT_WEBSITES[@]}")
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
+        --help)
+            usage
+            ;;
         --websites)
             IFS=',' read -r -a WEBSITES <<< "$2"
             shift 2
@@ -45,9 +48,6 @@ while [[ "$#" -gt 0 ]]; do
         --log)
             OUTPUT_FILE="$2"
             shift 2
-            ;;
-        --help)
-            usage
             ;;
         *)
             echo "Unknown option: $1"
