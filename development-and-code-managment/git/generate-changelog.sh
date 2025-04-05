@@ -87,11 +87,16 @@ fi
 # Function to log messages
 log_message() {
   local MESSAGE=$1
+  # Remove color codes for the log file
+  local PLAIN_MESSAGE=$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
+  
   if [ -n "$MESSAGE" ]; then
     if [ -n "$LOG_FILE" ]; then
-      echo "$MESSAGE" | tee -a "$LOG_FILE"
+      # Write plain text to the log file
+      echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
     else
-      echo "$MESSAGE"
+      # Print colored message to the console
+      echo -e "$MESSAGE"
     fi
   fi
 }
