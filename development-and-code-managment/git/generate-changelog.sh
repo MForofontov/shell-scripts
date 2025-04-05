@@ -8,9 +8,9 @@ usage() {
   echo "Usage: $0 <output_file> [--log <log_file>] [--help]"
   echo
   echo "Options:"
-  echo "  <output_file>       The file where the changelog will be saved."
-  echo "  --log <log_file>    Optional. Log output to the specified file."
-  echo "  --help              Display this help message."
+  echo "  <output_file>       (Required) The file where the changelog will be saved."
+  echo "  --log <log_file>    (Optional) Log output to the specified file."
+  echo "  --help              (Optional) Display this help message."
   echo
   echo "Example:"
   echo "  $0 CHANGELOG.md --log changelog.log"

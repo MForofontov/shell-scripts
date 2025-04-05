@@ -15,10 +15,10 @@ usage() {
     echo "Usage: $0 [--websites <site1,site2,...>] [--count <number>] [--timeout <seconds>] [--log <file>] [--help]"
     echo
     echo "Options:"
-    echo "  --websites <site1,site2,...>   Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
-    echo "  --count <number>               Number of ping attempts (default: $PING_COUNT)"
-    echo "  --timeout <seconds>            Timeout for each ping attempt (default: $TIMEOUT)"
-    echo "  --log <file>                   Log output to the specified file"
+    echo "  --websites <site1,site2,...>   (Optional) Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
+    echo "  --count <number>               (Optional) Number of ping attempts (default: $PING_COUNT)"
+    echo "  --timeout <seconds>            (Optional) Timeout for each ping attempt (default: $TIMEOUT)"
+    echo "  --log <file>                   (Optional) Log output to the specified file"
     echo "  --help                         Display this help message"
     echo
     echo "Example:"
