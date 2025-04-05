@@ -1,6 +1,5 @@
 #!/bin/bash
-# Git Stash Manager
-# Script to manage Git stashes (list, apply, drop)
+# Script to update npm dependencies
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -25,13 +24,11 @@ usage() {
 
   echo
   echo "$SEPARATOR"
-  echo -e "\033[1;34mGit Stash Manager\033[0m"
+  echo -e "\033[1;34mNPM Dependency Updater\033[0m"
   echo
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script helps you manage Git stashes. It allows you to:"
-  echo "    - List all available stashes"
-  echo "    - Apply a specific stash"
-  echo "    - Drop a specific stash"
+  echo "  This script updates npm dependencies and generates a summary of updated packages."
+  echo "  It must be run in a directory containing a 'package.json' file."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
@@ -77,45 +74,52 @@ if [ -n "$LOG_FILE" ]; then
   fi
 fi
 
-# Display available stashes
-log_message "INFO" "Available stashes:"
-git stash list | tee -a "$LOG_FILE"
-
-# Prompt user for stash index
-log_message "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
-read -r STASH_INDEX
-
-# Validate stash index
-if ! git stash list | grep -q "$STASH_INDEX"; then
-  log_message "ERROR" "Invalid stash index $STASH_INDEX"
+# Validate if npm is installed
+if ! command -v npm &> /dev/null; then
+  log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
   exit 1
 fi
 
-# Prompt user for action
-log_message "INFO" "Choose an action: [apply/drop]"
-read -r ACTION
+# Validate if the script is run in a directory with a package.json file
+if [ ! -f "package.json" ]; then
+  log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
+  exit 1
+fi
 
-# Get the current timestamp
+# Log the start of the update process
+log_message "INFO" "Starting npm dependency update..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
 
-# Perform the chosen action
-if [ "$ACTION" == "apply" ]; then
-  log_message "INFO" "$TIMESTAMP: Applying stash $STASH_INDEX..."
-  if git stash apply "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
+# Update npm dependencies
+if [ -n "$LOG_FILE" ]; then
+  if npm update >> "$LOG_FILE" 2>&1; then
+    log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "ERROR" "Failed to apply stash $STASH_INDEX."
-    exit 1
-  fi
-elif [ "$ACTION" == "drop" ]; then
-  log_message "INFO" "$TIMESTAMP: Dropping stash $STASH_INDEX..."
-  if git stash drop "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
-  else
-    log_message "ERROR" "Failed to drop stash $STASH_INDEX."
+    log_message "ERROR" "Failed to update dependencies!"
     exit 1
   fi
 else
-  log_message "ERROR" "Invalid action!"
-  exit 1
+  if npm update; then
+    log_message "SUCCESS" "Dependencies updated successfully!"
+  else
+    log_message "ERROR" "Failed to update dependencies!"
+    exit 1
+  fi
 fi
+
+# Generate a summary of updated packages
+log_message "INFO" "Generating summary of updated packages..."
+UPDATED_PACKAGES=$(npm outdated --json)
+if [ -n "$UPDATED_PACKAGES" ]; then
+  log_message "INFO" "Summary of updated packages:"
+  if [ -n "$LOG_FILE" ]; then
+    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
+  else
+    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
+  fi
+else
+  log_message "INFO" "No packages were updated."
+fi
+
+log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
