@@ -3,8 +3,19 @@
 # generate-changelog.sh
 # Script to generate a changelog from the Git log
 
-# Import the log_message function from log_with_levels.sh
-source /Users/mykfor1/Documents/git/github/shell-scripts/utils/log/log_with_levels.sh
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger file relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
 
 # Function to display usage instructions
 usage() {
