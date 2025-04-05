@@ -2,6 +2,16 @@
 # ping.sh
 # Script to ping a list of servers/websites and check their reachability
 
+# Import the log_message function from log_with_levels.sh
+LOGGER_FILE="/Users/mykfor1/Documents/git/github/shell-scripts/utils/log/log_with_levels.sh"
+
+if [ -f "$LOGGER_FILE" ]; then
+  source "$LOGGER_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOGGER_FILE"
+  exit 1
+fi
+
 # Default list of servers/websites to ping
 DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
 
@@ -50,7 +60,7 @@ while [[ "$#" -gt 0 ]]; do
             shift 2
             ;;
         *)
-            echo "Unknown option: $1"
+            log_message "ERROR" "Unknown option: $1"
             usage
             ;;
     esac
@@ -59,41 +69,31 @@ done
 # Validate log file if provided
 if [ -n "$OUTPUT_FILE" ]; then
     if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to log file $OUTPUT_FILE"
+        log_message "ERROR" "Cannot write to log file $OUTPUT_FILE"
         exit 1
     fi
 fi
 
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    if [ -n "$OUTPUT_FILE" ]; then
-        echo "$MESSAGE" | tee -a "$OUTPUT_FILE"
-    else
-        echo "$MESSAGE"
-    fi
-}
-
 # Function to ping websites
 ping_websites() {
     for SITE in "${WEBSITES[@]}"; do
-        log_message "Pinging $SITE..."
+        log_message "INFO" "Pinging $SITE..."
         if ping -c "$PING_COUNT" -W "$TIMEOUT" "$SITE" &> /dev/null; then
-            log_message "$SITE is reachable."
+            log_message "SUCCESS" "$SITE is reachable."
         else
-            log_message "$SITE is unreachable."
+            log_message "ERROR" "$SITE is unreachable."
         fi
     done
 }
 
 # Ping websites and handle errors
 if ! ping_websites; then
-    log_message "Error: Failed to ping websites."
+    log_message "ERROR" "Failed to ping websites."
     exit 1
 fi
 
 if [ -n "$OUTPUT_FILE" ]; then
-    log_message "Ping results have been written to $OUTPUT_FILE"
+    log_message "SUCCESS" "Ping results have been written to $OUTPUT_FILE"
 else
-    log_message "Ping results displayed on the console"
+    log_message "INFO" "Ping results displayed on the console"
 fi
