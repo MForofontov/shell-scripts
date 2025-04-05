@@ -3,6 +3,9 @@
 # generate-changelog.sh
 # Script to generate a changelog from the Git log
 
+# Import the log_message function from log_with_levels.sh
+source /Users/mykfor1/Documents/git/github/shell-scripts/utils/log/log_with_levels.sh
+
 # Function to display usage instructions
 usage() {
   # Get the terminal width
@@ -58,7 +61,7 @@ while [[ "$#" -gt 0 ]]; do
         OUTPUT_FILE="$1"
         shift
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option: $1"
+        log_message "ERROR" "Unknown option: $1"
         usage
       fi
       ;;
@@ -67,40 +70,23 @@ done
 
 # Validate required arguments
 if [ -z "$OUTPUT_FILE" ]; then
-  echo -e "\033[1;31mError:\033[0m <output_file> is required."
+  log_message "ERROR" "<output_file> is required."
   usage
 fi
 
 # Validate output file
 if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-  echo -e "\033[1;31mError:\033[0m Cannot write to output file $OUTPUT_FILE"
+  log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
   exit 1
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE"
+    log_message "ERROR" "Cannot write to log file $LOG_FILE"
     exit 1
   fi
 fi
-
-# Function to log messages
-log_message() {
-  local MESSAGE=$1
-  # Remove color codes for the log file
-  local PLAIN_MESSAGE=$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
-  
-  if [ -n "$MESSAGE" ]; then
-    if [ -n "$LOG_FILE" ]; then
-      # Write plain text to the log file
-      echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
-    else
-      # Print plain message to the console
-      echo -e "$MESSAGE"
-    fi
-  fi
-}
 
 # Get the project name from the current directory
 PROJECT_NAME=$(basename "$(pwd)")
@@ -108,7 +94,7 @@ PROJECT_NAME=$(basename "$(pwd)")
 # Get the current date
 CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-log_message "Generating changelog for $PROJECT_NAME..."
+log_message "INFO" "Generating changelog for $PROJECT_NAME..."
 
 # Add a header to the changelog
 {
@@ -119,8 +105,8 @@ log_message "Generating changelog for $PROJECT_NAME..."
 
 # Append the git log to the changelog
 if ! git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
-  log_message "\033[1;31mError:\033[0m Failed to generate changelog."
+  log_message "ERROR" "Failed to generate changelog."
   exit 1
 fi
 
-log_message "Changelog saved to $OUTPUT_FILE"
+log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
