@@ -96,7 +96,7 @@ log_message() {
       # Write plain text to the log file
       echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
     else
-      # Print colored message to the console
+      # Print plain message to the console
       echo -e "$MESSAGE"
     fi
   fi
@@ -119,7 +119,7 @@ log_message "Generating changelog for $PROJECT_NAME..."
 
 # Append the git log to the changelog
 if ! git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
-  log_message "Error: Failed to generate changelog."
+  log_message "\033[1;31mError:\033[0m Failed to generate changelog."
   exit 1
 fi
 
