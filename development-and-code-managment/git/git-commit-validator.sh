@@ -2,6 +2,16 @@
 # Git Commit Validator
 # Script to validate and commit changes with a proper commit message
 
+# Import the log_message function from log_with_levels.sh
+LOGGER_FILE="/Users/mykfor1/Documents/git/github/shell-scripts/utils/log/log_with_levels.sh"
+
+if [ -f "$LOGGER_FILE" ]; then
+  source "$LOGGER_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOGGER_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
   # Get the terminal width
@@ -18,20 +28,22 @@ usage() {
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [--log <log_file>] [--help]"
+  echo "  $0 <commit_message> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
   echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
   echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExample:\033[0m"
-  echo "  $0 --log commit_validation.log"
+  echo "  $0 'Initial commit' --log commit_validation.log"
   echo "$SEPARATOR"
   echo
   exit 0
 }
 
 # Initialize variables
+COMMIT_MESSAGE=""
 LOG_FILE=""
 
 # Parse arguments
@@ -45,52 +57,41 @@ while [[ "$#" -gt 0 ]]; do
       shift 2
       ;;
     *)
-      echo -e "\033[1;31mError:\033[0m Unknown option: $1"
-      usage
+      if [ -z "$COMMIT_MESSAGE" ]; then
+        COMMIT_MESSAGE="$1"
+        shift
+      else
+        log_message "ERROR" "Unknown option: $1"
+        usage
+      fi
       ;;
   esac
 done
 
+# Validate required arguments
+if [ -z "$COMMIT_MESSAGE" ]; then
+  log_message "ERROR" "<commit_message> is required."
+  usage
+fi
+
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE"
+    log_message "ERROR" "Cannot write to log file $LOG_FILE"
     exit 1
   fi
 fi
 
-# Function to log messages
-log_message() {
-  local MESSAGE=$1
-  # Remove color codes for the log file
-  local PLAIN_MESSAGE=$(echo -e "$MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
-  if [ -n "$LOG_FILE" ]; then
-    echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo -e "$MESSAGE"
-  fi
-}
-
-# Prompt user for commit message
-log_message "Enter commit message:"
-read -r COMMIT_MESSAGE
-
-# Check if commit message is empty
-if [ -z "$COMMIT_MESSAGE" ]; then
-  log_message "\033[1;31mError:\033[0m Commit message cannot be empty!"
-  exit 1
-fi
-
 # Validate commit message format (example: must start with a capital letter and be at least 10 characters long)
 if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
-  log_message "\033[1;31mError:\033[0m Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
+  log_message "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
   exit 1
 fi
 
 # Check if there are changes staged for commit
-log_message "Validating staged changes..."
+log_message "INFO" "Validating staged changes..."
 if git diff --cached --quiet; then
-  log_message "\033[1;31mError:\033[0m No changes staged for commit!"
+  log_message "ERROR" "No changes staged for commit!"
   exit 1
 fi
 
@@ -98,10 +99,10 @@ fi
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Commit the changes
-log_message "$TIMESTAMP: Committing changes..."
+log_message "INFO" "$TIMESTAMP: Committing changes..."
 if git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "\033[1;32mCommit successful!\033[0m"
+  log_message "SUCCESS" "Commit successful!"
 else
-  log_message "\033[1;31mError:\033[0m Failed to commit changes."
+  log_message "ERROR" "Failed to commit changes."
   exit 1
 fi
