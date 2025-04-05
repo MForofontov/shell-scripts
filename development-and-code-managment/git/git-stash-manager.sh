@@ -34,26 +34,39 @@ usage() {
   echo "    - Drop a specific stash"
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [log_file]"
+  echo "  $0 [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33mlog_file\033[0m    (Optional) Specify a log file to save the output."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0                  # Run the script without logging to a file"
-  echo "  $0 custom_log.log   # Run the script and log output to 'custom_log.log'"
+  echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
+  echo "  $0                        # Run the script without logging to a file"
   echo "$SEPARATOR"
   echo
   exit 1
 }
 
-# Check if a log file is provided as an argument
+# Initialize variables
 LOG_FILE=""
-if [ "$#" -gt 1 ]; then
-  usage
-elif [ "$#" -eq 1 ]; then
-  LOG_FILE="$1"
-fi
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      log_message "ERROR" "Unknown option: $1"
+      usage
+      ;;
+  esac
+done
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
