@@ -1,17 +1,27 @@
 #!/bin/bash
-# Script to update npm dependencies
+# dependency-updater-npm.sh
+# Script to update npm dependencies and generate a summary of updated packages
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
+# Construct the path to the logger and utility files relative to the script's directory
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../utils/helpers/print_with_separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -89,48 +99,25 @@ log_message "INFO" "Starting npm dependency update..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
 
-# Update npm dependencies with separators in the log file and stdout
-if [ -n "$LOG_FILE" ]; then
-  echo "========== npm update output ==========" | tee -a "$LOG_FILE"
-  if npm update 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of npm update ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Dependencies updated successfully!"
-  else
-    echo "========== End of npm update ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
-    exit 1
-  fi
+# Update npm dependencies
+print_with_separator "npm update output"
+if npm update 2>&1 | tee -a "$LOG_FILE"; then
+  log_message "SUCCESS" "Dependencies updated successfully!"
 else
-  echo "========== npm update output =========="
-  if npm update; then
-    echo "========== End of npm update =========="
-    log_message "SUCCESS" "Dependencies updated successfully!"
-  else
-    echo "========== End of npm update =========="
-    log_message "ERROR" "Failed to update dependencies!"
-    exit 1
-  fi
+  log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
+  exit 1
 fi
+print_with_separator "End of npm update"
 
-# Generate a summary of updated packages with separators in the log file and stdout
+# Generate a summary of updated packages
 log_message "INFO" "Generating summary of updated packages..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== npm outdated output ==========" | tee -a "$LOG_FILE"
-  UPDATED_PACKAGES=$(npm outdated --json)
-  echo "========== End of npm outdated ==========" | tee -a "$LOG_FILE"
-else
-  echo "========== npm outdated output =========="
-  UPDATED_PACKAGES=$(npm outdated --json)
-  echo "========== End of npm outdated =========="
-fi
+print_with_separator "npm outdated output"
+UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
+print_with_separator "End of npm outdated"
 
 if [ -n "$UPDATED_PACKAGES" ]; then
   log_message "INFO" "Summary of updated packages:"
-  if [ -n "$LOG_FILE" ]; then
-    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
-  else
-    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
-  fi
+  echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
 else
   log_message "INFO" "No packages were updated."
 fi
