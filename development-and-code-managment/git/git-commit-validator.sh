@@ -5,8 +5,9 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -16,11 +17,17 @@ else
   exit 1
 fi
 
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
-  # Get the terminal width
   TERMINAL_WIDTH=$(tput cols)
-  # Generate a separator line based on the terminal width
   SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
   echo
@@ -103,25 +110,12 @@ fi
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Commit the changes with separators
-log_message "INFO" "$TIMESTAMP: Committing changes..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== git commit output ==========" | tee -a "$LOG_FILE"
-  if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Commit successful!"
-  else
-    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to commit changes."
-    exit 1
-  fi
+print_with_separator "git commit output"
+if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of git commit"
+  log_message "SUCCESS" "Commit successful!"
 else
-  echo "========== git commit output =========="
-  if git commit -m "$COMMIT_MESSAGE"; then
-    echo "========== End of git commit =========="
-    log_message "SUCCESS" "Commit successful!"
-  else
-    echo "========== End of git commit =========="
-    log_message "ERROR" "Failed to commit changes."
-    exit 1
-  fi
+  print_with_separator "End of git commit"
+  log_message "ERROR" "Failed to commit changes."
+  exit 1
 fi
