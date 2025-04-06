@@ -102,11 +102,26 @@ fi
 # Get the current timestamp
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
-# Commit the changes
+# Commit the changes with separators
 log_message "INFO" "$TIMESTAMP: Committing changes..."
-if git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "SUCCESS" "Commit successful!"
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git commit output ==========" | tee -a "$LOG_FILE"
+  if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+    log_message "SUCCESS" "Commit successful!"
+  else
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
 else
-  log_message "ERROR" "Failed to commit changes."
-  exit 1
+  echo "========== git commit output =========="
+  if git commit -m "$COMMIT_MESSAGE"; then
+    echo "========== End of git commit =========="
+    log_message "SUCCESS" "Commit successful!"
+  else
+    echo "========== End of git commit =========="
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
 fi
