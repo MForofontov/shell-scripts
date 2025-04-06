@@ -77,9 +77,17 @@ if [ -n "$LOG_FILE" ]; then
   fi
 fi
 
-# Display available stashes
-log_message "INFO" "Available stashes:"
-git stash list | tee -a "$LOG_FILE"
+# Display available stashes with separators
+log_message "INFO" "Listing available stashes..."
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git stash list output ==========" | tee -a "$LOG_FILE"
+  git stash list | tee -a "$LOG_FILE"
+  echo "========== End of git stash list ==========" | tee -a "$LOG_FILE"
+else
+  echo "========== git stash list output =========="
+  git stash list
+  echo "========== End of git stash list =========="
+fi
 
 # Prompt user for stash index
 log_message "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
@@ -95,25 +103,61 @@ fi
 log_message "INFO" "Choose an action: [apply/drop]"
 read -r ACTION
 
+# Validate the action
+if [[ "$ACTION" != "apply" && "$ACTION" != "drop" ]]; then
+  log_message "ERROR" "Invalid action: $ACTION. Allowed actions are 'apply' or 'drop'."
+  exit 1
+fi
+
 # Get the current timestamp
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
-# Perform the chosen action
+# Perform the chosen action with separators
 if [ "$ACTION" == "apply" ]; then
   log_message "INFO" "$TIMESTAMP: Applying stash $STASH_INDEX..."
-  if git stash apply "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
+  if [ -n "$LOG_FILE" ]; then
+    echo "========== git stash apply output ==========" | tee -a "$LOG_FILE"
+    if git stash apply "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
+      echo "========== End of git stash apply ==========" | tee -a "$LOG_FILE"
+      log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
+    else
+      echo "========== End of git stash apply ==========" | tee -a "$LOG_FILE"
+      log_message "ERROR" "Failed to apply stash $STASH_INDEX."
+      exit 1
+    fi
   else
-    log_message "ERROR" "Failed to apply stash $STASH_INDEX."
-    exit 1
+    echo "========== git stash apply output =========="
+    if git stash apply "$STASH_INDEX"; then
+      echo "========== End of git stash apply =========="
+      log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
+    else
+      echo "========== End of git stash apply =========="
+      log_message "ERROR" "Failed to apply stash $STASH_INDEX."
+      exit 1
+    fi
   fi
 elif [ "$ACTION" == "drop" ]; then
   log_message "INFO" "$TIMESTAMP: Dropping stash $STASH_INDEX..."
-  if git stash drop "$STASH_INDEX" >> "$LOG_FILE" 2>&1; then
-    log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
+  if [ -n "$LOG_FILE" ]; then
+    echo "========== git stash drop output ==========" | tee -a "$LOG_FILE"
+    if git stash drop "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
+      echo "========== End of git stash drop ==========" | tee -a "$LOG_FILE"
+      log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
+    else
+      echo "========== End of git stash drop ==========" | tee -a "$LOG_FILE"
+      log_message "ERROR" "Failed to drop stash $STASH_INDEX."
+      exit 1
+    fi
   else
-    log_message "ERROR" "Failed to drop stash $STASH_INDEX."
-    exit 1
+    echo "========== git stash drop output =========="
+    if git stash drop "$STASH_INDEX"; then
+      echo "========== End of git stash drop =========="
+      log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
+    else
+      echo "========== End of git stash drop =========="
+      log_message "ERROR" "Failed to drop stash $STASH_INDEX."
+      exit 1
+    fi
   fi
 else
   log_message "ERROR" "Invalid action!"
