@@ -102,12 +102,13 @@ log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
 # Update npm dependencies
 print_with_separator "npm update output"
 if npm update 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of npm update"
   log_message "SUCCESS" "Dependencies updated successfully!"
 else
+  print_with_separator "End of npm update"
   log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
   exit 1
 fi
-print_with_separator "End of npm update"
 
 # Generate a summary of updated packages
 log_message "INFO" "Generating summary of updated packages..."
@@ -117,9 +118,10 @@ UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
 if [ -n "$UPDATED_PACKAGES" ]; then
   log_message "INFO" "Summary of updated packages:"
   echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
+  print_with_separator "End of npm outdated"
 else
+  print_with_separator "End of npm outdated"
   log_message "INFO" "No packages were updated."
 fi
-print_with_separator "End of npm outdated"
 
 log_message "INFO" "$TIMESTAMP: npm dependency update process completed."

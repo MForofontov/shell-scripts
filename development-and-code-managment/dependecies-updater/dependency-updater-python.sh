@@ -112,11 +112,12 @@ log_message "INFO" "Starting dependency update process..."
 # Update Python dependencies with separators in the log file and stdout
 print_with_separator "pip install output"
 if pip install --upgrade -r "$REQUIREMENTS_FILE" 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of pip install"
   log_message "SUCCESS" "Dependencies updated successfully!"
 else
+  print_with_separator "End of pip install"
   log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
   exit 1
 fi
-print_with_separator "End of pip install"
 
 log_message "INFO" "Dependency update process completed."
