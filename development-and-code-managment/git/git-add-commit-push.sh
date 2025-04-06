@@ -94,25 +94,70 @@ log_message "INFO" "Starting Git operations..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 log_message "INFO" "$TIMESTAMP: Starting Git operations..."
 
-# Add all changes
+# Add all changes with separators
 log_message "INFO" "Adding all changes..."
-if ! git add . >> "$LOG_FILE" 2>&1; then
-  log_message "ERROR" "Failed to add changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git add output ==========" | tee -a "$LOG_FILE"
+  if git add . 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of git add ==========" | tee -a "$LOG_FILE"
+  else
+    echo "========== End of git add ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to add changes."
+    exit 1
+  fi
+else
+  echo "========== git add output =========="
+  if git add .; then
+    echo "========== End of git add =========="
+  else
+    echo "========== End of git add =========="
+    log_message "ERROR" "Failed to add changes."
+    exit 1
+  fi
 fi
 
-# Commit changes
+# Commit changes with separators
 log_message "INFO" "Committing changes..."
-if ! git commit -m "$COMMIT_MESSAGE" >> "$LOG_FILE" 2>&1; then
-  log_message "ERROR" "Failed to commit changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git commit output ==========" | tee -a "$LOG_FILE"
+  if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+  else
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
+else
+  echo "========== git commit output =========="
+  if git commit -m "$COMMIT_MESSAGE"; then
+    echo "========== End of git commit =========="
+  else
+    echo "========== End of git commit =========="
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
 fi
 
-# Push changes
+# Push changes with separators
 log_message "INFO" "Pushing changes..."
-if ! git push >> "$LOG_FILE" 2>&1; then
-  log_message "ERROR" "Failed to push changes."
-  exit 1
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git push output ==========" | tee -a "$LOG_FILE"
+  if git push 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of git push ==========" | tee -a "$LOG_FILE"
+  else
+    echo "========== End of git push ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to push changes."
+    exit 1
+  fi
+else
+  echo "========== git push output =========="
+  if git push; then
+    echo "========== End of git push =========="
+  else
+    echo "========== End of git push =========="
+    log_message "ERROR" "Failed to push changes."
+    exit 1
+  fi
 fi
 
 log_message "SUCCESS" "$TIMESTAMP: Git operations completed successfully."
