@@ -77,8 +77,9 @@ fi
 
 # Add prefix to files
 log_message "INFO" "Adding prefix '$PREFIX' to files in $DIRECTORY..."
+echo "========== File Renaming Output =========="
 if [ -n "$LOG_FILE" ]; then
-  echo "========== File Renaming Output ==========" | tee -a "$LOG_FILE"
+  echo "========== File Renaming Output ==========" >> "$LOG_FILE"
 fi
 
 for FILE in "$DIRECTORY"/*; do
@@ -93,8 +94,9 @@ for FILE in "$DIRECTORY"/*; do
   fi
 done
 
+echo "========== End of File Renaming =========="
 if [ -n "$LOG_FILE" ]; then
-  echo "========== End of File Renaming ==========" | tee -a "$LOG_FILE"
+  echo "========== End of File Renaming ==========" >> "$LOG_FILE"
 fi
 
 log_message "INFO" "Prefix addition completed."
