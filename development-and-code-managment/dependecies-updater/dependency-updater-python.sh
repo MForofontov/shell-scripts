@@ -99,21 +99,24 @@ log_message() {
 log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
 log_message "INFO" "Starting dependency update process..."
 
-# Update Python dependencies with separators in the log file
+# Update Python dependencies with separators in the log file and stdout
 if [ -n "$LOG_FILE" ]; then
-  echo "========== pip install output ==========" >> "$LOG_FILE"
-  if pip install --upgrade -r "$REQUIREMENTS_FILE" >> "$LOG_FILE" 2>&1; then
-    echo "========== End of pip install ==========" >> "$LOG_FILE"
+  echo "========== pip install output ==========" | tee -a "$LOG_FILE"
+  if pip install --upgrade -r "$REQUIREMENTS_FILE" 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of pip install ==========" | tee -a "$LOG_FILE"
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    echo "========== End of pip install ==========" >> "$LOG_FILE"
+    echo "========== End of pip install ==========" | tee -a "$LOG_FILE"
     log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
     exit 1
   fi
 else
+  echo "========== pip install output =========="
   if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
+    echo "========== End of pip install =========="
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
+    echo "========== End of pip install =========="
     log_message "ERROR" "Failed to update dependencies!"
     exit 1
   fi
