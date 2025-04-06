@@ -1,5 +1,29 @@
 #!/bin/bash
-# Script to update Python dependencies
+# dependency-updater-python.sh
+# Script to update Python dependencies listed in a requirements file
+
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
 
 # Function to display usage instructions
 usage() {
@@ -58,68 +82,42 @@ done
 
 # Validate requirements file
 if [ -z "$REQUIREMENTS_FILE" ]; then
-  echo "Error: Requirements file is required."
+  log_message "ERROR" "Requirements file is required."
   usage
 fi
 
 if [ ! -f "$REQUIREMENTS_FILE" ]; then
-  echo "Error: Requirements file '$REQUIREMENTS_FILE' does not exist."
+  log_message "ERROR" "Requirements file '$REQUIREMENTS_FILE' does not exist."
   exit 1
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo "Error: Cannot write to log file '$LOG_FILE'."
+    log_message "ERROR" "Cannot write to log file '$LOG_FILE'."
     exit 1
   fi
 fi
 
 # Validate if pip is installed
 if ! command -v pip &> /dev/null; then
-  echo "Error: pip is not installed or not available in the PATH. Please install pip and try again."
+  log_message "ERROR" "pip is not installed or not available in the PATH. Please install pip and try again."
   exit 1
 fi
-
-# Function to log messages with levels
-log_message() {
-  local LEVEL=$1
-  local MESSAGE=$2
-  local TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  local FORMATTED_MESSAGE="[$TIMESTAMP] [$LEVEL] $MESSAGE"
-
-  if [ -n "$LOG_FILE" ]; then
-    echo "$FORMATTED_MESSAGE" | tee -a "$LOG_FILE"
-  else
-    echo "$FORMATTED_MESSAGE"
-  fi
-}
 
 # Log the start of the update process
 log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
 log_message "INFO" "Starting dependency update process..."
 
 # Update Python dependencies with separators in the log file and stdout
-if [ -n "$LOG_FILE" ]; then
-  echo "========== pip install output ==========" | tee -a "$LOG_FILE"
-  if pip install --upgrade -r "$REQUIREMENTS_FILE" 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of pip install ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Dependencies updated successfully!"
-  else
-    echo "========== End of pip install ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
-    exit 1
-  fi
+print_with_separator "pip install output"
+if pip install --upgrade -r "$REQUIREMENTS_FILE" 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of pip install"
+  log_message "SUCCESS" "Dependencies updated successfully!"
 else
-  echo "========== pip install output =========="
-  if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
-    echo "========== End of pip install =========="
-    log_message "SUCCESS" "Dependencies updated successfully!"
-  else
-    echo "========== End of pip install =========="
-    log_message "ERROR" "Failed to update dependencies!"
-    exit 1
-  fi
+  print_with_separator "End of pip install"
+  log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
+  exit 1
 fi
 
 log_message "INFO" "Dependency update process completed."

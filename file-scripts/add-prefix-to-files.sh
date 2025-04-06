@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -77,9 +86,7 @@ fi
 
 # Add prefix to files
 log_message "INFO" "Adding prefix '$PREFIX' to files in $DIRECTORY..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== File Renaming Output ==========" | tee -a "$LOG_FILE"
-fi
+print_with_separator "File Renaming Output"
 
 for FILE in "$DIRECTORY"/*; do
   if [ -f "$FILE" ]; then
@@ -93,8 +100,5 @@ for FILE in "$DIRECTORY"/*; do
   fi
 done
 
-if [ -n "$LOG_FILE" ]; then
-  echo "========== End of File Renaming ==========" | tee -a "$LOG_FILE"
-fi
-
+print_with_separator "End of File Renaming"
 log_message "INFO" "Prefix addition completed."
