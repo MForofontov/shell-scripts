@@ -3,9 +3,7 @@
 
 # Function to display usage instructions
 usage() {
-  # Get the terminal width
   TERMINAL_WIDTH=$(tput cols)
-  # Generate a separator line based on the terminal width
   SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
   echo
@@ -101,12 +99,15 @@ log_message() {
 log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
 log_message "INFO" "Starting dependency update process..."
 
-# Update Python dependencies
+# Update Python dependencies with separators in the log file
 if [ -n "$LOG_FILE" ]; then
+  echo "========== pip install output ==========" >> "$LOG_FILE"
   if pip install --upgrade -r "$REQUIREMENTS_FILE" >> "$LOG_FILE" 2>&1; then
+    echo "========== End of pip install ==========" >> "$LOG_FILE"
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "ERROR" "Failed to update dependencies!"
+    echo "========== End of pip install ==========" >> "$LOG_FILE"
+    log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
     exit 1
   fi
 else
