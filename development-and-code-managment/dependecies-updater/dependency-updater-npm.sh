@@ -6,8 +6,8 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../utils/helpers/print_with_separator.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../utils/helpers/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -113,7 +113,6 @@ print_with_separator "End of npm update"
 log_message "INFO" "Generating summary of updated packages..."
 print_with_separator "npm outdated output"
 UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
-print_with_separator "End of npm outdated"
 
 if [ -n "$UPDATED_PACKAGES" ]; then
   log_message "INFO" "Summary of updated packages:"
@@ -121,5 +120,6 @@ if [ -n "$UPDATED_PACKAGES" ]; then
 else
   log_message "INFO" "No packages were updated."
 fi
+print_with_separator "End of npm outdated"
 
 log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
