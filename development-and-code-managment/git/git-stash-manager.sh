@@ -5,8 +5,9 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -16,11 +17,17 @@ else
   exit 1
 fi
 
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
-  # Get the terminal width
   TERMINAL_WIDTH=$(tput cols)
-  # Generate a separator line based on the terminal width
   SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
   echo
@@ -79,15 +86,9 @@ fi
 
 # Display available stashes with separators
 log_message "INFO" "Listing available stashes..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== git stash list output ==========" | tee -a "$LOG_FILE"
-  git stash list | tee -a "$LOG_FILE"
-  echo "========== End of git stash list ==========" | tee -a "$LOG_FILE"
-else
-  echo "========== git stash list output =========="
-  git stash list
-  echo "========== End of git stash list =========="
-fi
+print_with_separator "git stash list output"
+git stash list | tee -a "$LOG_FILE"
+print_with_separator "End of git stash list"
 
 # Prompt user for stash index
 log_message "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
@@ -115,49 +116,25 @@ TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 # Perform the chosen action with separators
 if [ "$ACTION" == "apply" ]; then
   log_message "INFO" "$TIMESTAMP: Applying stash $STASH_INDEX..."
-  if [ -n "$LOG_FILE" ]; then
-    echo "========== git stash apply output ==========" | tee -a "$LOG_FILE"
-    if git stash apply "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
-      echo "========== End of git stash apply ==========" | tee -a "$LOG_FILE"
-      log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
-    else
-      echo "========== End of git stash apply ==========" | tee -a "$LOG_FILE"
-      log_message "ERROR" "Failed to apply stash $STASH_INDEX."
-      exit 1
-    fi
+  print_with_separator "git stash apply output"
+  if git stash apply "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
+    print_with_separator "End of git stash apply"
+    log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
   else
-    echo "========== git stash apply output =========="
-    if git stash apply "$STASH_INDEX"; then
-      echo "========== End of git stash apply =========="
-      log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
-    else
-      echo "========== End of git stash apply =========="
-      log_message "ERROR" "Failed to apply stash $STASH_INDEX."
-      exit 1
-    fi
+    print_with_separator "End of git stash apply"
+    log_message "ERROR" "Failed to apply stash $STASH_INDEX."
+    exit 1
   fi
 elif [ "$ACTION" == "drop" ]; then
   log_message "INFO" "$TIMESTAMP: Dropping stash $STASH_INDEX..."
-  if [ -n "$LOG_FILE" ]; then
-    echo "========== git stash drop output ==========" | tee -a "$LOG_FILE"
-    if git stash drop "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
-      echo "========== End of git stash drop ==========" | tee -a "$LOG_FILE"
-      log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
-    else
-      echo "========== End of git stash drop ==========" | tee -a "$LOG_FILE"
-      log_message "ERROR" "Failed to drop stash $STASH_INDEX."
-      exit 1
-    fi
+  print_with_separator "git stash drop output"
+  if git stash drop "$STASH_INDEX" 2>&1 | tee -a "$LOG_FILE"; then
+    print_with_separator "End of git stash drop"
+    log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
   else
-    echo "========== git stash drop output =========="
-    if git stash drop "$STASH_INDEX"; then
-      echo "========== End of git stash drop =========="
-      log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
-    else
-      echo "========== End of git stash drop =========="
-      log_message "ERROR" "Failed to drop stash $STASH_INDEX."
-      exit 1
-    fi
+    print_with_separator "End of git stash drop"
+    log_message "ERROR" "Failed to drop stash $STASH_INDEX."
+    exit 1
   fi
 else
   log_message "ERROR" "Invalid action!"
