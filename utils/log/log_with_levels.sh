@@ -34,11 +34,10 @@ log_message() {
   # Remove color codes for the log file
   local PLAIN_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
 
-  # Log to file if specified, otherwise just echo
+  # Log to file and console using tee
   if [ -n "$LOG_FILE" ]; then
-    echo "$PLAIN_MESSAGE" >> "$LOG_FILE"
+    echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
+  else
+    echo -e "$FORMATTED_MESSAGE"
   fi
-
-  # Echo to console
-  echo -e "$FORMATTED_MESSAGE"
 }

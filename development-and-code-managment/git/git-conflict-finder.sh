@@ -1,6 +1,6 @@
 #!/bin/bash
-# Git Conflict Finder
-# Script to identify unresolved merge conflicts in a Git repository
+# Git Commit Validator
+# Script to validate and commit changes with a proper commit message
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -25,28 +25,29 @@ usage() {
 
   echo
   echo "$SEPARATOR"
-  echo -e "\033[1;34mGit Conflict Finder\033[0m"
+  echo -e "\033[1;34mGit Commit Validator\033[0m"
   echo
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script checks for unresolved merge conflicts in the current Git repository."
+  echo "  This script validates a commit message and ensures that changes are staged before committing."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [--log <log_file>] [--help]"
+  echo "  $0 <commit_message> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
   echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
   echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
-  echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
-  echo "  $0                        # Run the script without logging to a file"
+  echo -e "\033[1;34mExample:\033[0m"
+  echo "  $0 'Initial commit' --log commit_validation.log"
   echo "$SEPARATOR"
   echo
-  exit 1
+  exit 0
 }
 
 # Initialize variables
+COMMIT_MESSAGE=""
 LOG_FILE=""
 
 # Parse arguments
@@ -60,11 +61,22 @@ while [[ "$#" -gt 0 ]]; do
       shift 2
       ;;
     *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
+      if [ -z "$COMMIT_MESSAGE" ]; then
+        COMMIT_MESSAGE="$1"
+        shift
+      else
+        log_message "ERROR" "Unknown option: $1"
+        usage
+      fi
       ;;
   esac
 done
+
+# Validate required arguments
+if [ -z "$COMMIT_MESSAGE" ]; then
+  log_message "ERROR" "<commit_message> is required."
+  usage
+fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
@@ -74,22 +86,57 @@ if [ -n "$LOG_FILE" ]; then
   fi
 fi
 
-# Log the start of the conflict check
-log_message "INFO" "Checking for unresolved conflicts..."
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "INFO" "$TIMESTAMP: Checking for unresolved conflicts..."
+# Validate commit message format (example: must start with a capital letter and be at least 10 characters long)
+if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
+  log_message "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
+  exit 1
+fi
 
-# Find merge conflicts
-CONFLICTS=$(git diff --name-only --diff-filter=U)
-
-if [ $? -eq 0 ]; then
-  if [ -n "$CONFLICTS" ]; then
-    log_message "WARNING" "Conflicted files found:"
-    log_message "DEBUG" "$CONFLICTS"
+# Check if there are changes staged for commit
+log_message "INFO" "Validating staged changes..."
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git diff --cached output ==========" | tee -a "$LOG_FILE"
+  if git diff --cached --quiet; then
+    echo "========== End of git diff --cached ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "No changes staged for commit!"
+    exit 1
   else
-    log_message "SUCCESS" "No conflicts found!"
+    echo "========== End of git diff --cached ==========" | tee -a "$LOG_FILE"
   fi
 else
-  log_message "ERROR" "Failed to check for conflicts."
-  exit 1
+  echo "========== git diff --cached output =========="
+  if git diff --cached --quiet; then
+    echo "========== End of git diff --cached =========="
+    log_message "ERROR" "No changes staged for commit!"
+    exit 1
+  else
+    echo "========== End of git diff --cached =========="
+  fi
+fi
+
+# Get the current timestamp
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Commit the changes with separators
+log_message "INFO" "$TIMESTAMP: Committing changes..."
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git commit output ==========" | tee -a "$LOG_FILE"
+  if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+    log_message "SUCCESS" "Commit successful!"
+  else
+    echo "========== End of git commit ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
+else
+  echo "========== git commit output =========="
+  if git commit -m "$COMMIT_MESSAGE"; then
+    echo "========== End of git commit =========="
+    log_message "SUCCESS" "Commit successful!"
+  else
+    echo "========== End of git commit =========="
+    log_message "ERROR" "Failed to commit changes."
+    exit 1
+  fi
 fi

@@ -2,57 +2,90 @@
 # count-files.sh
 # Script to count the number of files and directories in a given path
 
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger file relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 <directory> [log_file]"
-    echo "Example: $0 /path/to/directory custom_log.log"
-    exit 1
+  TERMINAL_WIDTH=$(tput cols)
+  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
+
+  echo
+  echo "$SEPARATOR"
+  echo -e "\033[1;34mCount Files Script\033[0m"
+  echo
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script counts the number of files and directories in a given path."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <directory> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory to count files and directories."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 /path/to/directory --log custom_log.log"
+  echo "  $0 /path/to/directory"
+  echo "$SEPARATOR"
+  echo
+  exit 1
 }
 
-# Check if the correct number of arguments is provided
+# Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
-    usage
+  usage
 fi
 
-# Get the directory path and log file from the arguments
-DIRECTORY="$1"
+# Initialize variables
+DIRECTORY="$1"   # Directory to count files and directories
 LOG_FILE=""
 
-# Check if a log file is provided as a second argument
-if [ "$#" -eq 2 ]; then
-    LOG_FILE="$2"
+# Parse optional arguments
+if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
+  LOG_FILE="$3"
 fi
 
-# Check if the directory exists
+# Validate directory
 if [ ! -d "$DIRECTORY" ]; then
-    echo "Error: Directory $DIRECTORY does not exist."
-    exit 1
+  log_message "ERROR" "Directory $DIRECTORY does not exist."
+  exit 1
 fi
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to log file $LOG_FILE"
-        exit 1
-    fi
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+    exit 1
+  fi
 fi
 
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    if [ -n "$MESSAGE" ]; then
-        if [ -n "$LOG_FILE" ]; then
-            echo "$MESSAGE" | tee -a "$LOG_FILE"
-        else
-            echo "$MESSAGE"
-        fi
-    fi
-}
-
 # Count files and directories
+log_message "INFO" "Counting files and directories in $DIRECTORY..."
+if [ -n "$LOG_FILE" ]; then
+  echo "========== Counting Output ==========" | tee -a "$LOG_FILE"
+fi
+
 FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
 DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
 
 # Log and print counts
-log_message "Number of files in $DIRECTORY: $FILE_COUNT"
-log_message "Number of directories in $DIRECTORY: $DIR_COUNT"
+log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
+log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
+
+if [ -n "$LOG_FILE" ]; then
+  echo "========== End of Counting ==========" | tee -a "$LOG_FILE"
+fi

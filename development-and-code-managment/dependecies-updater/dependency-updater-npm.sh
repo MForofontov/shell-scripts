@@ -17,9 +17,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  # Get the terminal width
   TERMINAL_WIDTH=$(tput cols)
-  # Generate a separator line based on the terminal width
   SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
   echo
@@ -91,26 +89,41 @@ log_message "INFO" "Starting npm dependency update..."
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
 
-# Update npm dependencies
+# Update npm dependencies with separators in the log file and stdout
 if [ -n "$LOG_FILE" ]; then
-  if npm update >> "$LOG_FILE" 2>&1; then
+  echo "========== npm update output ==========" | tee -a "$LOG_FILE"
+  if npm update 2>&1 | tee -a "$LOG_FILE"; then
+    echo "========== End of npm update ==========" | tee -a "$LOG_FILE"
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "ERROR" "Failed to update dependencies!"
+    echo "========== End of npm update ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
     exit 1
   fi
 else
+  echo "========== npm update output =========="
   if npm update; then
+    echo "========== End of npm update =========="
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
+    echo "========== End of npm update =========="
     log_message "ERROR" "Failed to update dependencies!"
     exit 1
   fi
 fi
 
-# Generate a summary of updated packages
+# Generate a summary of updated packages with separators in the log file and stdout
 log_message "INFO" "Generating summary of updated packages..."
-UPDATED_PACKAGES=$(npm outdated --json)
+if [ -n "$LOG_FILE" ]; then
+  echo "========== npm outdated output ==========" | tee -a "$LOG_FILE"
+  UPDATED_PACKAGES=$(npm outdated --json)
+  echo "========== End of npm outdated ==========" | tee -a "$LOG_FILE"
+else
+  echo "========== npm outdated output =========="
+  UPDATED_PACKAGES=$(npm outdated --json)
+  echo "========== End of npm outdated =========="
+fi
+
 if [ -n "$UPDATED_PACKAGES" ]; then
   log_message "INFO" "Summary of updated packages:"
   if [ -n "$LOG_FILE" ]; then

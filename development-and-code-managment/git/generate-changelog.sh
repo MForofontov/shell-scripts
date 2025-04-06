@@ -19,9 +19,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  # Get the terminal width
   TERMINAL_WIDTH=$(tput cols)
-  # Generate a separator line based on the terminal width
   SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
   echo
@@ -114,10 +112,25 @@ log_message "INFO" "Generating changelog for $PROJECT_NAME..."
   echo
 } > "$OUTPUT_FILE"
 
-# Append the git log to the changelog
-if ! git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
-  log_message "ERROR" "Failed to generate changelog."
-  exit 1
+# Append the git log to the changelog with separators
+if [ -n "$LOG_FILE" ]; then
+  echo "========== git log output ==========" | tee -a "$LOG_FILE"
+  if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE" | tee -a "$LOG_FILE"; then
+    echo "========== End of git log ==========" | tee -a "$LOG_FILE"
+  else
+    echo "========== End of git log ==========" | tee -a "$LOG_FILE"
+    log_message "ERROR" "Failed to generate changelog. Check the log file for details: $LOG_FILE"
+    exit 1
+  fi
+else
+  echo "========== git log output =========="
+  if git log --pretty=format:"- %h %s (%an, %ar)" >> "$OUTPUT_FILE"; then
+    echo "========== End of git log =========="
+  else
+    echo "========== End of git log =========="
+    log_message "ERROR" "Failed to generate changelog."
+    exit 1
+  fi
 fi
 
 log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
