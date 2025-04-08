@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../utils/helpers/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -82,22 +91,12 @@ fi
 
 # Compare files using diff
 log_message "INFO" "Comparing $FILE1 and $FILE2..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== File Comparison Output ==========" | tee -a "$LOG_FILE"
-  if diff "$FILE1" "$FILE2" | tee -a "$LOG_FILE"; then
-    echo "========== End of File Comparison ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Files are identical."
-  else
-    echo "========== End of File Comparison ==========" | tee -a "$LOG_FILE"
-    log_message "INFO" "Files differ. See the output above for details."
-  fi
+print_with_separator "File Comparison Output"
+
+if diff "$FILE1" "$FILE2" 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of File Comparison"
+  log_message "SUCCESS" "Files are identical."
 else
-  echo "========== File Comparison Output =========="
-  if diff "$FILE1" "$FILE2"; then
-    echo "========== End of File Comparison =========="
-    log_message "SUCCESS" "Files are identical."
-  else
-    echo "========== End of File Comparison =========="
-    log_message "INFO" "Files differ. See the output above for details."
-  fi
+  print_with_separator "End of File Comparison"
+  log_message "INFO" "Files differ. See the output above for details."
 fi
