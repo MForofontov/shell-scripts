@@ -61,14 +61,33 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-DIRECTORY="$1"   # Directory to clean
-DAYS="$2"        # Age threshold for files to be deleted
+DIRECTORY=""
+DAYS=""
 LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$DIRECTORY" ]; then
+        DIRECTORY="$1"
+      elif [ -z "$DAYS" ]; then
+        DAYS="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then
