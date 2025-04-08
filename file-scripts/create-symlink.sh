@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../utils/helpers/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -77,17 +86,13 @@ fi
 
 # Create symbolic link
 log_message "INFO" "Creating symbolic link: $LINK_NAME -> $TARGET_FILE"
-if [ -n "$LOG_FILE" ]; then
-  echo "========== Symbolic Link Creation Output ==========" | tee -a "$LOG_FILE"
-fi
+print_with_separator "Symbolic Link Creation Output"
 
 if ln -s "$TARGET_FILE" "$LINK_NAME"; then
+  print_with_separator "End of Symbolic Link Creation"
   log_message "SUCCESS" "Symbolic link created: $LINK_NAME -> $TARGET_FILE"
 else
+  print_with_separator "End of Symbolic Link Creation"
   log_message "ERROR" "Failed to create symbolic link."
   exit 1
-fi
-
-if [ -n "$LOG_FILE" ]; then
-  echo "========== End of Symbolic Link Creation ==========" | tee -a "$LOG_FILE"
 fi
