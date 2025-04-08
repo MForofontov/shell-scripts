@@ -76,6 +76,12 @@ if [ ! -d "$SOURCE_DIR" ]; then
   exit 1
 fi
 
+# Validate output file
+if [ -z "$OUTPUT_FILE" ]; then
+  log_message "ERROR" "Output file path is required."
+  exit 1
+fi
+
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then
