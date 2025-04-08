@@ -52,19 +52,30 @@ usage() {
   exit 1
 }
 
-# Check if help is requested
-if [[ "$1" == "--help" ]]; then
-  usage
-fi
-
-# Check if a log file is provided as an argument
+# Initialize variables
 LOG_FILE="/dev/null"
 
-if [ "$#" -gt 1 ]; then
-  usage
-elif [ "$#" -eq 1 ]; then
-  LOG_FILE="$1"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      echo -e "\033[1;31mError:\033[0m Unknown option: $1"
+      usage
+      ;;
+  esac
+done
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
