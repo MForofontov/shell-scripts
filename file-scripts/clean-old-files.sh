@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../utils/helpers/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -83,24 +92,13 @@ fi
 
 # Remove files older than the specified number of days
 log_message "INFO" "Removing files older than $DAYS days from $DIRECTORY..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== File Deletion Output ==========" | tee -a "$LOG_FILE"
-  if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of File Deletion ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Successfully removed files older than $DAYS days from $DIRECTORY."
-  else
-    echo "========== End of File Deletion ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to remove some files from $DIRECTORY."
-    exit 1
-  fi
+print_with_separator "File Deletion Output"
+
+if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of File Deletion"
+  log_message "SUCCESS" "Successfully removed files older than $DAYS days from $DIRECTORY."
 else
-  echo "========== File Deletion Output =========="
-  if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \;; then
-    echo "========== End of File Deletion =========="
-    log_message "SUCCESS" "Successfully removed files older than $DAYS days from $DIRECTORY."
-  else
-    echo "========== End of File Deletion =========="
-    log_message "ERROR" "Failed to remove some files from $DIRECTORY."
-    exit 1
-  fi
+  print_with_separator "End of File Deletion"
+  log_message "ERROR" "Failed to remove some files from $DIRECTORY."
+  exit 1
 fi
