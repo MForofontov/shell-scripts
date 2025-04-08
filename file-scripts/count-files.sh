@@ -67,6 +67,7 @@ LOG_FILE=""
 if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
   LOG_FILE="$3"
 fi
+LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

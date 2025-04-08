@@ -67,6 +67,7 @@ LOG_FILE=""
 if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
   LOG_FILE="$3"
 fi
+LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate network prefix
 if ! [[ "$NETWORK" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then

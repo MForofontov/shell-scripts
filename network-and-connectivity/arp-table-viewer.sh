@@ -64,7 +64,7 @@ if [ "$#" -gt 1 ]; then
 elif [ "$#" -eq 1 ]; then
   LOG_FILE="$1"
 fi
-
+LOG_FILE="${LOG_FILE:-/dev/null}"
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then

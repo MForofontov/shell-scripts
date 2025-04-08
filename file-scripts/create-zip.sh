@@ -69,6 +69,7 @@ LOG_FILE=""
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
+LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate source file or directory
 if [ ! -e "$SOURCE" ]; then

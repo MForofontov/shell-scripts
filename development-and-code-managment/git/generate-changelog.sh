@@ -85,6 +85,7 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
+LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate required arguments
 if [ -z "$OUTPUT_FILE" ]; then
