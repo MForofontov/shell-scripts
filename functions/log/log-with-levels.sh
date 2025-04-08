@@ -35,7 +35,7 @@ log_message() {
   local PLAIN_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
 
   # Log to file and console using tee
-  if [ -n "$LOG_FILE" ]; then
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
   else
     echo -e "$FORMATTED_MESSAGE"

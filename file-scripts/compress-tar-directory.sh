@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -52,18 +61,48 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-SOURCE_DIR="$1"   # Directory to compress
-OUTPUT_FILE="$2"  # Path to the output tar.gz file
-LOG_FILE=""
+SOURCE_DIR=""
+OUTPUT_FILE=""
+LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$SOURCE_DIR" ]; then
+        SOURCE_DIR="$1"
+      elif [ -z "$OUTPUT_FILE" ]; then
+        OUTPUT_FILE="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate source directory
 if [ ! -d "$SOURCE_DIR" ]; then
   log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+  exit 1
+fi
+
+# Validate output file
+if [ -z "$OUTPUT_FILE" ]; then
+  log_message "ERROR" "Output file path is required."
   exit 1
 fi
 
@@ -77,24 +116,13 @@ fi
 
 # Compress the directory
 log_message "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== tar output ==========" | tee -a "$LOG_FILE"
-  if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")" 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of tar output ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Directory compressed into $OUTPUT_FILE."
-  else
-    echo "========== End of tar output ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to compress directory."
-    exit 1
-  fi
+print_with_separator "tar output"
+
+if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")" 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of tar output"
+  log_message "SUCCESS" "Directory compressed into $OUTPUT_FILE."
 else
-  echo "========== tar output =========="
-  if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
-    echo "========== End of tar output =========="
-    log_message "SUCCESS" "Directory compressed into $OUTPUT_FILE."
-  else
-    echo "========== End of tar output =========="
-    log_message "ERROR" "Failed to compress directory."
-    exit 1
-  fi
+  print_with_separator "End of tar output"
+  log_message "ERROR" "Failed to compress directory."
+  exit 1
 fi

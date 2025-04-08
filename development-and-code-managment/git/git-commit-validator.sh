@@ -55,7 +55,7 @@ usage() {
 
 # Initialize variables
 COMMIT_MESSAGE=""
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do

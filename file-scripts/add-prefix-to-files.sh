@@ -6,8 +6,8 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -61,14 +61,33 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-DIRECTORY="$1"   # Directory containing the files to rename
-PREFIX="$2"      # Prefix to add to the files
-LOG_FILE=""
+DIRECTORY=""
+PREFIX=""
+LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$DIRECTORY" ]; then
+        DIRECTORY="$1"
+      elif [ -z "$PREFIX" ]; then
+        PREFIX="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

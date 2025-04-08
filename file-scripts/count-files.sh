@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -51,13 +60,35 @@ if [ "$#" -lt 1 ]; then
 fi
 
 # Initialize variables
-DIRECTORY="$1"   # Directory to count files and directories
-LOG_FILE=""
+DIRECTORY=""
+LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
-  LOG_FILE="$3"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$DIRECTORY" ]; then
+        DIRECTORY="$1"
+        shift
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      ;;
+  esac
+done
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then
@@ -75,9 +106,7 @@ fi
 
 # Count files and directories
 log_message "INFO" "Counting files and directories in $DIRECTORY..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== Counting Output ==========" | tee -a "$LOG_FILE"
-fi
+print_with_separator "Counting Output"
 
 FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
 DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
@@ -86,6 +115,4 @@ DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
 log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
 log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
 
-if [ -n "$LOG_FILE" ]; then
-  echo "========== End of Counting ==========" | tee -a "$LOG_FILE"
-fi
+print_with_separator "End of Counting"

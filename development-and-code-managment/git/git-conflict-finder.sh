@@ -53,7 +53,7 @@ usage() {
 }
 
 # Initialize variables
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do

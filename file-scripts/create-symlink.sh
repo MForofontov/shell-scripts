@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -52,14 +61,38 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-TARGET_FILE="$1"   # Path to the target file
-LINK_NAME="$2"     # Path to the symbolic link to create
-LOG_FILE=""
+TARGET_FILE=""
+LINK_NAME=""
+LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$TARGET_FILE" ]; then
+        TARGET_FILE="$1"
+      elif [ -z "$LINK_NAME" ]; then
+        LINK_NAME="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate target file
 if [ ! -e "$TARGET_FILE" ]; then
@@ -77,17 +110,13 @@ fi
 
 # Create symbolic link
 log_message "INFO" "Creating symbolic link: $LINK_NAME -> $TARGET_FILE"
-if [ -n "$LOG_FILE" ]; then
-  echo "========== Symbolic Link Creation Output ==========" | tee -a "$LOG_FILE"
-fi
+print_with_separator "Symbolic Link Creation Output"
 
 if ln -s "$TARGET_FILE" "$LINK_NAME"; then
+  print_with_separator "End of Symbolic Link Creation"
   log_message "SUCCESS" "Symbolic link created: $LINK_NAME -> $TARGET_FILE"
 else
+  print_with_separator "End of Symbolic Link Creation"
   log_message "ERROR" "Failed to create symbolic link."
   exit 1
-fi
-
-if [ -n "$LOG_FILE" ]; then
-  echo "========== End of Symbolic Link Creation ==========" | tee -a "$LOG_FILE"
 fi
