@@ -5,14 +5,23 @@
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../utils/helpers/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
   exit 1
 fi
 
@@ -86,24 +95,13 @@ DATE=$(date +%Y%m%d%H%M%S)     # Current date and time for backup file name
 BACKUP_FILE="${BACKUP_DIR}/backup_${DATE}.tar.gz"  # Backup file name
 
 log_message "INFO" "Creating backup of $SOURCE_DIR at $BACKUP_FILE..."
-if [ -n "$LOG_FILE" ]; then
-  echo "========== tar output ==========" | tee -a "$LOG_FILE"
-  if tar -czf "$BACKUP_FILE" -C "$SOURCE_DIR" . 2>&1 | tee -a "$LOG_FILE"; then
-    echo "========== End of tar output ==========" | tee -a "$LOG_FILE"
-    log_message "SUCCESS" "Backup created at $BACKUP_FILE"
-  else
-    echo "========== End of tar output ==========" | tee -a "$LOG_FILE"
-    log_message "ERROR" "Failed to create backup."
-    exit 1
-  fi
+print_with_separator "tar output"
+
+if tar -czf "$BACKUP_FILE" -C "$SOURCE_DIR" . 2>&1 | tee -a "$LOG_FILE"; then
+  print_with_separator "End of tar output"
+  log_message "SUCCESS" "Backup created at $BACKUP_FILE"
 else
-  echo "========== tar output =========="
-  if tar -czf "$BACKUP_FILE" -C "$SOURCE_DIR" .; then
-    echo "========== End of tar output =========="
-    log_message "SUCCESS" "Backup created at $BACKUP_FILE"
-  else
-    echo "========== End of tar output =========="
-    log_message "ERROR" "Failed to create backup."
-    exit 1
-  fi
+  print_with_separator "End of tar output"
+  log_message "ERROR" "Failed to create backup."
+  exit 1
 fi
