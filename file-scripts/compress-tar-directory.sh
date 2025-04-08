@@ -61,14 +61,38 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-SOURCE_DIR="$1"   # Directory to compress
-OUTPUT_FILE="$2"  # Path to the output tar.gz file
+SOURCE_DIR=""
+OUTPUT_FILE=""
 LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$SOURCE_DIR" ]; then
+        SOURCE_DIR="$1"
+      elif [ -z "$OUTPUT_FILE" ]; then
+        OUTPUT_FILE="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate source directory
 if [ ! -d "$SOURCE_DIR" ]; then
