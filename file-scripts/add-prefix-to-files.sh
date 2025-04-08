@@ -63,13 +63,24 @@ fi
 # Initialize variables
 DIRECTORY="$1"   # Directory containing the files to rename
 PREFIX="$2"      # Prefix to add to the files
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      log_message "ERROR" "Unknown option: $1"
+      usage
+      ;;
+  esac
+done
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

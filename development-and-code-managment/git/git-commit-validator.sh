@@ -55,7 +55,7 @@ usage() {
 
 # Initialize variables
 COMMIT_MESSAGE=""
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -78,7 +78,6 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate required arguments
 if [ -z "$COMMIT_MESSAGE" ]; then

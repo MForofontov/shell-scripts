@@ -63,13 +63,12 @@ fi
 # Initialize variables
 DIRECTORY="$1"   # Directory to search for large files
 SIZE="$2"        # Minimum size of files to find
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

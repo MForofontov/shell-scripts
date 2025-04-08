@@ -63,13 +63,12 @@ fi
 # Initialize variables
 FILE1="$1"       # Path to the first file
 FILE2="$2"       # Path to the second file
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate files
 if [ ! -f "$FILE1" ]; then

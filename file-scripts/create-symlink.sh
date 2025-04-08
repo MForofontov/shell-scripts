@@ -63,13 +63,12 @@ fi
 # Initialize variables
 TARGET_FILE="$1"   # Path to the target file
 LINK_NAME="$2"     # Path to the symbolic link to create
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate target file
 if [ ! -e "$TARGET_FILE" ]; then

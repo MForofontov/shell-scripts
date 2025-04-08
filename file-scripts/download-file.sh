@@ -63,13 +63,12 @@ fi
 # Initialize variables
 URL="$1"          # URL of the file to download
 DEST_FILE="$2"    # Path to save the downloaded file
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate URL
 if ! [[ "$URL" =~ ^https?:// ]]; then

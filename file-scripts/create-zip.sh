@@ -63,13 +63,12 @@ fi
 # Initialize variables
 SOURCE="$1"       # Path to the file or directory to zip
 OUTPUT_ZIP="$2"   # Path to the output zip file
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate source file or directory
 if [ ! -e "$SOURCE" ]; then

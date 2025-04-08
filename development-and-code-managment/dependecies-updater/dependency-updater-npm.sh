@@ -55,7 +55,7 @@ usage() {
 }
 
 # Initialize variables
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -73,7 +73,6 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then

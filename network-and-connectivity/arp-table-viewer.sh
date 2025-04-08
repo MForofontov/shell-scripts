@@ -58,13 +58,14 @@ if [[ "$1" == "--help" ]]; then
 fi
 
 # Check if a log file is provided as an argument
-LOG_FILE=""
+LOG_FILE="/dev/null"
+
 if [ "$#" -gt 1 ]; then
   usage
 elif [ "$#" -eq 1 ]; then
   LOG_FILE="$1"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
+
 # Validate log file if provided
 if [ -n "$LOG_FILE" ]; then
   if ! touch "$LOG_FILE" 2>/dev/null; then

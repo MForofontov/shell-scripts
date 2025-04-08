@@ -56,7 +56,7 @@ usage() {
 
 # Initialize variables
 REQUIREMENTS_FILE=""
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -79,7 +79,6 @@ while [[ "$#" -gt 0 ]]; do
       ;;
   esac
 done
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate requirements file
 if [ -z "$REQUIREMENTS_FILE" ]; then

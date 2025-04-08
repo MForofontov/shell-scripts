@@ -63,13 +63,12 @@ fi
 # Initialize variables
 SOURCE_DIR="$1"   # Source directory
 DEST_DIR="$2"     # Destination directory
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate source directory
 if [ ! -d "$SOURCE_DIR" ]; then

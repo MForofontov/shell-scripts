@@ -61,13 +61,12 @@ fi
 
 # Initialize variables
 NETWORK="$1"      # Network prefix to scan
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
   LOG_FILE="$3"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate network prefix
 if ! [[ "$NETWORK" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then

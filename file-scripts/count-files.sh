@@ -61,13 +61,12 @@ fi
 
 # Initialize variables
 DIRECTORY="$1"   # Directory to count files and directories
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
   LOG_FILE="$3"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

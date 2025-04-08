@@ -63,13 +63,12 @@ fi
 # Initialize variables
 DIRECTORY="$1"   # Directory to clean
 DAYS="$2"        # Age threshold for files to be deleted
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then

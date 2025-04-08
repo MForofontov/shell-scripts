@@ -63,13 +63,12 @@ fi
 # Initialize variables
 ZIP_FILE="$1"      # Path to the zip archive
 DEST_DIR="$2"      # Destination directory to extract the archive
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse optional arguments
 if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
   LOG_FILE="$4"
 fi
-LOG_FILE="${LOG_FILE:-/dev/null}"
 
 # Validate zip file
 if [ ! -f "$ZIP_FILE" ]; then
