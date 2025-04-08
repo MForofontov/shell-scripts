@@ -4,7 +4,6 @@ print_with_separator() {
   local SEPARATOR="========== $MESSAGE =========="
   if [ -n "$LOG_FILE" ]; then
     echo "$SEPARATOR" >> "$LOG_FILE"
-  fi
   else
     echo "$SEPARATOR"
   fi
