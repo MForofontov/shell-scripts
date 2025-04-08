@@ -61,14 +61,38 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-URL="$1"          # URL of the file to download
-DEST_FILE="$2"    # Path to save the downloaded file
+URL=""
+DEST_FILE=""
 LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 3 && "$3" == "--log" ]]; then
-  LOG_FILE="$4"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$URL" ]; then
+        URL="$1"
+      elif [ -z "$DEST_FILE" ]; then
+        DEST_FILE="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
 # Validate URL
 if ! [[ "$URL" =~ ^https?:// ]]; then
