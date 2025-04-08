@@ -60,13 +60,35 @@ if [ "$#" -lt 1 ]; then
 fi
 
 # Initialize variables
-DIRECTORY="$1"   # Directory to count files and directories
+DIRECTORY=""
 LOG_FILE="/dev/null"
 
-# Parse optional arguments
-if [[ "$#" -ge 2 && "$2" == "--log" ]]; then
-  LOG_FILE="$3"
-fi
+# Parse arguments using while and case
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        usage
+      fi
+      ;;
+    --help)
+      usage
+      ;;
+    *)
+      if [ -z "$DIRECTORY" ]; then
+        DIRECTORY="$1"
+        shift
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      ;;
+  esac
+done
 
 # Validate directory
 if [ ! -d "$DIRECTORY" ]; then
