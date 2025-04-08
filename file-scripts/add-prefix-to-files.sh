@@ -61,11 +61,11 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # Initialize variables
-DIRECTORY="$1"   # Directory containing the files to rename
-PREFIX="$2"      # Prefix to add to the files
+DIRECTORY=""
+PREFIX=""
 LOG_FILE="/dev/null"
 
-# Parse optional arguments
+# Parse arguments using while and case
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --log)
@@ -76,8 +76,15 @@ while [[ "$#" -gt 0 ]]; do
       usage
       ;;
     *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
+      if [ -z "$DIRECTORY" ]; then
+        DIRECTORY="$1"
+      elif [ -z "$PREFIX" ]; then
+        PREFIX="$1"
+      else
+        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
       ;;
   esac
 done
