@@ -39,17 +39,17 @@ usage() {
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <file1> <file2> [--log <log_file>] [--help]"
+  echo "  $0 <source_file> <target_file> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<file1>\033[0m           (Required) Path to the first file."
-  echo -e "  \033[1;36m<file2>\033[0m           (Required) Path to the second file."
+  echo -e "  \033[1;36m<source_file>\033[0m     (Required) Path to the first file (source file)."
+  echo -e "  \033[1;36m<target_file>\033[0m     (Required) Path to the second file (target file)."
   echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
   echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/file1 /path/to/file2 --log custom_log.log"
-  echo "  $0 /path/to/file1 /path/to/file2"
+  echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
+  echo "  $0 /path/to/source_file /path/to/target_file"
   echo "$SEPARATOR"
   echo
   exit 1
@@ -57,12 +57,13 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<source_file> and <target_file> are required."
   usage
 fi
 
 # Initialize variables
-FILE1=""
-FILE2=""
+SOURCE_FILE=""
+TARGET_FILE=""
 LOG_FILE="/dev/null"
 
 # Parse arguments using while and case
@@ -81,10 +82,10 @@ while [[ "$#" -gt 0 ]]; do
       usage
       ;;
     *)
-      if [ -z "$FILE1" ]; then
-        FILE1="$1"
-      elif [ -z "$FILE2" ]; then
-        FILE2="$1"
+      if [ -z "$SOURCE_FILE" ]; then
+        SOURCE_FILE="$1"
+      elif [ -z "$TARGET_FILE" ]; then
+        TARGET_FILE="$1"
       else
         echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
         usage
@@ -95,13 +96,13 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Validate files
-if [ ! -f "$FILE1" ]; then
-  log_message "ERROR" "File $FILE1 does not exist."
+if [ ! -f "$SOURCE_FILE" ]; then
+  log_message "ERROR" "Source file $SOURCE_FILE does not exist."
   exit 1
 fi
 
-if [ ! -f "$FILE2" ]; then
-  log_message "ERROR" "File $FILE2 does not exist."
+if [ ! -f "$TARGET_FILE" ]; then
+  log_message "ERROR" "Target file $TARGET_FILE does not exist."
   exit 1
 fi
 
@@ -114,10 +115,10 @@ if [ -n "$LOG_FILE" ]; then
 fi
 
 # Compare files using diff
-log_message "INFO" "Comparing $FILE1 and $FILE2..."
+log_message "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
 print_with_separator "File Comparison Output"
 
-if diff "$FILE1" "$FILE2" 2>&1 | tee -a "$LOG_FILE"; then
+if diff "$SOURCE_FILE" "$TARGET_FILE" 2>&1 | tee -a "$LOG_FILE"; then
   print_with_separator "End of File Comparison"
   log_message "SUCCESS" "Files are identical."
 else
