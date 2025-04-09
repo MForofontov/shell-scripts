@@ -57,6 +57,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<tar_file> and <destination_directory> are required."
   usage
 fi
 
