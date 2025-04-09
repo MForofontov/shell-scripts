@@ -56,6 +56,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<requirements_file> is required."
   usage
 fi
 
@@ -78,7 +79,7 @@ while [[ "$#" -gt 0 ]]; do
         REQUIREMENTS_FILE="$1"
         shift
       else
-        echo "Error: Unknown option or multiple requirements files provided: $1"
+        log_message "ERROR" "Unknown option or multiple requirements files provided: $1"
         usage
       fi
       ;;
