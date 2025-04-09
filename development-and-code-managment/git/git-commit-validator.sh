@@ -55,6 +55,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<commit_message> is required."
   usage
 fi
 
