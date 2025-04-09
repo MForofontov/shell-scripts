@@ -57,6 +57,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<source> and <output_zip> are required."
   usage
 fi
 
