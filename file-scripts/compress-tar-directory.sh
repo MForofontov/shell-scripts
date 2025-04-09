@@ -57,6 +57,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<source_directory> and <output_file> are required."
   usage
 fi
 
