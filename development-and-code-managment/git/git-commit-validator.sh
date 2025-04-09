@@ -53,6 +53,11 @@ usage() {
   exit 0
 }
 
+# Check if no arguments are provided
+if [ "$#" -lt 1 ]; then
+  usage
+fi
+
 # Initialize variables
 COMMIT_MESSAGE=""
 LOG_FILE="/dev/null"
