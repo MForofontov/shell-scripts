@@ -54,6 +54,12 @@ usage() {
   exit 1
 }
 
+# Check if no arguments are provided
+if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<requirements_file> is required."
+  usage
+fi
+
 # Initialize variables
 REQUIREMENTS_FILE=""
 LOG_FILE="/dev/null"
@@ -61,19 +67,24 @@ LOG_FILE="/dev/null"
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        log_message "ERROR" "Missing argument for --log"
+        usage
+      fi
+      ;;
     --help)
       usage
-      ;;
-    --log)
-      LOG_FILE="$2"
-      shift 2
       ;;
     *)
       if [ -z "$REQUIREMENTS_FILE" ]; then
         REQUIREMENTS_FILE="$1"
         shift
       else
-        echo "Error: Unknown option or multiple requirements files provided: $1"
+        log_message "ERROR" "Unknown option or multiple requirements files provided: $1"
         usage
       fi
       ;;

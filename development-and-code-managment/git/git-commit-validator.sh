@@ -53,6 +53,12 @@ usage() {
   exit 0
 }
 
+# Check if no arguments are provided
+if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<commit_message> is required."
+  usage
+fi
+
 # Initialize variables
 COMMIT_MESSAGE=""
 LOG_FILE="/dev/null"
@@ -60,12 +66,17 @@ LOG_FILE="/dev/null"
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    --log)
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        log_message "ERROR" "Missing argument for --log"
+        usage
+      fi
+      ;;
     --help)
       usage
-      ;;
-    --log)
-      LOG_FILE="$2"
-      shift 2
       ;;
     *)
       if [ -z "$COMMIT_MESSAGE" ]; then

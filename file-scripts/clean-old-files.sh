@@ -57,6 +57,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<directory> and <days> are required."
   usage
 fi
 
@@ -69,8 +70,12 @@ LOG_FILE="/dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --log)
-      LOG_FILE="$2"
-      shift 2
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        log_message "ERROR" "Missing argument for --log"
+        usage
       ;;
     --help)
       usage
@@ -81,7 +86,7 @@ while [[ "$#" -gt 0 ]]; do
       elif [ -z "$DAYS" ]; then
         DAYS="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift

@@ -52,6 +52,11 @@ usage() {
   exit 1
 }
 
+# Check if no arguments are provided
+if [ "$#" -lt 1 ]; then
+  usage
+fi
+
 # Initialize variables
 LOG_FILE="/dev/null"
 

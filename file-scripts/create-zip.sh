@@ -57,6 +57,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<source> and <output_zip> are required."
   usage
 fi
 
@@ -73,7 +74,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -81,12 +82,12 @@ while [[ "$#" -gt 0 ]]; do
       usage
       ;;
     *)
-      if [ -z "$TARGET_FILE" ]; then
-        TARGET_FILE="$1"
-      elif [ -z "$LINK_NAME" ]; then
-        LINK_NAME="$1"
+      if [ -z "$SOURCE" ]; then
+        SOURCE="$1"
+      elif [ -z "$OUTPUT_ZIP" ]; then
+        OUTPUT_ZIP="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift
