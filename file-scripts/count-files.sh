@@ -72,7 +72,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -84,7 +84,7 @@ while [[ "$#" -gt 0 ]]; do
         DIRECTORY="$1"
         shift
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       ;;
