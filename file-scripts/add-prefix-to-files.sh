@@ -70,8 +70,12 @@ LOG_FILE="/dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --log)
-      LOG_FILE="$2"
-      shift 2
+      if [[ -n "$2" ]]; then
+        LOG_FILE="$2"
+        shift 2
+      else
+        log_message "ERROR" "Missing argument for --log"
+        usage
       ;;
     --help)
       usage
