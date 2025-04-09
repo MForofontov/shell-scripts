@@ -56,6 +56,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<directory> is required."
   usage
 fi
 
