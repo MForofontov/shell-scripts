@@ -82,7 +82,7 @@ while [[ "$#" -gt 0 ]]; do
       elif [ -z "$PREFIX" ]; then
         PREFIX="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift
