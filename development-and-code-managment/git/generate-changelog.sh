@@ -57,6 +57,7 @@ usage() {
 
 # Check if at least one argument is provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<output_file> is required."
   usage
 fi
 
