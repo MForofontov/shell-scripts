@@ -47,6 +47,12 @@ usage() {
     exit 1
 }
 
+# Check if no arguments are provided
+if [ "$#" -eq 0 ]; then
+    log_message "ERROR" "<url1> <url2> ... are required."
+    usage
+fi
+
 # Initialize variables
 URLS=()
 LOG_FILE="/dev/null"
