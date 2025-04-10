@@ -33,12 +33,12 @@ usage() {
     echo "  It also supports optional output to a file."
     echo
     echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <log_file> [output_file] [--help]"
+    echo "  $0 [--output_file <output_file>] [--log <log_file>] [--help]"
     echo
     echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<log_file>\033[0m       (Required) Path to the log file."
-    echo -e "  \033[1;33m[output_file]\033[0m    (Optional) Path to save the extracted IPs."
-    echo -e "  \033[1;33m--help\033[0m           (Optional) Display this help message."
+    echo -e "  \033[1;33m--output_file <output_file>\033[0m    (Optional) Path to save the extracted IPs."
+    echo -e "  \033[1;36m--log <log_file>\033[0m               (Optional) Path to the log file."
+    echo -e "  \033[1;33m--help\033[0m                         (Optional) Display this help message."
     echo
     echo -e "\033[1;34mExamples:\033[0m"
     echo "  $0 /path/to/logfile.log extracted_ips.txt"
@@ -47,17 +47,29 @@ usage() {
     exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-    log_message "ERROR" "Log file is required."
-    usage
-fi
-
 # Parse arguments
 LOG_FILE=""
 OUTPUT_FILE=""
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
+        --output_file)
+            if [[ -n "$2" ]]; then
+                OUTPUT_FILE="$2"
+                shift
+            else
+                log_message "ERROR" "--output_file requires a file name."
+                usage
+            fi
+            ;;
+        --log)
+            if [[ -n "$2" ]]; then
+                LOG_FILE="$2"
+                shift
+            else
+                log_message "ERROR" "--log requires a file name."
+                usage
+            fi
+            ;;
         --help)
             usage
             ;;
