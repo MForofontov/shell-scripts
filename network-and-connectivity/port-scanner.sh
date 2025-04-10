@@ -2,85 +2,151 @@
 # port-scanner.sh
 # Script to scan open ports on a specified server
 
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
+
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 <server> [start_port] [end_port] [output_file]"
-    echo "Example: $0 example.com 1 65535 scan_results.txt"
+    print_with_separator "Port Scanner Script"
+    echo -e "\033[1;34mDescription:\033[0m"
+    echo "  This script scans open ports on a specified server."
+    echo
+    echo -e "\033[1;34mUsage:\033[0m"
+    echo "  $0 <server> [--start <start_port>] [--end <end_port>] [--output <output_file>] [--help]"
+    echo
+    echo -e "\033[1;34mOptions:\033[0m"
+    echo -e "  \033[1;36m<server>\033[0m                  (Required) The server to scan."
+    echo -e "  \033[1;33m--start <start_port>\033[0m      (Optional) Start port (default: 1)."
+    echo -e "  \033[1;33m--end <end_port>\033[0m          (Optional) End port (default: 65535)."
+    echo -e "  \033[1;33m--output <output_file>\033[0m    (Optional) File to save the scan results."
+    echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
+    echo
+    echo -e "\033[1;34mExamples:\033[0m"
+    echo "  $0 example.com --start 1 --end 1000 --output scan_results.txt"
+    echo "  $0 example.com"
+    print_with_separator
     exit 1
 }
 
-# Check if at least one argument is provided
+# Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+    log_message "ERROR" "Server is required."
     usage
 fi
 
-# Get the server, start port, end port, and output file from the arguments
-SERVER=$1
-START_PORT=${2:-1}
-END_PORT=${3:-65535}
-OUTPUT_FILE=${4:-}
+# Initialize variables
+SERVER=""
+START_PORT=1
+END_PORT=65535
+OUTPUT_FILE=""
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --help)
+            usage
+            ;;
+        --start)
+            START_PORT="$2"
+            shift 2
+            ;;
+        --end)
+            END_PORT="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT_FILE="$2"
+            shift 2
+            ;;
+        *)
+            if [ -z "$SERVER" ]; then
+                SERVER="$1"
+                shift
+            else
+                log_message "ERROR" "Unknown option: $1"
+                usage
+            fi
+            ;;
+    esac
+done
 
 # Validate server
+if [ -z "$SERVER" ]; then
+    log_message "ERROR" "Server is required."
+    usage
+fi
+
 if ! ping -c 1 -W 1 "$SERVER" &> /dev/null; then
-    echo "Error: Cannot reach server $SERVER"
+    log_message "ERROR" "Cannot reach server $SERVER."
     exit 1
 fi
 
 # Validate start port
 if ! [[ "$START_PORT" =~ ^[0-9]+$ ]] || [ "$START_PORT" -lt 1 ] || [ "$START_PORT" -gt 65535 ]; then
-    echo "Error: Invalid start port $START_PORT"
+    log_message "ERROR" "Invalid start port: $START_PORT"
     usage
 fi
 
 # Validate end port
 if ! [[ "$END_PORT" =~ ^[0-9]+$ ]] || [ "$END_PORT" -lt 1 ] || [ "$END_PORT" -gt 65535 ]; then
-    echo "Error: Invalid end port $END_PORT"
+    log_message "ERROR" "Invalid end port: $END_PORT"
     usage
 fi
 
 # Validate port range
 if [ "$START_PORT" -gt "$END_PORT" ]; then
-    echo "Error: Start port $START_PORT is greater than end port $END_PORT"
+    log_message "ERROR" "Start port ($START_PORT) is greater than end port ($END_PORT)."
     usage
 fi
 
 # Validate output file if provided
 if [ -n "$OUTPUT_FILE" ]; then
     if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to output file $OUTPUT_FILE"
+        log_message "ERROR" "Cannot write to output file $OUTPUT_FILE."
         exit 1
     fi
 fi
 
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    if [ -n "$MESSAGE" ]; then
-        if [ -n "$OUTPUT_FILE" ]; then
-            echo "$MESSAGE" | tee -a "$OUTPUT_FILE"
-        else
-            echo "$MESSAGE"
-        fi
-    fi
-}
-
-log_message "Scanning ports on $SERVER from $START_PORT to $END_PORT..."
+log_message "INFO" "Scanning ports on $SERVER from $START_PORT to $END_PORT..."
+print_with_separator "Port Scan Results"
 
 # Function to scan ports
 scan_ports() {
-    for PORT in $(seq $START_PORT $END_PORT); do
-        timeout 1 bash -c "echo > /dev/tcp/$SERVER/$PORT" &> /dev/null && log_message "Port $PORT is open."
+    for PORT in $(seq "$START_PORT" "$END_PORT"); do
+        timeout 1 bash -c "echo > /dev/tcp/$SERVER/$PORT" &> /dev/null && log_message "SUCCESS" "Port $PORT is open."
     done
 }
 
-# Scan ports and handle errors
+# Perform port scan
 if ! scan_ports; then
-    log_message "Error: Failed to scan ports on $SERVER."
+    log_message "ERROR" "Failed to scan ports on $SERVER."
+    print_with_separator "End of Port Scan Results"
     exit 1
 fi
 
+print_with_separator "End of Port Scan Results"
 if [ -n "$OUTPUT_FILE" ]; then
-    log_message "Port scan results have been written to $OUTPUT_FILE"
+    log_message "SUCCESS" "Port scan results have been written to $OUTPUT_FILE."
 else
-    log_message "Port scan results displayed on the console"
+    log_message "INFO" "Port scan results displayed on the console."
 fi
