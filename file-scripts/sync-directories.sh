@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mSynchronize Directories Script\033[0m"
-  echo
+  print_with_separator "Synchronize Directories Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script synchronizes two directories using rsync."
   echo "  It also supports optional logging to a file."
@@ -50,13 +44,13 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/source /path/to/destination --log custom_log.log"
   echo "  $0 /path/to/source /path/to/destination"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 1
 }
 
 # Check if no arguments are provided
 if [ "$#" -lt 2 ]; then
+  log_message "ERROR" "<source_directory> and <destination_directory> are required."
   usage
 fi
 
@@ -73,7 +67,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -86,7 +80,7 @@ while [[ "$#" -gt 0 ]]; do
       elif [ -z "$DEST_DIR" ]; then
         DEST_DIR="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift

@@ -26,13 +26,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mGit Add, Commit, and Push Script\033[0m"
-  echo
+  print_with_separator "Git Add, Commit, and Push Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script automates the process of adding, committing, and pushing changes to a Git repository."
   echo "  It also supports optional logging to a file."
@@ -47,8 +41,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 'Initial commit' --log git_operations.log"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 0
 }
 

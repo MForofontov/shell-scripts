@@ -28,13 +28,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mGenerate Changelog Script\033[0m"
-  echo
+  print_with_separator "Generate Changelog Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script generates a changelog file from the Git log of the current repository."
   echo "  It includes commit hashes, messages, authors, and relative commit times."
@@ -50,8 +44,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 CHANGELOG.md --log changelog.log"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 0
 }
 

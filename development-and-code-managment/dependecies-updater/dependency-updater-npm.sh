@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mNPM Dependency Updater\033[0m"
-  echo
+  print_with_separator "NPM Dependency Updater"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script updates npm dependencies and generates a summary of updated packages."
   echo "  It must be run in a directory containing a 'package.json' file."
@@ -49,8 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
   echo "  $0                        # Run the script without logging to a file"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 1
 }
 

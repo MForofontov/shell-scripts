@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mPython Dependency Updater\033[0m"
-  echo
+  print_with_separator "Python Dependency Updater"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script updates Python dependencies listed in a requirements file."
   echo "  It must be run in an environment where 'pip' is installed and accessible."
@@ -49,8 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 requirements.txt               # Update dependencies without logging."
   echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 1
 }
 

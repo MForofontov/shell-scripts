@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mGit Conflict Finder\033[0m"
-  echo
+  print_with_separator "Git Conflict Finder Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script scans the repository for merge conflicts."
   echo "  It also supports optional logging to a file."
@@ -47,8 +41,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 --log conflict_finder.log"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 0
 }
 

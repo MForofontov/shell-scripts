@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mGit Commit Validator\033[0m"
-  echo
+  print_with_separator "Git Commit Validator Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script validates a commit message and ensures that changes are staged before committing."
   echo "  It also supports optional logging to a file."
@@ -48,8 +42,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 'Initial commit' --log commit_validation.log"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 0
 }
 

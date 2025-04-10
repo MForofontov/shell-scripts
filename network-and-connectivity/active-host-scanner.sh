@@ -27,13 +27,7 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mActive Host Scanner Script\033[0m"
-  echo
+  print_with_separator "Active Host Scanner Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script scans a network for active hosts using ping."
   echo "  It also supports optional logging to a file."
@@ -49,13 +43,13 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 192.168.1 --log custom_log.log"
   echo "  $0 192.168.1"
-  echo "$SEPARATOR"
-  echo
+  print_with_separator
   exit 1
 }
 
 # Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<network_prefix> is required."
   usage
 fi
 
@@ -71,7 +65,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -82,7 +76,7 @@ while [[ "$#" -gt 0 ]]; do
       if [ -z "$NETWORK" ]; then
         NETWORK="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift
