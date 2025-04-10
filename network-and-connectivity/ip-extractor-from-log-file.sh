@@ -48,7 +48,7 @@ usage() {
 }
 
 # Parse arguments
-LOG_FILE=""
+LOG_FILE="/dev/null"
 OUTPUT_FILE=""
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -87,15 +87,12 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# Validate log file
-if [ -z "$LOG_FILE" ]; then
-    log_message "ERROR" "Log file is required."
-    usage
-fi
-
-if [ ! -f "$LOG_FILE" ]; then
-    log_message "ERROR" "Log file $LOG_FILE does not exist."
-    exit 1
+# Validate log file if provided
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+        log_message "ERROR" "Cannot write to log file $LOG_FILE"
+        exit 1
+    fi
 fi
 
 # Validate output file if provided
