@@ -27,24 +27,24 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Python Dependency Updater"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script updates Python dependencies listed in a requirements file."
-    echo "  It must be run in an environment where 'pip' is installed and accessible."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <requirements_file> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<requirements_file>\033[0m       (Required) Path to the requirements file."
-    echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 requirements.txt               # Update dependencies without logging."
-    echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
-    print_with_separator
-    exit 1
+  print_with_separator "Python Dependency Updater"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script updates Python dependencies listed in a requirements file."
+  echo "  It must be run in an environment where 'pip' is installed and accessible."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <requirements_file> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<requirements_file>\033[0m       (Required) Path to the requirements file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 requirements.txt               # Update dependencies without logging."
+  echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
+  print_with_separator
+  exit 1
 }
 
 # Check if no arguments are provided

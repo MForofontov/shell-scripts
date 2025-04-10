@@ -28,24 +28,24 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Generate Changelog Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script generates a changelog file from the Git log of the current repository."
-    echo "  It includes commit hashes, messages, authors, and relative commit times."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <output_file> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<output_file>\033[0m       (Required) The file where the changelog will be saved."
-    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExample:\033[0m"
-    echo "  $0 CHANGELOG.md --log changelog.log"
-    print_with_separator
-    exit 0
+  print_with_separator "Generate Changelog Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script generates a changelog file from the Git log of the current repository."
+  echo "  It includes commit hashes, messages, authors, and relative commit times."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <output_file> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<output_file>\033[0m       (Required) The file where the changelog will be saved."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExample:\033[0m"
+  echo "  $0 CHANGELOG.md --log changelog.log"
+  print_with_separator
+  exit 0
 }
 
 # Check if at least one argument is provided

@@ -27,22 +27,22 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Git Conflict Finder Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script scans the repository for merge conflicts."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExample:\033[0m"
-    echo "  $0 --log conflict_finder.log"
-    print_with_separator
-    exit 0
+  print_with_separator "Git Conflict Finder Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script scans the repository for merge conflicts."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExample:\033[0m"
+  echo "  $0 --log conflict_finder.log"
+  print_with_separator
+  exit 0
 }
 
 # Initialize variables

@@ -26,23 +26,23 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Git Add, Commit, and Push Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script automates the process of adding, committing, and pushing changes to a Git repository."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <commit_message> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
-    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExample:\033[0m"
-    echo "  $0 'Initial commit' --log git_operations.log"
-    print_with_separator
-    exit 0
+  print_with_separator "Git Add, Commit, and Push Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script automates the process of adding, committing, and pushing changes to a Git repository."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <commit_message> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExample:\033[0m"
+  echo "  $0 'Initial commit' --log git_operations.log"
+  print_with_separator
+  exit 0
 }
 
 # Check if no arguments are provided

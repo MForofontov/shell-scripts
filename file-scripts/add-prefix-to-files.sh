@@ -27,25 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Add Prefix to Files Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script adds a specified prefix to all files in a given directory."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <directory> <prefix> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory containing the files to rename."
-    echo -e "  \033[1;36m<prefix>\033[0m          (Required) Prefix to add to the files."
-    echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 /path/to/directory my_prefix --log custom_log.log"
-    echo "  $0 /path/to/directory my_prefix"
-    print_with_separator
-    exit 1
+  print_with_separator "Add Prefix to Files Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script adds a specified prefix to all files in a given directory."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <directory> <prefix> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory containing the files to rename."
+  echo -e "  \033[1;36m<prefix>\033[0m          (Required) Prefix to add to the files."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 /path/to/directory my_prefix --log custom_log.log"
+  echo "  $0 /path/to/directory my_prefix"
+  print_with_separator
+  exit 1
 }
 
 # Check if no arguments are provided

@@ -27,25 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Create Zip Archive Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script creates a zip archive of a directory or file."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <source> <output_zip> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<source>\033[0m          (Required) Path to the file or directory to zip."
-    echo -e "  \033[1;36m<output_zip>\033[0m     (Required) Path to the output zip file."
-    echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 /path/to/source /path/to/output.zip --log custom_log.log"
-    echo "  $0 /path/to/source /path/to/output.zip"
-    print_with_separator
-    exit 1
+  print_with_separator "Create Zip Archive Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script creates a zip archive of a directory or file."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <source> <output_zip> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<source>\033[0m          (Required) Path to the file or directory to zip."
+  echo -e "  \033[1;36m<output_zip>\033[0m     (Required) Path to the output zip file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 /path/to/source /path/to/output.zip --log custom_log.log"
+  echo "  $0 /path/to/source /path/to/output.zip"
+  print_with_separator
+  exit 1
 }
 
 # Check if no arguments are provided

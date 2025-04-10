@@ -27,23 +27,23 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Git Commit Validator Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script validates a commit message and ensures that changes are staged before committing."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <commit_message> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
-    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExample:\033[0m"
-    echo "  $0 'Initial commit' --log commit_validation.log"
-    print_with_separator
-    exit 0
+  print_with_separator "Git Commit Validator Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script validates a commit message and ensures that changes are staged before committing."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <commit_message> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExample:\033[0m"
+  echo "  $0 'Initial commit' --log commit_validation.log"
+  print_with_separator
+  exit 0
 }
 
 # Check if no arguments are provided

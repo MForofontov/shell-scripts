@@ -1,12 +1,12 @@
 #!/bin/bash
-# network-speed-test.sh
-# Script to run a network speed test using speedtest-cli
+# ping.sh
+# Script to ping a list of servers/websites and check their reachability
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
@@ -25,95 +25,118 @@ else
   exit 1
 fi
 
+# Default list of servers/websites to ping
+DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
+
+# Default number of ping attempts and timeout
+PING_COUNT=3
+TIMEOUT=5
+OUTPUT_FILE=""
+
 # Function to display usage instructions
 usage() {
-    print_with_separator "Network Speed Test Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script runs a network speed test using speedtest-cli."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 [log_file] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;33m[log_file]\033[0m  (Optional) Path to save the speed test results."
-    echo -e "  \033[1;33m--help\033[0m      (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 custom_log.log"
-    echo "  $0"
-    print_with_separator
-    exit 1
+  print_with_separator "Ping Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script pings a list of servers/websites and checks their reachability."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 [--websites <site1,site2,...>] [--count <number>] [--timeout <seconds>] [--log <file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m--websites <site1,site2,...>\033[0m   (Optional) Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
+  echo -e "  \033[1;36m--count <number>\033[0m               (Optional) Number of ping attempts (default: $PING_COUNT)"
+  echo -e "  \033[1;36m--timeout <seconds>\033[0m            (Optional) Timeout for each ping attempt (default: $TIMEOUT)"
+  echo -e "  \033[1;33m--log <file>\033[0m                   (Optional) Log output to the specified file"
+  echo -e "  \033[1;33m--help\033[0m                         (Optional) Display this help message"
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
+  echo "  $0"
+  print_with_separator
+  exit 1
 }
 
-# Check if speedtest-cli is installed
-if ! command -v speedtest-cli &> /dev/null; then
-    log_message "INFO" "speedtest-cli is not installed. Installing..."
-    if [[ "$(uname)" == "Linux" ]]; then
-        if ! sudo apt-get install -y speedtest-cli; then
-            log_message "ERROR" "Failed to install speedtest-cli."
-            exit 1
-        fi
-    elif [[ "$(uname)" == "Darwin" ]]; then
-        if ! brew install speedtest-cli; then
-            log_message "ERROR" "Failed to install speedtest-cli."
-            exit 1
-        fi
-    else
-        log_message "ERROR" "Unsupported operating system: $(uname)"
-        exit 1
-    fi
-fi
-
-# Initialize variables
-LOG_FILE=""
-
-# Parse arguments
+# Parse input arguments
+WEBSITES=("${DEFAULT_WEBSITES[@]}")
 while [[ "$#" -gt 0 ]]; do
-    case "$1" in
-        --help)
-            usage
-            ;;
-        *)
-            if [ -z "$LOG_FILE" ]; then
-                LOG_FILE="$1"
-            else
-                log_message "ERROR" "Too many arguments provided."
-                usage
-            fi
-            shift
-            ;;
-    esac
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --websites)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "No websites provided after --websites."
+        usage
+      fi
+      IFS=',' read -r -a WEBSITES <<< "$2"
+      shift 2
+      ;;
+    --count)
+      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        log_message "ERROR" "Invalid count value: $2"
+        usage
+      fi
+      PING_COUNT="$2"
+      shift 2
+      ;;
+    --timeout)
+      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        log_message "ERROR" "Invalid timeout value: $2"
+        usage
+      fi
+      TIMEOUT="$2"
+      shift 2
+      ;;
+    --log)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "No log file provided after --log."
+        usage
+      fi
+      OUTPUT_FILE="$2"
+      shift 2
+      ;;
+    *)
+      log_message "ERROR" "Unknown option: $1"
+      usage
+      ;;
+  esac
 done
 
 # Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-        log_message "ERROR" "Cannot write to log file $LOG_FILE"
-        exit 1
-    fi
+if [ -n "$OUTPUT_FILE" ]; then
+  if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+    log_message "ERROR" "Cannot write to log file $OUTPUT_FILE"
+    exit 1
+  fi
 fi
 
-log_message "INFO" "Running network speed test..."
-print_with_separator "Network Speed Test Output"
+log_message "INFO" "Starting ping test..."
+print_with_separator "Ping Test Output"
 
-# Function to run the speed test and log the results
-run_speed_test() {
+# Function to ping websites
+ping_websites() {
+  for SITE in "${WEBSITES[@]}"; do
     TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-    log_message "INFO" "$TIMESTAMP: Running network speed test..."
-    if ! speedtest-cli | tee -a "$LOG_FILE"; then
-        log_message "ERROR" "Failed to run network speed test."
-        exit 1
+    log_message "INFO" "Pinging $SITE..."
+    if ping -c "$PING_COUNT" -W "$TIMEOUT" "$SITE" &> /dev/null; then
+      log_message "SUCCESS" "$TIMESTAMP: $SITE is reachable."
+    else
+      log_message "ERROR" "$TIMESTAMP: $SITE is unreachable."
     fi
-    log_message "INFO" "$TIMESTAMP: Network speed test completed."
+  done
 }
 
-# Run the speed test and handle errors
-if ! run_speed_test; then
-    log_message "ERROR" "Failed to run network speed test."
-    print_with_separator "End of Network Speed Test Output"
-    exit 1
+# Ping websites and handle errors
+if ! ping_websites; then
+  log_message "ERROR" "Failed to ping websites."
+  print_with_separator "End of Ping Test Output"
+  exit 1
 fi
 
-print_with_separator "End of Network Speed Test Output"
-log_message "SUCCESS" "Network speed test complete."
+print_with_separator "End of Ping Test Output"
+
+if [ -n "$OUTPUT_FILE" ]; then
+  log_message "SUCCESS" "Ping results have been written to $OUTPUT_FILE"
+else
+  log_message "INFO" "Ping results displayed on the console"
+fi

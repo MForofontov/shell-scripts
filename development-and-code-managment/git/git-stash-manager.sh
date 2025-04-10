@@ -27,26 +27,26 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Git Stash Manager Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script helps you manage Git stashes. It allows you to:"
-    echo "    - List all available stashes"
-    echo "    - Apply a specific stash"
-    echo "    - Drop a specific stash"
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
-    echo "  $0                        # Run the script without logging to a file"
-    print_with_separator
-    exit 1
+  print_with_separator "Git Stash Manager Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script helps you manage Git stashes. It allows you to:"
+  echo "    - List all available stashes"
+  echo "    - Apply a specific stash"
+  echo "    - Drop a specific stash"
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
+  echo "  $0                        # Run the script without logging to a file"
+  print_with_separator
+  exit 1
 }
 
 # Initialize variables

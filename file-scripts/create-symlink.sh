@@ -27,25 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-    print_with_separator "Create Symbolic Link Script"
-    echo -e "\033[1;34mDescription:\033[0m"
-    echo "  This script creates a symbolic link to a target file."
-    echo "  It also supports optional logging to a file."
-    echo
-    echo -e "\033[1;34mUsage:\033[0m"
-    echo "  $0 <target_file> <link_name> [--log <log_file>] [--help]"
-    echo
-    echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<target_file>\033[0m      (Required) Path to the target file."
-    echo -e "  \033[1;36m<link_name>\033[0m        (Required) Path to the symbolic link to create."
-    echo -e "  \033[1;33m--log <log_file>\033[0m   (Optional) Log output to the specified file."
-    echo -e "  \033[1;33m--help\033[0m             (Optional) Display this help message."
-    echo
-    echo -e "\033[1;34mExamples:\033[0m"
-    echo "  $0 /path/to/target /path/to/link --log custom_log.log"
-    echo "  $0 /path/to/target /path/to/link"
-    print_with_separator
-    exit 1
+  print_with_separator "Create Symbolic Link Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script creates a symbolic link to a target file."
+  echo "  It also supports optional logging to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <target_file> <link_name> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;36m<target_file>\033[0m      (Required) Path to the target file."
+  echo -e "  \033[1;36m<link_name>\033[0m        (Required) Path to the symbolic link to create."
+  echo -e "  \033[1;33m--log <log_file>\033[0m   (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m             (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 /path/to/target /path/to/link --log custom_log.log"
+  echo "  $0 /path/to/target /path/to/link"
+  print_with_separator
+  exit 1
 }
 
 # Check if no arguments are provided
