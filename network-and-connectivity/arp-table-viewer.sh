@@ -38,10 +38,10 @@ usage() {
   echo "  This script fetches and logs the ARP table."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [log_file] [--help]"
+  echo "  $0 [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m[log_file]\033[0m  (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
   echo -e "  \033[1;33m--help\033[0m      (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
@@ -51,11 +51,6 @@ usage() {
   echo
   exit 1
 }
-
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-  usage
-fi
 
 # Initialize variables
 LOG_FILE="/dev/null"
@@ -68,7 +63,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -76,7 +71,7 @@ while [[ "$#" -gt 0 ]]; do
       usage
       ;;
     *)
-      echo -e "\033[1;31mError:\033[0m Unknown option: $1"
+      log_message "ERROR" "Unknown option: $1"
       usage
       ;;
   esac
