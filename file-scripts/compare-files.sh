@@ -27,32 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mCompare Files Script\033[0m"
-  echo
-  echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script compares two files and prints their differences."
-  echo "  It also supports optional logging to a file."
-  echo
-  echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <source_file> <target_file> [--log <log_file>] [--help]"
-  echo
-  echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<source_file>\033[0m     (Required) Path to the first file (source file)."
-  echo -e "  \033[1;36m<target_file>\033[0m     (Required) Path to the second file (target file)."
-  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
-  echo
-  echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
-  echo "  $0 /path/to/source_file /path/to/target_file"
-  echo "$SEPARATOR"
-  echo
-  exit 1
+    print_with_separator "Compare Files Script"
+    echo -e "\033[1;34mDescription:\033[0m"
+    echo "  This script compares two files and prints their differences."
+    echo "  It also supports optional logging to a file."
+    echo
+    echo -e "\033[1;34mUsage:\033[0m"
+    echo "  $0 <source_file> <target_file> [--log <log_file>] [--help]"
+    echo
+    echo -e "\033[1;34mOptions:\033[0m"
+    echo -e "  \033[1;36m<source_file>\033[0m     (Required) Path to the first file (source file)."
+    echo -e "  \033[1;36m<target_file>\033[0m     (Required) Path to the second file (target file)."
+    echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+    echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+    echo
+    echo -e "\033[1;34mExamples:\033[0m"
+    echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
+    echo "  $0 /path/to/source_file /path/to/target_file"
+    print_with_separator
+    exit 1
 }
 
 # Check if no arguments are provided
