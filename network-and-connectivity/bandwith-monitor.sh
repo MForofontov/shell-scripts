@@ -42,13 +42,13 @@ usage() {
     echo "  $0 <interface> [--log <log_file>] [--help]"
     echo
     echo -e "\033[1;34mOptions:\033[0m"
-    echo -e "  \033[1;36m<interface>\033[0m       (Required) Network interface to monitor (e.g., eth0)."
+    echo -e "  \033[1;36m<interface>\033[0m       (Required) Network interface to monitor (e.g., eth0 or en0)."
     echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
     echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
     echo
     echo -e "\033[1;34mExamples:\033[0m"
     echo "  $0 eth0 --log custom_log.log"
-    echo "  $0 eth0"
+    echo "  $0 en0"
     echo "$SEPARATOR"
     echo
     exit 1
@@ -110,24 +110,47 @@ log_message "INFO" "Press Ctrl+C to stop."
 
 # Function to monitor bandwidth usage
 monitor_bandwidth() {
+    local RX_PREV=0
+    local TX_PREV=0
+
     while true; do
-        RX1=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-        TX1=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
-        sleep 1
-        RX2=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-        TX2=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
+        if [[ "$(uname)" == "Linux" ]]; then
+            # Linux: Read RX and TX bytes from /sys/class/net
+            RX_CURRENT=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes 2>/dev/null)
+            TX_CURRENT=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes 2>/dev/null)
+        elif [[ "$(uname)" == "Darwin" ]]; then
+            # macOS: Use netstat to get RX and TX bytes
+            RX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $7}' | head -n 1)
+            TX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $10}' | head -n 1)
+        else
+            log_message "ERROR" "Unsupported operating system: $(uname)"
+            exit 1
+        fi
 
-        RX_RATE=$((RX2 - RX1))
-        TX_RATE=$((TX2 - TX1))
+        # Validate that RX and TX values are numeric
+        if ! [[ "$RX_CURRENT" =~ ^[0-9]+$ ]] || ! [[ "$TX_CURRENT" =~ ^[0-9]+$ ]]; then
+            log_message "ERROR" "Failed to retrieve network statistics for interface $INTERFACE."
+            exit 1
+        fi
 
+        # Calculate the rates
+        RX_RATE=$((RX_CURRENT - RX_PREV))
+        TX_RATE=$((TX_CURRENT - TX_PREV))
+
+        # Update previous values
+        RX_PREV=$RX_CURRENT
+        TX_PREV=$TX_CURRENT
+
+        # Log the bandwidth usage
         TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
         log_message "INFO" "$TIMESTAMP: Download: $((RX_RATE / 1024)) KB/s, Upload: $((TX_RATE / 1024)) KB/s"
+
+        sleep 1
     done
 }
 
 # Monitor bandwidth usage and handle errors
 if ! monitor_bandwidth; then
-    print_with_separator "End of Bandwidth Monitor Output"
     log_message "ERROR" "Failed to monitor bandwidth usage on interface $INTERFACE."
     exit 1
 fi
