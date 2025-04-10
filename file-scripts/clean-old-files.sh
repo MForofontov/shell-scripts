@@ -27,32 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mClean Old Files Script\033[0m"
-  echo
-  echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script deletes files older than a specified number of days from a given directory."
-  echo "  It also supports optional logging to a file."
-  echo
-  echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <directory> <days> [--log <log_file>] [--help]"
-  echo
-  echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory to clean."
-  echo -e "  \033[1;36m<days>\033[0m            (Required) Age threshold for files to be deleted (e.g., 30 days)."
-  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
-  echo
-  echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/directory 30 --log custom_log.log"
-  echo "  $0 /path/to/directory 30"
-  echo "$SEPARATOR"
-  echo
-  exit 1
+    print_with_separator "Clean Old Files Script"
+    echo -e "\033[1;34mDescription:\033[0m"
+    echo "  This script deletes files older than a specified number of days from a given directory."
+    echo "  It also supports optional logging to a file."
+    echo
+    echo -e "\033[1;34mUsage:\033[0m"
+    echo "  $0 <directory> <days> [--log <log_file>] [--help]"
+    echo
+    echo -e "\033[1;34mOptions:\033[0m"
+    echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory to clean."
+    echo -e "  \033[1;36m<days>\033[0m            (Required) Age threshold for files to be deleted (e.g., 30 days)."
+    echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+    echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+    echo
+    echo -e "\033[1;34mExamples:\033[0m"
+    echo "  $0 /path/to/directory 30 --log custom_log.log"
+    echo "  $0 /path/to/directory 30"
+    print_with_separator
+    exit 1
 }
 
 # Check if no arguments are provided
