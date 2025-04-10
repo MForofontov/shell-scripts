@@ -1,12 +1,13 @@
 #!/bin/bash
-# ping.sh
-# Script to ping a list of servers/websites and check their reachability
+# network-speed-test.sh
+# Script to run a network speed test using speedtest-cli
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Construct the path to the logger file relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -16,88 +17,103 @@ else
   exit 1
 fi
 
-# Default list of servers/websites to ping
-DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
-
-# Default number of ping attempts and timeout
-PING_COUNT=3
-TIMEOUT=5
-OUTPUT_FILE=""
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [--websites <site1,site2,...>] [--count <number>] [--timeout <seconds>] [--log <file>] [--help]"
+    print_with_separator "Network Speed Test Script"
+    echo -e "\033[1;34mDescription:\033[0m"
+    echo "  This script runs a network speed test using speedtest-cli."
+    echo "  It also supports optional logging to a file."
     echo
-    echo "Options:"
-    echo "  --websites <site1,site2,...>   (Optional) Comma-separated list of websites to ping (default: ${DEFAULT_WEBSITES[*]})"
-    echo "  --count <number>               (Optional) Number of ping attempts (default: $PING_COUNT)"
-    echo "  --timeout <seconds>            (Optional) Timeout for each ping attempt (default: $TIMEOUT)"
-    echo "  --log <file>                   (Optional) Log output to the specified file"
-    echo "  --help                         (Optional) Display this help message"
+    echo -e "\033[1;34mUsage:\033[0m"
+    echo "  $0 [log_file] [--help]"
     echo
-    echo "Example:"
-    echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
-    exit 0
+    echo -e "\033[1;34mOptions:\033[0m"
+    echo -e "  \033[1;33m[log_file]\033[0m  (Optional) Path to save the speed test results."
+    echo -e "  \033[1;33m--help\033[0m      (Optional) Display this help message."
+    echo
+    echo -e "\033[1;34mExamples:\033[0m"
+    echo "  $0 custom_log.log"
+    echo "  $0"
+    print_with_separator
+    exit 1
 }
 
-# Parse input arguments
-WEBSITES=("${DEFAULT_WEBSITES[@]}")
+# Check if speedtest-cli is installed
+if ! command -v speedtest-cli &> /dev/null; then
+    log_message "INFO" "speedtest-cli is not installed. Installing..."
+    if [[ "$(uname)" == "Linux" ]]; then
+        if ! sudo apt-get install -y speedtest-cli; then
+            log_message "ERROR" "Failed to install speedtest-cli."
+            exit 1
+        fi
+    elif [[ "$(uname)" == "Darwin" ]]; then
+        if ! brew install speedtest-cli; then
+            log_message "ERROR" "Failed to install speedtest-cli."
+            exit 1
+        fi
+    else
+        log_message "ERROR" "Unsupported operating system: $(uname)"
+        exit 1
+    fi
+fi
+
+# Initialize variables
+LOG_FILE=""
+
+# Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --help)
             usage
             ;;
-        --websites)
-            IFS=',' read -r -a WEBSITES <<< "$2"
-            shift 2
-            ;;
-        --count)
-            PING_COUNT="$2"
-            shift 2
-            ;;
-        --timeout)
-            TIMEOUT="$2"
-            shift 2
-            ;;
-        --log)
-            OUTPUT_FILE="$2"
-            shift 2
-            ;;
         *)
-            log_message "ERROR" "Unknown option: $1"
-            usage
+            if [ -z "$LOG_FILE" ]; then
+                LOG_FILE="$1"
+            else
+                log_message "ERROR" "Too many arguments provided."
+                usage
+            fi
+            shift
             ;;
     esac
 done
 
 # Validate log file if provided
-if [ -n "$OUTPUT_FILE" ]; then
-    if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-        log_message "ERROR" "Cannot write to log file $OUTPUT_FILE"
+if [ -n "$LOG_FILE" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+        log_message "ERROR" "Cannot write to log file $LOG_FILE"
         exit 1
     fi
 fi
 
-# Function to ping websites
-ping_websites() {
-    for SITE in "${WEBSITES[@]}"; do
-        log_message "INFO" "Pinging $SITE..."
-        if ping -c "$PING_COUNT" -W "$TIMEOUT" "$SITE" &> /dev/null; then
-            log_message "SUCCESS" "$SITE is reachable."
-        else
-            log_message "ERROR" "$SITE is unreachable."
-        fi
-    done
+log_message "INFO" "Running network speed test..."
+print_with_separator "Network Speed Test Output"
+
+# Function to run the speed test and log the results
+run_speed_test() {
+    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+    log_message "INFO" "$TIMESTAMP: Running network speed test..."
+    if ! speedtest-cli | tee -a "$LOG_FILE"; then
+        log_message "ERROR" "Failed to run network speed test."
+        exit 1
+    fi
+    log_message "INFO" "$TIMESTAMP: Network speed test completed."
 }
 
-# Ping websites and handle errors
-if ! ping_websites; then
-    log_message "ERROR" "Failed to ping websites."
+# Run the speed test and handle errors
+if ! run_speed_test; then
+    log_message "ERROR" "Failed to run network speed test."
+    print_with_separator "End of Network Speed Test Output"
     exit 1
 fi
 
-if [ -n "$OUTPUT_FILE" ]; then
-    log_message "SUCCESS" "Ping results have been written to $OUTPUT_FILE"
-else
-    log_message "INFO" "Ping results displayed on the console"
-fi
+print_with_separator "End of Network Speed Test Output"
+log_message "SUCCESS" "Network speed test complete."
