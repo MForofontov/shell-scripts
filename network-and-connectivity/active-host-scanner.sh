@@ -56,6 +56,7 @@ usage() {
 
 # Check if no arguments are provided
 if [ "$#" -lt 1 ]; then
+  log_message "ERROR" "<network_prefix> is required."
   usage
 fi
 
@@ -71,7 +72,7 @@ while [[ "$#" -gt 0 ]]; do
         LOG_FILE="$2"
         shift 2
       else
-        echo -e "\033[1;31mError:\033[0m Missing argument for --log"
+        log_message "ERROR" "Missing argument for --log"
         usage
       fi
       ;;
@@ -82,7 +83,7 @@ while [[ "$#" -gt 0 ]]; do
       if [ -z "$NETWORK" ]; then
         NETWORK="$1"
       else
-        echo -e "\033[1;31mError:\033[0m Unknown option or too many arguments: $1"
+        log_message "ERROR" "Unknown option or too many arguments: $1"
         usage
       fi
       shift
