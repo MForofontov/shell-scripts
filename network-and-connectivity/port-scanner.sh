@@ -148,5 +148,5 @@ print_with_separator "End of Port Scan Results"
 if [ -n "$OUTPUT_FILE" ]; then
     log_message "SUCCESS" "Port scan results have been written to $OUTPUT_FILE."
 else
-    log_message "INFO" "Port scan results displayed on the console."
+    log_message "SUCCESS" "Port scan results displayed on the console."
 fi
