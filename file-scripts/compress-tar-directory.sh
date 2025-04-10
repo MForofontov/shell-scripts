@@ -27,32 +27,25 @@ fi
 
 # Function to display usage instructions
 usage() {
-  TERMINAL_WIDTH=$(tput cols)
-  SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
-
-  echo
-  echo "$SEPARATOR"
-  echo -e "\033[1;34mCompress Directory Script\033[0m"
-  echo
-  echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script compresses a directory into a tar.gz file."
-  echo "  It also supports optional logging to a file."
-  echo
-  echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <source_directory> <output_file> [--log <log_file>] [--help]"
-  echo
-  echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<source_directory>\033[0m  (Required) Directory to compress."
-  echo -e "  \033[1;36m<output_file>\033[0m       (Required) Path to the output tar.gz file."
-  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
-  echo
-  echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
-  echo "  $0 /path/to/source /path/to/output.tar.gz"
-  echo "$SEPARATOR"
-  echo
-  exit 1
+    print_with_separator "Compress Directory Script"
+    echo -e "\033[1;34mDescription:\033[0m"
+    echo "  This script compresses a directory into a tar.gz file."
+    echo "  It also supports optional logging to a file."
+    echo
+    echo -e "\033[1;34mUsage:\033[0m"
+    echo "  $0 <source_directory> <output_file> [--log <log_file>] [--help]"
+    echo
+    echo -e "\033[1;34mOptions:\033[0m"
+    echo -e "  \033[1;36m<source_directory>\033[0m  (Required) Directory to compress."
+    echo -e "  \033[1;36m<output_file>\033[0m       (Required) Path to the output tar.gz file."
+    echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+    echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+    echo
+    echo -e "\033[1;34mExamples:\033[0m"
+    echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
+    echo "  $0 /path/to/source /path/to/output.tar.gz"
+    print_with_separator
+    exit 1
 }
 
 # Check if no arguments are provided
