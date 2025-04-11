@@ -33,11 +33,11 @@ usage() {
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [log_file] [--help]"
+  echo "  $0 [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m[log_file]\033[0m  (Optional) Path to save the speed test results."
-  echo -e "  \033[1;33m--help\033[0m      (Optional) Display this help message."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Path to save the speed test results."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 custom_log.log"
@@ -71,6 +71,14 @@ LOG_FILE=""
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    --log)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "Log file name is required after --log."
+        usage
+      fi
+      LOG_FILE="$2"
+      shift 2
+      ;;
     --help)
       usage
       ;;
