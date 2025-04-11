@@ -94,21 +94,19 @@ print_with_separator "Password Generation"
 # Function to generate a random password
 generate_password() {
   local length=$1
-  tr -dc 'A-Za-z0-9!@#$%^&*()_+{}[]' < /dev/urandom | head -c "$length"
+  LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()_+{}[]' < /dev/urandom | head -c "$length"
 }
 
 # Generate the password
 PASSWORD=$(generate_password "$LENGTH")
 
 # Display the generated password
-echo "Generated password: $PASSWORD"
+log_message "INFO"  "Generated password: $PASSWORD"
 
+print_with_separator "End of Password Generation"
 # Log the password if a log file is specified
 if [ -n "$LOG_FILE" ]; then
-  echo "$PASSWORD" > "$LOG_FILE"
   log_message "SUCCESS" "Password saved to $LOG_FILE."
 else
   log_message "SUCCESS" "Password displayed on the console."
 fi
-
-print_with_separator "End of Password Generation"

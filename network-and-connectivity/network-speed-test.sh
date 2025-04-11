@@ -118,8 +118,8 @@ run_speed_test() {
 
 # Run the speed test and handle errors
 if ! run_speed_test; then
-  log_message "ERROR" "Failed to run network speed test."
   print_with_separator "End of Network Speed Test Output"
+  log_message "ERROR" "Failed to run network speed test."
   exit 1
 fi
 

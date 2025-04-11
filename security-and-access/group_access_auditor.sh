@@ -89,8 +89,8 @@ list_groups() {
 
 # Perform the group access audit
 if ! list_groups; then
-  log_message "ERROR" "Failed to list groups and their members."
   print_with_separator "End of Group Access Audit Results"
+  log_message "ERROR" "Failed to list groups and their members."
   exit 1
 fi
 

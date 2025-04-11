@@ -159,8 +159,8 @@ scan_ports() {
 
 # Perform port scan
 if ! scan_ports; then
-  log_message "ERROR" "Failed to scan ports on $SERVER."
   print_with_separator "End of Port Scan Results"
+  log_message "ERROR" "Failed to scan ports on $SERVER."
   exit 1
 fi
 

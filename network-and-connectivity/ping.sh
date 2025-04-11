@@ -134,8 +134,8 @@ ping_websites() {
 
 # Ping websites and handle errors
 if ! ping_websites; then
-  log_message "ERROR" "Failed to ping websites."
   print_with_separator "End of Ping Test Output"
+  log_message "ERROR" "Failed to ping websites."
   exit 1
 fi
 
