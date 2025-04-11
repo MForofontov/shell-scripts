@@ -32,17 +32,18 @@ usage() {
   echo "  This script scans open ports on a specified server."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <server> [--start <start_port>] [--end <end_port>] [--output <output_file>] [--help]"
+  echo "  $0 <server> [--start <start_port>] [--end <end_port>] [--output <output_file>] [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m<server>\033[0m                  (Required) The server to scan."
   echo -e "  \033[1;33m--start <start_port>\033[0m      (Optional) Start port (default: 1)."
   echo -e "  \033[1;33m--end <end_port>\033[0m          (Optional) End port (default: 65535)."
   echo -e "  \033[1;33m--output <output_file>\033[0m    (Optional) File to save the scan results."
+  echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) File to save the log messages."
   echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 example.com --start 1 --end 1000 --output scan_results.txt"
+  echo "  $0 example.com --start 1 --end 1000 --output scan_results.txt --log scan_log.txt"
   echo "  $0 example.com"
   print_with_separator
   exit 1
@@ -59,10 +60,19 @@ SERVER=""
 START_PORT=1
 END_PORT=65535
 OUTPUT_FILE=""
+LOG_FILE=""
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
+    --log)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "Log file name is required after --log."
+        usage
+      fi
+      LOG_FILE="$2"
+      shift 2
+      ;;
     --help)
       usage
       ;;
@@ -123,13 +133,27 @@ if [ -n "$OUTPUT_FILE" ]; then
   fi
 fi
 
+# Validate log file if provided
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+    exit 1
+  fi
+fi
+
 log_message "INFO" "Scanning ports on $SERVER from $START_PORT to $END_PORT..."
 print_with_separator "Port Scan Results"
 
 # Function to scan ports
 scan_ports() {
   for PORT in $(seq "$START_PORT" "$END_PORT"); do
-    timeout 1 bash -c "echo > /dev/tcp/$SERVER/$PORT" &> /dev/null && log_message "SUCCESS" "Port $PORT is open."
+    if timeout 1 bash -c "echo > /dev/tcp/$SERVER/$PORT" &> /dev/null; then
+      RESULT="Port $PORT is open."
+      log_message "SUCCESS" "$RESULT"
+      if [ -n "$OUTPUT_FILE" ]; then
+        echo "$RESULT" >> "$OUTPUT_FILE"
+      fi
+    fi
   done
 }
 
@@ -145,4 +169,8 @@ if [ -n "$OUTPUT_FILE" ]; then
   log_message "SUCCESS" "Port scan results have been written to $OUTPUT_FILE."
 else
   log_message "SUCCESS" "Port scan results displayed on the console."
+fi
+
+if [ -n "$LOG_FILE" ]; then
+  log_message "SUCCESS" "Log messages have been saved to $LOG_FILE."
 fi
