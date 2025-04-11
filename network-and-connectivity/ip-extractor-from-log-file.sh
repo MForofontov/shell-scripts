@@ -123,8 +123,8 @@ extract_ips() {
 
 # Perform IP extraction
 if ! extract_ips; then
-  log_message "ERROR" "IP extraction failed."
   print_with_separator "End of IP Extraction Output"
+  log_message "ERROR" "IP extraction failed."
   exit 1
 fi
 

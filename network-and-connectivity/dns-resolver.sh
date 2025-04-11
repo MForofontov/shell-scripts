@@ -111,8 +111,8 @@ resolve_domains() {
 
 # Resolve domains and handle errors
 if ! resolve_domains; then
-  log_message "ERROR" "Failed to resolve domains."
   print_with_separator "End of DNS Resolution Output"
+  log_message "ERROR" "Failed to resolve domains."
   exit 1
 fi
 

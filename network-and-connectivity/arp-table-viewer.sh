@@ -84,8 +84,8 @@ print_with_separator "ARP Table Output"
 
 # Fetch and log the ARP table
 if ! arp -a | tee -a "$LOG_FILE"; then
-  log_message "ERROR" "Failed to fetch ARP table."
   print_with_separator "End of ARP Table Output"
+  log_message "ERROR" "Failed to fetch ARP table."
   exit 1
 fi
 
