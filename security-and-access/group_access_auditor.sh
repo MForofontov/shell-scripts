@@ -36,7 +36,7 @@ usage() {
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Path to save the audit log (default: prints to console)."
-  echo -e "  \033[1;33m--help\033[0m           (Optional) Display this help message."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_group_access.log"
@@ -46,7 +46,7 @@ usage() {
 }
 
 # Parse input arguments
-LOG_FILE=""
+LOG_FILE="dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --help)

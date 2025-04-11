@@ -35,7 +35,7 @@ usage() {
   echo "  $0 [--log <log_file>] [additional_ports]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Path to save the log messages."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Path to save the log messages."
   echo -e "  \033[1;36m[additional_ports]\033[0m  (Optional) Space-separated list of additional ports to allow."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
@@ -54,7 +54,7 @@ fi
 
 # Parse input arguments
 ADDITIONAL_PORTS=()
-LOG_FILE=""
+LOG_FILE="dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --help)
