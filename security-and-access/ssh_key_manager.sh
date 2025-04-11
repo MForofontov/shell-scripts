@@ -48,7 +48,7 @@ usage() {
 }
 
 # Parse input arguments
-LOG_FILE="/dev/null"
+LOG_FILE=""
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --help)
