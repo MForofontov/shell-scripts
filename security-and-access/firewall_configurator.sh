@@ -54,7 +54,7 @@ fi
 
 # Parse input arguments
 ADDITIONAL_PORTS=()
-LOG_FILE="dev/null"
+LOG_FILE="/dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --help)

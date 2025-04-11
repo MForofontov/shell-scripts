@@ -49,7 +49,7 @@ usage() {
 
 # Default values
 LENGTH=16
-LOG_FILE="dev/null"
+LOG_FILE="/dev/null"
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
