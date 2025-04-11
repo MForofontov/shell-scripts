@@ -60,7 +60,7 @@ SERVER=""
 START_PORT=1
 END_PORT=65535
 OUTPUT_FILE=""
-LOG_FILE=""
+LOG_FILE="dev/null"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do

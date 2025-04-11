@@ -31,7 +31,6 @@ DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
 # Default number of ping attempts and timeout
 PING_COUNT=3
 TIMEOUT=5
-OUTPUT_FILE=""
 
 # Function to display usage instructions
 usage() {
@@ -58,6 +57,7 @@ usage() {
 
 # Parse input arguments
 WEBSITES=("${DEFAULT_WEBSITES[@]}")
+LOG_FILE="/dev/null"
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --help)
@@ -92,7 +92,7 @@ while [[ "$#" -gt 0 ]]; do
         log_message "ERROR" "No log file provided after --log."
         usage
       fi
-      OUTPUT_FILE="$2"
+      LOG_FILE="$2"
       shift 2
       ;;
     *)
@@ -102,10 +102,16 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
+# Validate websites
+if [ "${#WEBSITES[@]}" -eq 0 ]; then
+  log_message "ERROR" "At least one website is required."
+  usage
+fi
+
 # Validate log file if provided
-if [ -n "$OUTPUT_FILE" ]; then
-  if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $OUTPUT_FILE"
+if [ -n "$LOG_FILE" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    log_message "ERROR" "Cannot write to log file $LOG_FILE"
     exit 1
   fi
 fi
@@ -135,8 +141,8 @@ fi
 
 print_with_separator "End of Ping Test Output"
 
-if [ -n "$OUTPUT_FILE" ]; then
-  log_message "SUCCESS" "Ping results have been written to $OUTPUT_FILE"
+if [ -n "$LOG_FILE" ]; then
+  log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
 else
   log_message "INFO" "Ping results displayed on the console"
 fi
