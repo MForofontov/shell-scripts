@@ -111,8 +111,8 @@ check_status_codes() {
 
 # Check status codes and handle errors
 if ! check_status_codes; then
-  log_message "ERROR" "Failed to check HTTP status codes."
   print_with_separator "End of HTTP Status Code Output"
+  log_message "ERROR" "Failed to check HTTP status codes."
   exit 1
 fi
 
