@@ -36,8 +36,8 @@ usage() {
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m--ssh_dir <ssh_directory>\033[0m  (Optional) Directory to scan for SSH keys (default: /home)."
-  echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Path to save the log messages (default: unused_ssh_keys.log)."
-  echo -e "  \033[1;33m--help\033[0m                   (Optional) Display this help message."
+  echo -e "  \033[1;33m--log <log_file>\033[0m           (Optional) Path to save the log messages (default: unused_ssh_keys.log)."
+  echo -e "  \033[1;33m--help\033[0m                     (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --ssh_dir /home --log unused_ssh_keys.log"
