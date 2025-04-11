@@ -37,7 +37,7 @@ usage() {
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m--length <length>\033[0m  (Optional) Length of the password (default: 16)."
   echo -e "  \033[1;33m--log <log_file>\033[0m   (Optional) Path to save the generated password."
-  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo -e "  \033[1;33m--help\033[0m             (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --length 20 --log password.log"
@@ -49,7 +49,7 @@ usage() {
 
 # Default values
 LENGTH=16
-LOG_FILE=""
+LOG_FILE="dev/null"
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
