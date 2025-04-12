@@ -46,7 +46,7 @@ usage() {
 }
 
 # Default values
-LOG_FILE=""
+LOG_FILE="/dev/null"
 SERVICES=("nginx" "apache2" "postgresql" "django" "react" "celery-worker") # List of services to check
 
 # Parse input arguments
