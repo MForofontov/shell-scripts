@@ -130,5 +130,5 @@ print_with_separator "System Report"
 } > "$REPORT_FILE"
 
 # Notify user
-log_message "SUCCESS" "System report generated at $REPORT_FILE."
 print_with_separator "End of System Report"
+log_message "SUCCESS" "System report generated at $REPORT_FILE."
