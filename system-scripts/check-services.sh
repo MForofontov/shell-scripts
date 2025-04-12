@@ -101,12 +101,21 @@ for service in "${SERVICES[@]}"; do
   is_running "$service"
 done
 
-# Check for any Celery worker
-log_message "INFO" "Checking for any Celery worker..."
-if pgrep -f "celery" > /dev/null; then
-  log_message "SUCCESS" "Celery worker is running."
+# Enhanced Celery worker check
+log_message "INFO" "Checking for Celery workers using the Celery CLI..."
+if command -v celery > /dev/null; then
+  if celery -A <app_name> status > /dev/null 2>&1; then
+    log_message "SUCCESS" "Celery workers are running."
+  else
+    log_message "ERROR" "No Celery workers are running or unable to connect to the Celery application."
+  fi
 else
-  log_message "ERROR" "No Celery worker is running."
+  log_message "WARNING" "Celery CLI is not installed. Falling back to process name check."
+  if pgrep -f "celery" > /dev/null; then
+    log_message "SUCCESS" "Celery worker is running (detected by process name)."
+  else
+    log_message "ERROR" "No Celery worker is running."
+  fi
 fi
 
 print_with_separator "End of Service Check"
