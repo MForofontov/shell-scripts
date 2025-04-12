@@ -105,7 +105,7 @@ USAGE=$(df / | grep / | awk '{ print $5 }' | sed 's/%//g')
 if [ "$USAGE" -ge "$THRESHOLD" ]; then
   ALERT_MESSAGE="Disk usage is at ${USAGE}% - exceeds the threshold of ${THRESHOLD}%"
   echo "$ALERT_MESSAGE" | mail -s "Disk Usage Alert" "$EMAIL"
-  log_message "ERROR" "$ALERT_MESSAGE"
+  log_message "WARNING" "$ALERT_MESSAGE"
 else
   log_message "SUCCESS" "Disk usage is at ${USAGE}%, below the threshold of ${THRESHOLD}%."
 fi

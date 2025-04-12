@@ -1,5 +1,5 @@
 #!/bin/bash
-# Utility script to log messages with log levels, timestamps, and optional file logging
+# Utility script to log messages with log levels, timestamps, and optional file logging.
 
 # Function to log messages with log levels and timestamps
 log_message() {
@@ -17,13 +17,16 @@ log_message() {
       LEVEL_COLOR="\033[1;32m"  # Green
       ;;
     INFO)
-      LEVEL_COLOR=""  # Default (no color)
+      LEVEL_COLOR="\033[1;34m"  # Blue
       ;;
     DEBUG)
+      LEVEL_COLOR="\033[1;36m"  # Cyan
+      ;;
+    WARNING)
       LEVEL_COLOR="\033[1;33m"  # Yellow
       ;;
     *)
-      echo -e "\033[1;31mError:\033[0m Invalid log level '$LEVEL'. Valid levels are ERROR, INFO, DEBUG, SUCCESS."
+      echo -e "\033[1;31mError:\033[0m Invalid log level '$LEVEL'. Valid levels are ERROR, SUCCESS, INFO, DEBUG, WARNING."
       return 1
       ;;
   esac
