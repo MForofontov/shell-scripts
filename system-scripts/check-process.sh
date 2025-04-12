@@ -94,12 +94,10 @@ fi
 log_message "INFO" "Checking if process $PROCESS_NAME is running..."
 print_with_separator "Process Check"
 
+print_with_separator "End of Process Check"
 # Check if the process is running
 if pgrep "$PROCESS_NAME" > /dev/null; then
   log_message "SUCCESS" "Process $PROCESS_NAME is running."
 else
   log_message "ERROR" "Process $PROCESS_NAME is not running."
 fi
-
-print_with_separator "End of Process Check"
-log_message "INFO" "Process check completed."
