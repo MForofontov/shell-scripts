@@ -48,7 +48,7 @@ usage() {
 
 # Default values
 PROCESS_NAME=""
-LOG_FILE=""
+LOG_FILE="/dev/null"
 
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
