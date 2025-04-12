@@ -95,14 +95,14 @@ log_message "INFO" "Starting network traffic monitoring on interface $INTERFACE.
 print_with_separator "Network Traffic Monitor"
 
 # Monitor network traffic
-if [ -n "$LOG_FILE" ]; then
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
   tcpdump -i "$INTERFACE" -w "$LOG_FILE" &
   MONITOR_PID=$!
   log_message "INFO" "Network traffic is being monitored on interface $INTERFACE. Logs are being saved to $LOG_FILE."
 else
   tcpdump -i "$INTERFACE" &
   MONITOR_PID=$!
-  log_message "INFO" "Network traffic is being monitored on interface $INTERFACE."
+  log_message "INFO" "Network traffic is being monitored on interface $INTERFACE. Output is displayed on the console."
 fi
 
 # Wait for user to terminate the monitoring
