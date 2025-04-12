@@ -47,7 +47,7 @@ usage() {
 }
 
 # Default values
-SSH_DIR="/home"
+SSH_DIR=""
 LOG_FILE="/dev/null"
 
 # Parse input arguments
@@ -106,4 +106,4 @@ for user in $(ls "$SSH_DIR"); do
 done
 
 print_with_separator "End of Unused SSH Key Detector"
-log_message "SUCCESS" "Unused SSH key scan completed. Log saved to $LOG_FILE."
+log_message "SUCCESS" "Unused SSH key scan completed."

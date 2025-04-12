@@ -80,7 +80,7 @@ print_with_separator "User Access Audit Results"
 
 # Audit user access
 log_message "INFO" "Listing system users and their details..."
-log_message "Username:Home Directory:Shell"
+log_message "INFO" "Username:Home Directory:Shell"
 cat /etc/passwd | awk -F: '{ print $1 ":" $6 ":" $7 }' | tee -a "$LOG_FILE"
 
 print_with_separator "End of User Access Audit"

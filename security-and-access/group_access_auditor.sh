@@ -95,8 +95,4 @@ if ! list_groups; then
 fi
 
 print_with_separator "End of Group Access Audit Results"
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Group access audit completed. Log saved to $LOG_FILE."
-else
-  log_message "SUCCESS" "Group access audit completed. Results displayed on the console."
-fi
+log_message "INFO" "Group access audit completed successfully."

@@ -6,7 +6,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../utils/log/log_with_levels.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
@@ -141,8 +141,12 @@ fi
 
 print_with_separator "End of Ping Test Output"
 
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+  if [ -f "$LOG_FILE" ]; then
+    log_message "SUCCESS" "Ping results have been appended to $LOG_FILE"
+  else
+    log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
+  fi
 else
   log_message "INFO" "Ping results displayed on the console"
 fi

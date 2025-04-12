@@ -170,7 +170,3 @@ if [ -n "$OUTPUT_FILE" ]; then
 else
   log_message "SUCCESS" "Port scan results displayed on the console."
 fi
-
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Log messages have been saved to $LOG_FILE."
-fi
