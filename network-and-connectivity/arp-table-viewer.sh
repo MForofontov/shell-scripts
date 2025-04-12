@@ -91,8 +91,4 @@ fi
 
 # Log success
 print_with_separator "End of ARP Table Output"
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "ARP table saved to $LOG_FILE"
-else
-  log_message "SUCCESS" "ARP table fetched successfully."
-fi
+log_message "SUCCESS" "ARP table fetched successfully."

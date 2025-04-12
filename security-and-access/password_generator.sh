@@ -104,9 +104,4 @@ PASSWORD=$(generate_password "$LENGTH")
 log_message "INFO"  "Generated password: $PASSWORD"
 
 print_with_separator "End of Password Generation"
-# Log the password if a log file is specified
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Password saved to $LOG_FILE."
-else
-  log_message "SUCCESS" "Password displayed on the console."
-fi
+log_message "SUCCESS" "Password generation completed successfully."

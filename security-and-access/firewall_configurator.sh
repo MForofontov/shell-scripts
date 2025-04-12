@@ -114,8 +114,4 @@ else
 fi
 
 print_with_separator "End of Firewall Configuration"
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Firewall configuration completed. Log saved to $LOG_FILE."
-else
-  log_message "SUCCESS" "Firewall configuration completed."
-fi
+log_message "SUCCESS" "Firewall configuration completed successfully."
