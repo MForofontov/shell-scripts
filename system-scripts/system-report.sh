@@ -1,65 +1,134 @@
 #!/bin/bash
 # system-report.sh
-# Script to generate a system report
+# Script to generate a system report.
+
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 <report_file> [log_file]"
-    echo "Example: $0 /path/to/report.txt custom_log.log"
-    exit 1
+  print_with_separator "System Report Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script generates a system report and saves it to a file."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 <report_file> [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;33m<report_file>\033[0m      (Required) Path to save the system report."
+  echo -e "  \033[1;33m--log <log_file>\033[0m   (Optional) Path to save the log messages."
+  echo -e "  \033[1;33m--help\033[0m             (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 /path/to/report.txt --log system_report.log"
+  echo "  $0 /path/to/report.txt"
+  print_with_separator
+  exit 1
 }
 
-# Check if the correct number of arguments is provided
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    usage
-fi
+# Default values
+REPORT_FILE=""
+LOG_FILE="/dev/null"
 
-# Get the report file path and log file from the arguments
-REPORT_FILE="$1"
-LOG_FILE=""
+# Parse input arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "No log file provided after --log."
+        usage
+      fi
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      if [ -z "$REPORT_FILE" ]; then
+        REPORT_FILE="$1"
+      else
+        log_message "ERROR" "Unknown option or too many arguments: $1"
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
 
-# Check if a log file is provided as a second argument
-if [ "$#" -eq 2 ]; then
-    LOG_FILE="$2"
+# Validate required arguments
+if [ -z "$REPORT_FILE" ]; then
+  log_message "ERROR" "The <report_file> argument is required."
+  usage
 fi
 
 # Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to log file $LOG_FILE"
-        exit 1
-    fi
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+    exit 1
+  fi
+  exec > >(tee -a "$LOG_FILE") 2>&1
 fi
 
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    if [ -n "$MESSAGE" ]; then
-        if [ -n "$LOG_FILE" ]; then
-            echo "$MESSAGE" | tee -a "$LOG_FILE"
-        else
-            echo "$MESSAGE"
-        fi
-    fi
-}
+log_message "INFO" "Starting system report generation..."
+print_with_separator "System Report"
 
 # Generate system report
-log_message "Generating system report at $REPORT_FILE..."
 {
-    echo "System Report - $(date)"
-    echo "----------------------------------"
-    echo "Uptime:"
-    uptime
-    echo ""
-    echo "Disk Usage:"
-    df -h
-    echo ""
-    echo "Memory Usage:"
+  echo "System Report - $(date)"
+  echo "----------------------------------"
+  echo "Uptime:"
+  uptime
+  echo ""
+  echo "Disk Usage:"
+  df -h
+  echo ""
+  echo "Memory Usage:"
+  if command -v free > /dev/null; then
     free -h
-    echo ""
-    echo "CPU Usage:"
-    top -bn1 | grep "Cpu(s)"
+  else
+    vm_stat | awk '
+      /Pages active/ {active=$3}
+      /Pages inactive/ {inactive=$3}
+      /Pages speculative/ {speculative=$3}
+      /Pages wired down/ {wired=$4}
+      /Pages free/ {free=$3}
+      END {
+        total=active+inactive+speculative+wired+free
+        used=active+inactive+speculative+wired
+        printf "Used: %.2f GB\nFree: %.2f GB\n", used/256, free/256
+      }'
+  fi
+  echo ""
+  echo "CPU Usage:"
+  if command -v top > /dev/null; then
+    top -l 1 | grep "CPU usage"
+  else
+    ps -A -o %cpu | awk '{s+=$1} END {print "CPU Usage: " s "%"}'
+  fi
 } > "$REPORT_FILE"
 
 # Notify user
-log_message "System report generated at $REPORT_FILE."
+log_message "SUCCESS" "System report generated at $REPORT_FILE."
+print_with_separator "End of System Report"
