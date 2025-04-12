@@ -105,7 +105,7 @@ CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk
 if (( $(echo "$CPU_USAGE > $THRESHOLD" | bc -l) )); then
   ALERT_MESSAGE="CPU usage is at ${CPU_USAGE}% - exceeds the threshold of ${THRESHOLD}%"
   echo "$ALERT_MESSAGE" | mail -s "CPU Usage Alert" "$EMAIL"
-  log_message "ERROR" "$ALERT_MESSAGE"
+  log_message "WARNING" "$ALERT_MESSAGE"
 else
   log_message "SUCCESS" "CPU usage is at ${CPU_USAGE}%, below the threshold of ${THRESHOLD}%."
 fi
