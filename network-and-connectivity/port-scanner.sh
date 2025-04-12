@@ -171,6 +171,12 @@ else
   log_message "SUCCESS" "Port scan results displayed on the console."
 fi
 
-if [ -n "$LOG_FILE" ]; then
-  log_message "SUCCESS" "Log messages have been saved to $LOG_FILE."
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+  if [ -f "$LOG_FILE" ]; then
+    log_message "SUCCESS" "Ping results have been appended to $LOG_FILE"
+  else
+    log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
+  fi
+else
+  log_message "INFO" "Ping results displayed on the console"
 fi

@@ -142,7 +142,11 @@ fi
 print_with_separator "End of Ping Test Output"
 
 if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  log_message "SUCCESS" "Ping results have been appended to $LOG_FILE"
+  if [ -f "$LOG_FILE" ]; then
+    log_message "SUCCESS" "Ping results have been appended to $LOG_FILE"
+  else
+    log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
+  fi
 else
   log_message "INFO" "Ping results displayed on the console"
 fi
