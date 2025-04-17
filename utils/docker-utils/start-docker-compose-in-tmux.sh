@@ -36,9 +36,9 @@ usage() {
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m<docker_compose_dir>\033[0m   (Required) Path to the Docker Compose directory."
-  echo -e "  \033[1;33m<tmux_session_name>\033[0m   (Required) Name of the tmux session."
-  echo -e "  \033[1;33m--log <log_file>\033[0m      (Optional) Path to save the log messages."
-  echo -e "  \033[1;33m--help\033[0m                (Optional) Display this help message."
+  echo -e "  \033[1;33m<tmux_session_name>\033[0m    (Required) Name of the tmux session."
+  echo -e "  \033[1;33m--log <log_file>\033[0m       (Optional) Path to save the log messages."
+  echo -e "  \033[1;33m--help\033[0m                 (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/docker-compose my_session --log docker_compose.log"
