@@ -107,8 +107,8 @@ log_message "INFO" "The following containers will be stopped:"
 docker ps --format "table {{.ID}}\t{{.Names}}" | tee -a "$LOG_FILE"
 read -p "Are you sure you want to stop all running containers? (y/N): " CONFIRM
 if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
-  log_message "INFO" "Operation canceled."
   print_with_separator "End of Stop All Docker Containers"
+  log_message "INFO" "Operation canceled."
   exit 0
 fi
 
