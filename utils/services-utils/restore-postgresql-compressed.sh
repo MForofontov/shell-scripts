@@ -111,6 +111,7 @@ log_message "INFO" "Decompressing backup file $COMPRESSED_BACKUP_FILE..."
 if gunzip -c "$COMPRESSED_BACKUP_FILE" > "$TEMP_BACKUP_FILE"; then
   log_message "SUCCESS" "Decompression successful. Temporary file: $TEMP_BACKUP_FILE"
 else
+  print_with_separator "End of PostgreSQL Restore"
   log_message "ERROR" "Decompression failed."
   unset PGPASSWORD
   exit 1
@@ -122,6 +123,7 @@ if [[ "$COMPRESSED_BACKUP_FILE" == *.sql.gz ]]; then
   if psql -U "$DB_USER" -d "$DB_NAME" -f "$TEMP_BACKUP_FILE"; then
     log_message "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
   else
+    print_with_separator "End of PostgreSQL Restore"
     log_message "ERROR" "Failed to restore database from SQL dump file."
     rm "$TEMP_BACKUP_FILE"
     unset PGPASSWORD
@@ -132,12 +134,14 @@ elif [[ "$COMPRESSED_BACKUP_FILE" == *.dump.gz ]]; then
   if pg_restore -U "$DB_USER" -d "$DB_NAME" "$TEMP_BACKUP_FILE"; then
     log_message "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
   else
+    print_with_separator "End of PostgreSQL Restore"
     log_message "ERROR" "Failed to restore database from custom format dump file."
     rm "$TEMP_BACKUP_FILE"
     unset PGPASSWORD
     exit 1
   fi
 else
+  print_with_separator "End of PostgreSQL Restore"
   log_message "ERROR" "Unsupported backup file format: $COMPRESSED_BACKUP_FILE"
   rm "$TEMP_BACKUP_FILE"
   unset PGPASSWORD
