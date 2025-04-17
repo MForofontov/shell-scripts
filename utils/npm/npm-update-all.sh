@@ -1,74 +1,124 @@
 #!/bin/bash
 # npm-update-all.sh
-# Script to update all NPM packages to the latest version
+# Script to update all NPM packages to the latest version.
+
+# Dynamically determine the directory of the current script
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+
+# Source the logger file
+if [ -f "$LOG_FUNCTION_FILE" ]; then
+  source "$LOG_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  exit 1
+fi
+
+# Source the utility file for print_with_separator
+if [ -f "$UTILITY_FUNCTION_FILE" ]; then
+  source "$UTILITY_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
 
 # Function to display usage instructions
 usage() {
-    echo "Usage: $0 [log_file]"
-    echo "Example: $0 npm_update.log"
-    exit 1
+  print_with_separator "NPM Update All Packages Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script updates all NPM packages to their latest versions."
+  echo
+  echo -e "\033[1;34mUsage:\033[0m"
+  echo "  $0 [--log <log_file>] [--help]"
+  echo
+  echo -e "\033[1;34mOptions:\033[0m"
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Path to save the log messages."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 --log npm_update.log"
+  echo "  $0"
+  print_with_separator
+  exit 1
 }
 
-# Check if a log file is provided as an argument
-LOG_FILE=""
-if [ "$#" -gt 1 ]; then
-    usage
-elif [ "$#" -eq 1 ]; then
-    LOG_FILE="$1"
-fi
+# Default values
+LOG_FILE="/dev/null"
+
+# Parse input arguments
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      ;;
+    --log)
+      if [ -z "$2" ]; then
+        log_message "ERROR" "No log file provided after --log."
+        usage
+      fi
+      LOG_FILE="$2"
+      shift 2
+      ;;
+    *)
+      log_message "ERROR" "Unknown option: $1"
+      usage
+      ;;
+  esac
+done
 
 # Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-        echo "Error: Cannot write to log file $LOG_FILE"
-        exit 1
-    fi
+if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+  if ! touch "$LOG_FILE" 2>/dev/null; then
+    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+    exit 1
+  fi
+  exec > >(tee -a "$LOG_FILE") 2>&1
 fi
 
-# Function to log messages
-log_message() {
-    local MESSAGE=$1
-    if [ -n "$LOG_FILE" ]; then
-        echo "$MESSAGE" | tee -a "$LOG_FILE"
-    else
-        echo "$MESSAGE"
-    fi
-}
+log_message "INFO" "Starting NPM package update process..."
+print_with_separator "NPM Update All Packages"
 
 # Check if npm is installed
 if ! command -v npm &> /dev/null; then
-    log_message "Error: npm is not installed. Please install Node.js and npm first."
-    exit 1
+  log_message "ERROR" "npm is not installed. Please install Node.js and npm first."
+  exit 1
 fi
 
-log_message "Starting NPM package update process..."
-
-# Check outdated packages
-log_message "Checking for outdated packages..."
+# Check for outdated packages
+log_message "INFO" "Checking for outdated packages..."
 if ! npm outdated; then
-    log_message "Error: Failed to check outdated packages."
-    exit 1
+  print_with_separator "End of NPM Update All Packages"
+  log_message "ERROR" "Failed to check outdated packages."
+  exit 1
 fi
 
 # Update all packages
-log_message "Updating all NPM packages..."
+log_message "INFO" "Updating all NPM packages..."
 if ! npm update; then
-    log_message "Error: Failed to update packages."
-    exit 1
+  print_with_separator "End of NPM Update All Packages"
+  log_message "ERROR" "Failed to update packages."
+  exit 1
 fi
 
 # Install updated packages
-log_message "Installing updated packages..."
+log_message "INFO" "Installing updated packages..."
 if ! npm install; then
-    log_message "Error: Failed to install updated packages."
-    exit 1
+  print_with_separator "End of NPM Update All Packages"
+  log_message "ERROR" "Failed to install updated packages."
+  exit 1
 fi
 
 # Run npm audit fix
-log_message "Running npm audit fix..."
+log_message "INFO" "Running npm audit fix..."
 if ! npm audit fix; then
-    log_message "Error: Failed to run npm audit fix."
-    exit 1
+  print_with_separator "End of NPM Update All Packages"
+  log_message "ERROR" "Failed to run npm audit fix."
+  exit 1
 fi
 
-log_message "All NPM packages have been updated to the latest version."
+# Notify user
+print_with_separator "End of NPM Update All Packages"
+log_message "SUCCESS" "All NPM packages have been updated to the latest version."
