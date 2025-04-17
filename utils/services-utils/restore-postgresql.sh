@@ -111,9 +111,9 @@ if [[ "$BACKUP_FILE" == *.sql ]]; then
   if psql -U "$DB_USER" -d "$DB_NAME" -f "$BACKUP_FILE"; then
     log_message "SUCCESS" "Database restored successfully from $BACKUP_FILE."
   else
+    print_with_separator "End of PostgreSQL Restore"
     log_message "ERROR" "Failed to restore database from SQL dump file."
     unset PGPASSWORD
-    print_with_separator "End of PostgreSQL Restore"
     exit 1
   fi
 elif [[ "$BACKUP_FILE" == *.dump ]]; then
@@ -121,15 +121,15 @@ elif [[ "$BACKUP_FILE" == *.dump ]]; then
   if pg_restore -U "$DB_USER" -d "$DB_NAME" "$BACKUP_FILE"; then
     log_message "SUCCESS" "Database restored successfully from $BACKUP_FILE."
   else
+    print_with_separator "End of PostgreSQL Restore"
     log_message "ERROR" "Failed to restore database from custom format dump file."
     unset PGPASSWORD
-    print_with_separator "End of PostgreSQL Restore"
     exit 1
   fi
 else
+  print_with_separator "End of PostgreSQL Restore"
   log_message "ERROR" "Unsupported backup file format: $BACKUP_FILE"
   unset PGPASSWORD
-  print_with_separator "End of PostgreSQL Restore"
   exit 1
 fi
 
