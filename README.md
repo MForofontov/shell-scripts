@@ -53,6 +53,7 @@ This repository contains a variety of shell scripts organized into categories. E
 ---
 
 ## Scripts
+Examples of Scripts.
 
 ### System Scripts
 Scripts for monitoring and managing system resources.
