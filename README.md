@@ -42,12 +42,12 @@ This repository contains a variety of shell scripts organized into categories. E
 
 3. Run a script:
    ```bash
-   ./path/to/script.sh [arguments]
+   shell-scripts script [arguments]
    ```
 
 4. For help with a specific script, use the `--help` flag:
    ```bash
-   ./path/to/script.sh --help
+   shell-scripts script --help
    ```
 
 ---
