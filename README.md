@@ -117,4 +117,4 @@ Contributions are welcome! If you have a script to add or improvements to sugges
 
 ## License
 
-This repository is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License (GPL) - see the [LICENSE](LICENSE) file for details.
