@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/scale-cluster.sh
 # scale-cluster.sh
 # Script to scale Kubernetes clusters by changing the number of nodes
 
@@ -242,7 +241,7 @@ scale_minikube_cluster() {
 # Scale kind cluster (requires delete and recreate)
 scale_kind_cluster() {
   log_message "INFO" "Scaling kind cluster '${CLUSTER_NAME}' to ${NODE_COUNT} nodes..."
-  log_message "WARN" "Kind clusters require recreation to scale. This will cause downtime."
+  log_message "WARNING" "Kind clusters require recreation to scale. This will cause downtime."
   
   # Save cluster configuration and important resources
   log_message "INFO" "Backing up cluster resources before scaling..."
@@ -396,7 +395,7 @@ wait_for_cluster() {
     current_time=$(date +%s)
     if [[ $current_time -ge $end_time ]]; then
       log_message "ERROR" "Timeout waiting for cluster nodes to be ready."
-      log_message "WARN" "The scaling operation may have partially completed."
+      log_message "WARNING" "The scaling operation may have partially completed."
       exit 1
     fi
     

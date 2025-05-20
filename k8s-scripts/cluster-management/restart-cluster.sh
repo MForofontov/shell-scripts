@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/restart-cluster.sh
 # restart-cluster.sh
 # Script to restart Kubernetes clusters across various providers
 
