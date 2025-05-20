@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/create-cluster.sh
 # create-cluster.sh
 # Script to create Kubernetes clusters with various providers
 

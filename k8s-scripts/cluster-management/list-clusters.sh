@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/list-clusters.sh
 # list-clusters.sh
 # Script to list all Kubernetes clusters across various providers
 

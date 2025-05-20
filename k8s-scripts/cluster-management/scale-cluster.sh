@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/scale-cluster.sh
 # scale-cluster.sh
 # Script to scale Kubernetes clusters by changing the number of nodes
 

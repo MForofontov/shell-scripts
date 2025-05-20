@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/switch-context.sh
 # switch-context.sh
 # Script to easily switch between Kubernetes contexts
 
@@ -208,10 +207,10 @@ switch_context() {
     echo -e "\033[1;34mContext Information:\033[0m"
     
     # Show cluster info
-    echo -e "\033[1mCluster:\033[0m $(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$target_context\")].context.cluster}")"
-    echo -e "\033[1mUser:\033[0m $(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$target_context\")].context.user}")"
-    echo -e "\033[1mNamespace:\033[0m $(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$target_context\")].context.namespace}" || echo "default")"
-    
+    echo -e "\033[1mCluster:\033[0m $(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$target_context"'")].context.cluster}')"
+    echo -e "\033[1mUser:\033[0m $(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$target_context"'")].context.user}')"
+    echo -e "\033[1mNamespace:\033[0m $(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$target_context"'")].context.namespace}' || echo "default")"
+
     # Test connection to the cluster
     echo
     echo -e "\033[1;34mConnection Test:\033[0m"

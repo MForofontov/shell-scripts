@@ -1,5 +1,4 @@
-upgrade-cluster.sh#!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/cluster-management/upgrade-cluster.sh
+#!/bin/bash
 # upgrade-cluster.sh
 # Script to upgrade Kubernetes clusters across various providers
 
