@@ -177,7 +177,7 @@ get_cluster_info() {
   
   # Check if the versions are the same
   if [[ "$current_version" == "$K8S_VERSION" ]]; then
-    log_message "WARN" "Cluster is already running Kubernetes version $K8S_VERSION."
+    log_message "WARNING" "Cluster is already running Kubernetes version $K8S_VERSION."
     read -p "Continue anyway? [y/N]: " continue_anyway
     
     case "$continue_anyway" in
@@ -193,8 +193,8 @@ get_cluster_info() {
   
   # Check if we're attempting to downgrade
   if [[ "$(printf '%s\n' "$current_version" "$K8S_VERSION" | sort -V | head -n1)" == "$K8S_VERSION" ]]; then
-    log_message "WARN" "Target version ($K8S_VERSION) is older than current version ($current_version)."
-    log_message "WARN" "Downgrading Kubernetes clusters is not recommended and may cause issues."
+    log_message "WARNING" "Target version ($K8S_VERSION) is older than current version ($current_version)."
+    log_message "WARNING" "Downgrading Kubernetes clusters is not recommended and may cause issues."
     
     if [ "$FORCE" != true ]; then
       read -p "Continue with downgrade anyway? [y/N]: " continue_anyway
@@ -209,7 +209,7 @@ get_cluster_info() {
           ;;
       esac
     else
-      log_message "WARN" "Force flag set. Proceeding with downgrade."
+      log_message "WARNING" "Force flag set. Proceeding with downgrade."
     fi
   fi
   
@@ -220,7 +220,7 @@ get_cluster_info() {
 # Create backup before upgrade
 create_backup() {
   if [ "$BACKUP" != true ]; then
-    log_message "WARN" "Skipping backup as --no-backup flag was provided."
+    log_message "WARNING" "Skipping backup as --no-backup flag was provided."
     return 0
   fi
   
@@ -491,7 +491,7 @@ verify_upgrade() {
   if [[ "$current_version" == "$K8S_VERSION"* ]]; then
     log_message "SUCCESS" "Cluster successfully upgraded to Kubernetes version $current_version"
   else
-    log_message "WARN" "Cluster version after upgrade ($current_version) doesn't match target version ($K8S_VERSION)"
+    log_message "WARNING" "Cluster version after upgrade ($current_version) doesn't match target version ($K8S_VERSION)"
     # This might not be an error, as patch versions can differ
   fi
 }

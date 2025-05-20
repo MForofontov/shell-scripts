@@ -75,7 +75,7 @@ check_requirements() {
   case "$PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "WARN" "minikube not found. Attempting to install..."
+        log_message "WARNING" "minikube not found. Attempting to install..."
         if command_exists brew; then
           brew install minikube
         else
@@ -87,7 +87,7 @@ check_requirements() {
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "WARN" "kind not found. Attempting to install..."
+        log_message "WARNING" "kind not found. Attempting to install..."
         if command_exists brew; then
           brew install kind
         else
@@ -99,7 +99,7 @@ check_requirements() {
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "WARN" "k3d not found. Attempting to install..."
+        log_message "WARNING" "k3d not found. Attempting to install..."
         if command_exists brew; then
           brew install k3d
         else
@@ -112,7 +112,7 @@ check_requirements() {
   esac
 
   if ! command_exists kubectl; then
-    log_message "WARN" "kubectl not found. Attempting to install..."
+    log_message "WARNING" "kubectl not found. Attempting to install..."
     if command_exists brew; then
       brew install kubectl
     else
@@ -171,7 +171,7 @@ create_minikube_cluster() {
     log_message "INFO" "Using custom config file: $CONFIG_FILE"
     # Minikube doesn't directly accept a config file parameter like kind or k3d
     # We could parse the file and extract values if needed
-    log_message "WARN" "Custom config file for minikube is used as a reference only. Some settings may not be applied."
+    log_message "WARNING" "Custom config file for minikube is used as a reference only. Some settings may not be applied."
   fi
   
   log_message "INFO" "Running: minikube $MINIKUBE_ARGS"

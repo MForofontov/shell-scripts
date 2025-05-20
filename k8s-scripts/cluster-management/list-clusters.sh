@@ -73,21 +73,21 @@ check_requirements() {
   # Only check for providers that were requested
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "minikube" ]]; then
     if ! command_exists minikube; then
-      log_message "WARN" "minikube not found. Minikube clusters will not be listed."
+      log_message "WARNING" "minikube not found. Minikube clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "kind" ]]; then
     if ! command_exists kind; then
-      log_message "WARN" "kind not found. Kind clusters will not be listed."
+      log_message "WARNING" "kind not found. Kind clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "k3d" ]]; then
     if ! command_exists k3d; then
-      log_message "WARN" "k3d not found. K3d clusters will not be listed."
+      log_message "WARNING" "k3d not found. K3d clusters will not be listed."
       all_tools_available=false
     fi
   fi
@@ -108,7 +108,7 @@ check_requirements() {
   if $all_tools_available; then
     log_message "SUCCESS" "All required tools are available."
   else
-    log_message "WARN" "Some provider tools are missing. Only available providers will be listed."
+    log_message "WARNING" "Some provider tools are missing. Only available providers will be listed."
   fi
 }
 
@@ -123,7 +123,7 @@ get_minikube_clusters() {
   # Get clusters as JSON
   local minikube_clusters=""
   if ! minikube_clusters=$(minikube profile list -o json 2>/dev/null); then
-    log_message "WARN" "Failed to get minikube profiles."
+    log_message "WARNING" "Failed to get minikube profiles."
     return
   fi
   
@@ -199,7 +199,7 @@ get_kind_clusters() {
   # Get clusters
   local kind_clusters=""
   if ! kind_clusters=$(kind get clusters 2>/dev/null); then
-    log_message "WARN" "Failed to get kind clusters."
+    log_message "WARNING" "Failed to get kind clusters."
     return
   fi
   
@@ -219,7 +219,7 @@ get_kind_clusters() {
     # Get nodes to determine status and count
     local nodes=""
     if ! nodes=$(kind get nodes --name "$name" 2>/dev/null); then
-      log_message "WARN" "Failed to get nodes for kind cluster $name."
+      log_message "WARNING" "Failed to get nodes for kind cluster $name."
       continue
     fi
     
@@ -276,7 +276,7 @@ get_k3d_clusters() {
   # Get clusters as JSON
   local k3d_clusters=""
   if ! k3d_clusters=$(k3d cluster list -o json 2>/dev/null); then
-    log_message "WARN" "Failed to get k3d clusters."
+    log_message "WARNING" "Failed to get k3d clusters."
     return
   fi
   
@@ -394,7 +394,7 @@ EOF
       
       details_obj+="}"
       clusters_json+=", \"details\": $details_obj"
-    }
+    fi
     
     clusters_json+="}"
   done
