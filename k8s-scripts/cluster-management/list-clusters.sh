@@ -42,12 +42,12 @@ usage() {
   echo "  $0 <options>"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-p, --provider\033[0m PROVIDER  Provider to list (minikube, kind, k3d, all) (default: ${PROVIDER})"
-  echo -e "  \033[1;33m-f, --format\033[0m FORMAT      Output format (table, json, yaml) (default: ${FORMAT})"
-  echo -e "  \033[1;33m-d, --details\033[0m            Show detailed information"
-  echo -e "  \033[1;33m--filter\033[0m PATTERN         Filter clusters by name pattern"
-  echo -e "  \033[1;33m--log\033[0m FILE               Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                   Display this help message"
+  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to list (minikube, kind, k3d, all) (default: ${PROVIDER})"
+  echo -e "  \033[1;33m-f, --format <FORMAT>\033[0m      (Optional) Output format (table, json, yaml) (default: ${FORMAT})"
+  echo -e "  \033[1;33m-d, --details\033[0m              (Optional) Show detailed information"
+  echo -e "  \033[1;33m--filter <PATTERN>\033[0m         (Optional) Filter clusters by name pattern"
+  echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                     (Optional) Display this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0"
