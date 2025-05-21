@@ -41,11 +41,11 @@ usage() {
   echo "  $0 <options>"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-n, --name\033[0m NAME          Cluster name to delete (required)"
-  echo -e "  \033[1;33m-p, --provider\033[0m PROVIDER  Provider to use (minikube, kind, k3d) (default: ${PROVIDER})"
-  echo -e "  \033[1;33m-f, --force\033[0m              Force deletion without confirmation"
-  echo -e "  \033[1;33m--log\033[0m FILE               Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                   Display this help message"
+  echo -e "  \033[1;36m-n, --name <NAME>\033[0m          (Required) Cluster name to delete"
+  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to use (minikube, kind, k3d) (default: ${PROVIDER})"
+  echo -e "  \033[1;33m-f, --force\033[0m                (Optional) Force deletion without confirmation"
+  echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                     (Optional) Display this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --name my-cluster"
