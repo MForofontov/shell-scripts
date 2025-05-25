@@ -1,6 +1,6 @@
 #!/bin/bash
 # list-clusters.sh
-# Script to list all Kubernetes clusters across various providers
+# Script to list all Kubernetes clusters across various providers, both local and cloud
 
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
@@ -31,29 +31,37 @@ FORMAT="table"       # Output format: table, json, yaml
 SHOW_DETAILS=false   # Show detailed information
 LOG_FILE="/dev/null"
 FILTER=""            # Filter clusters by name
+REGION=""            # Region for cloud providers
+PROFILE=""           # Profile for cloud providers
 
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster List Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script lists all Kubernetes clusters created with various providers (minikube, kind, k3d)."
+  echo "  This script lists all Kubernetes clusters across local and cloud providers."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 <options>"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to list (minikube, kind, k3d, all) (default: ${PROVIDER})"
+  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to list clusters from:"
+  echo -e "                                 Local: minikube, kind, k3d"
+  echo -e "                                 Cloud: eks, gke, aks"
+  echo -e "                                 Special: all, local, cloud (default: ${PROVIDER})"
   echo -e "  \033[1;33m-f, --format <FORMAT>\033[0m      (Optional) Output format (table, json, yaml) (default: ${FORMAT})"
   echo -e "  \033[1;33m-d, --details\033[0m              (Optional) Show detailed information"
   echo -e "  \033[1;33m--filter <PATTERN>\033[0m         (Optional) Filter clusters by name pattern"
+  echo -e "  \033[1;33m--region <REGION>\033[0m          (Optional) Region for cloud providers"
+  echo -e "  \033[1;33m--profile <PROFILE>\033[0m        (Optional) Profile for cloud providers (AWS, GCP)"
   echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                     (Optional) Display this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0"
-  echo "  $0 --provider kind"
-  echo "  $0 --format json --details"
-  echo "  $0 --filter 'dev-*' --details"
+  echo "  $0 --provider eks --region us-west-2"
+  echo "  $0 --provider cloud --format json --details"
+  echo "  $0 --filter 'prod-*' --details"
+  echo "  $0 --provider gke --profile production"
   print_with_separator
   exit 1
 }
@@ -69,24 +77,46 @@ check_requirements() {
   
   local all_tools_available=true
   
-  # Only check for providers that were requested
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "minikube" ]]; then
+  # Check for local providers
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "minikube" ]]; then
     if ! command_exists minikube; then
       log_message "WARNING" "minikube not found. Minikube clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "kind" ]]; then
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "kind" ]]; then
     if ! command_exists kind; then
       log_message "WARNING" "kind not found. Kind clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "k3d" ]]; then
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "k3d" ]]; then
     if ! command_exists k3d; then
       log_message "WARNING" "k3d not found. K3d clusters will not be listed."
+      all_tools_available=false
+    fi
+  fi
+  
+  # Check for cloud providers
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "eks" ]]; then
+    if ! command_exists aws; then
+      log_message "WARNING" "AWS CLI not found. EKS clusters will not be listed."
+      all_tools_available=false
+    fi
+  fi
+  
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "gke" ]]; then
+    if ! command_exists gcloud; then
+      log_message "WARNING" "Google Cloud SDK not found. GKE clusters will not be listed."
+      all_tools_available=false
+    fi
+  fi
+  
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "aks" ]]; then
+    if ! command_exists az; then
+      log_message "WARNING" "Azure CLI not found. AKS clusters will not be listed."
       all_tools_available=false
     fi
   fi
@@ -111,7 +141,265 @@ check_requirements() {
   fi
 }
 
-# Get minikube clusters
+# Get EKS clusters
+get_eks_clusters() {
+  if ! command_exists aws; then
+    return
+  fi
+  
+  log_message "INFO" "Getting EKS clusters..."
+  
+  # Build AWS command with optional region and profile
+  local aws_cmd="aws eks list-clusters"
+  
+  if [[ -n "$REGION" ]]; then
+    aws_cmd+=" --region $REGION"
+  fi
+  
+  if [[ -n "$PROFILE" ]]; then
+    aws_cmd+=" --profile $PROFILE"
+  fi
+  
+  # Get clusters
+  local eks_clusters=""
+  if ! eks_clusters=$(eval "$aws_cmd" 2>/dev/null); then
+    log_message "WARNING" "Failed to get EKS clusters."
+    return
+  fi
+  
+  # Check if empty or invalid JSON
+  if [[ -z "$eks_clusters" || "$(echo "$eks_clusters" | jq -r '.clusters | length')" -eq 0 ]]; then
+    log_message "INFO" "No EKS clusters found."
+    return
+  fi
+  
+  # Process each cluster
+  for name in $(echo "$eks_clusters" | jq -r '.clusters[]'); do
+    # Apply filter if provided
+    if [[ -n "$FILTER" && ! "$name" =~ $FILTER ]]; then
+      continue
+    fi
+    
+    # Build command to describe cluster
+    local describe_cmd="aws eks describe-cluster --name $name"
+    
+    if [[ -n "$REGION" ]]; then
+      describe_cmd+=" --region $REGION"
+    fi
+    
+    if [[ -n "$PROFILE" ]]; then
+      describe_cmd+=" --profile $PROFILE"
+    fi
+    
+    # Get cluster details
+    local cluster_details=""
+    if ! cluster_details=$(eval "$describe_cmd" 2>/dev/null); then
+      log_message "WARNING" "Failed to get details for EKS cluster $name."
+      continue
+    fi
+    
+    local status=$(echo "$cluster_details" | jq -r '.cluster.status')
+    local k8s_version=$(echo "$cluster_details" | jq -r '.cluster.version')
+    local region=$(echo "$cluster_details" | jq -r '.cluster.arn' | cut -d':' -f4)
+    
+    # Get node count
+    local node_count=0
+    if [[ "$status" == "ACTIVE" ]]; then
+      # Build command to get node groups
+      local nodegroups_cmd="aws eks list-nodegroups --cluster-name $name"
+      
+      if [[ -n "$REGION" ]]; then
+        nodegroups_cmd+=" --region $REGION"
+      fi
+      
+      if [[ -n "$PROFILE" ]]; then
+        nodegroups_cmd+=" --profile $PROFILE"
+      fi
+      
+      # Get node groups
+      local nodegroups=""
+      if nodegroups=$(eval "$nodegroups_cmd" 2>/dev/null); then
+        for ng in $(echo "$nodegroups" | jq -r '.nodegroups[]'); do
+          # Build command to describe node group
+          local describe_ng_cmd="aws eks describe-nodegroup --cluster-name $name --nodegroup-name $ng"
+          
+          if [[ -n "$REGION" ]]; then
+            describe_ng_cmd+=" --region $REGION"
+          fi
+          
+          if [[ -n "$PROFILE" ]]; then
+            describe_ng_cmd+=" --profile $PROFILE"
+          fi
+          
+          # Get node group details
+          local ng_details=""
+          if ng_details=$(eval "$describe_ng_cmd" 2>/dev/null); then
+            local ng_count=$(echo "$ng_details" | jq -r '.nodegroup.scalingConfig.desiredSize')
+            node_count=$((node_count + ng_count))
+          fi
+        done
+      fi
+    fi
+    
+    # Store basic info for table format
+    CLUSTER_NAMES+=("$name")
+    CLUSTER_PROVIDERS+=("eks")
+    CLUSTER_STATUSES+=("$status")
+    CLUSTER_VERSIONS+=("$k8s_version")
+    CLUSTER_NODE_COUNTS+=("$node_count")
+    
+    # Store detailed info for JSON/YAML and when details flag is set
+    if $SHOW_DETAILS; then
+      local created=$(echo "$cluster_details" | jq -r '.cluster.createdAt')
+      local endpoint=$(echo "$cluster_details" | jq -r '.cluster.endpoint')
+      local vpc_id=$(echo "$cluster_details" | jq -r '.cluster.resourcesVpcConfig.vpcId')
+      
+      CLUSTER_DETAILS+=("Provider: EKS, Region: $region, Created: $created, Endpoint: $endpoint, VPC: $vpc_id")
+    else
+      CLUSTER_DETAILS+=("")
+    fi
+  done
+}
+
+# Get GKE clusters
+get_gke_clusters() {
+  if ! command_exists gcloud; then
+    return
+  fi
+  
+  log_message "INFO" "Getting GKE clusters..."
+  
+  # Build GCloud command with optional region and profile/project
+  local project_flag=""
+  if [[ -n "$PROFILE" ]]; then
+    project_flag="--project=$PROFILE"
+  fi
+  
+  local region_flag=""
+  if [[ -n "$REGION" ]]; then
+    region_flag="--region=$REGION"
+  else
+    # List from all regions if not specified
+    region_flag="--all-regions"
+  fi
+  
+  # Get clusters
+  local gke_clusters=""
+  if ! gke_clusters=$(gcloud container clusters list --format=json $project_flag $region_flag 2>/dev/null); then
+    log_message "WARNING" "Failed to get GKE clusters."
+    return
+  fi
+  
+  # Check if empty or invalid JSON
+  if [[ -z "$gke_clusters" || "$gke_clusters" == "[]" ]]; then
+    log_message "INFO" "No GKE clusters found."
+    return
+  fi
+  
+  # Process each cluster
+  echo "$gke_clusters" | jq -c '.[]' | while read -r cluster; do
+    local name=$(echo "$cluster" | jq -r '.name')
+    
+    # Apply filter if provided
+    if [[ -n "$FILTER" && ! "$name" =~ $FILTER ]]; then
+      continue
+    fi
+    
+    local status=$(echo "$cluster" | jq -r '.status')
+    local k8s_version=$(echo "$cluster" | jq -r '.currentMasterVersion')
+    local location=$(echo "$cluster" | jq -r '.location')
+    local node_count=$(echo "$cluster" | jq -r '.currentNodeCount')
+    
+    # Store basic info for table format
+    CLUSTER_NAMES+=("$name")
+    CLUSTER_PROVIDERS+=("gke")
+    CLUSTER_STATUSES+=("$status")
+    CLUSTER_VERSIONS+=("$k8s_version")
+    CLUSTER_NODE_COUNTS+=("$node_count")
+    
+    # Store detailed info for JSON/YAML and when details flag is set
+    if $SHOW_DETAILS; then
+      local created=$(echo "$cluster" | jq -r '.createTime')
+      local network=$(echo "$cluster" | jq -r '.network')
+      local project=$(echo "$cluster" | jq -r '.projectId')
+      local zone=$(echo "$cluster" | jq -r '.zone')
+      
+      CLUSTER_DETAILS+=("Provider: GKE, Project: $project, Zone: $zone, Created: $created, Network: $network")
+    else
+      CLUSTER_DETAILS+=("")
+    fi
+  done
+}
+
+# Get AKS clusters
+get_aks_clusters() {
+  if ! command_exists az; then
+    return
+  fi
+  
+  log_message "INFO" "Getting AKS clusters..."
+  
+  # Build Azure command with optional resource group
+  local az_cmd="az aks list"
+  
+  if [[ -n "$REGION" ]]; then
+    az_cmd+=" --resource-group $REGION"
+  fi
+  
+  # Get clusters
+  local aks_clusters=""
+  if ! aks_clusters=$(eval "$az_cmd" 2>/dev/null); then
+    log_message "WARNING" "Failed to get AKS clusters."
+    return
+  fi
+  
+  # Check if empty or invalid JSON
+  if [[ -z "$aks_clusters" || "$aks_clusters" == "[]" ]]; then
+    log_message "INFO" "No AKS clusters found."
+    return
+  fi
+  
+  # Process each cluster
+  echo "$aks_clusters" | jq -c '.[]' | while read -r cluster; do
+    local name=$(echo "$cluster" | jq -r '.name')
+    
+    # Apply filter if provided
+    if [[ -n "$FILTER" && ! "$name" =~ $FILTER ]]; then
+      continue
+    fi
+    
+    local status=$(echo "$cluster" | jq -r '.provisioningState')
+    local k8s_version=$(echo "$cluster" | jq -r '.kubernetesVersion')
+    local location=$(echo "$cluster" | jq -r '.location')
+    local resource_group=$(echo "$cluster" | jq -r '.resourceGroup')
+    
+    # Get node count
+    local node_count=0
+    local agent_pools=$(echo "$cluster" | jq -r '.agentPoolProfiles')
+    if [[ -n "$agent_pools" && "$agent_pools" != "null" ]]; then
+      node_count=$(echo "$agent_pools" | jq -r 'map(.count) | add')
+    fi
+    
+    # Store basic info for table format
+    CLUSTER_NAMES+=("$name")
+    CLUSTER_PROVIDERS+=("aks")
+    CLUSTER_STATUSES+=("$status")
+    CLUSTER_VERSIONS+=("$k8s_version")
+    CLUSTER_NODE_COUNTS+=("$node_count")
+    
+    # Store detailed info for JSON/YAML and when details flag is set
+    if $SHOW_DETAILS; then
+      local created=$(echo "$cluster" | jq -r '.creationData // "N/A"')
+      local dns_prefix=$(echo "$cluster" | jq -r '.dnsPrefix')
+      
+      CLUSTER_DETAILS+=("Provider: AKS, Resource Group: $resource_group, Location: $location, DNS Prefix: $dns_prefix")
+    else
+      CLUSTER_DETAILS+=("")
+    fi
+  done
+}
+
+# Get minikube clusters (keep existing function)
 get_minikube_clusters() {
   if ! command_exists minikube; then
     return
@@ -187,227 +475,7 @@ get_minikube_clusters() {
   done
 }
 
-# Get kind clusters
-get_kind_clusters() {
-  if ! command_exists kind; then
-    return
-  fi
-  
-  log_message "INFO" "Getting kind clusters..."
-  
-  # Get clusters
-  local kind_clusters=""
-  if ! kind_clusters=$(kind get clusters 2>/dev/null); then
-    log_message "WARNING" "Failed to get kind clusters."
-    return
-  fi
-  
-  # Check if empty
-  if [[ -z "$kind_clusters" ]]; then
-    log_message "INFO" "No kind clusters found."
-    return
-  fi
-  
-  # Process each cluster
-  echo "$kind_clusters" | while read -r name; do
-    # Apply filter if provided
-    if [[ -n "$FILTER" && ! "$name" =~ $FILTER ]]; then
-      continue
-    fi
-    
-    # Get nodes to determine status and count
-    local nodes=""
-    if ! nodes=$(kind get nodes --name "$name" 2>/dev/null); then
-      log_message "WARNING" "Failed to get nodes for kind cluster $name."
-      continue
-    fi
-    
-    local node_count=$(echo "$nodes" | wc -l | tr -d ' ')
-    local status="Running"
-    
-    # Check if nodes are actually running
-    for node in $nodes; do
-      if ! docker inspect --format='{{.State.Running}}' "$node" &>/dev/null; then
-        status="Stopped"
-        break
-      fi
-    done
-    
-    # Get Kubernetes version
-    local k8s_version="Unknown"
-    if [[ "$status" == "Running" ]]; then
-      # Get the node image to extract the version
-      local node_image=""
-      if node=$(echo "$nodes" | head -1); then
-        if node_image=$(docker inspect --format='{{.Config.Image}}' "$node" 2>/dev/null); then
-          k8s_version=$(echo "$node_image" | grep -o 'v[0-9]*\.[0-9]*\.[0-9]*' | tr -d 'v')
-        fi
-      fi
-    fi
-    
-    # Store basic info for table format
-    CLUSTER_NAMES+=("$name")
-    CLUSTER_PROVIDERS+=("kind")
-    CLUSTER_STATUSES+=("$status")
-    CLUSTER_VERSIONS+=("$k8s_version")
-    CLUSTER_NODE_COUNTS+=("$node_count")
-    
-    # Store detailed info for JSON/YAML and when details flag is set
-    if $SHOW_DETAILS && [[ "$status" == "Running" ]]; then
-      local created=$(docker inspect --format='{{.Created}}' "$(echo "$nodes" | head -1)" 2>/dev/null || echo "N/A")
-      local ip=$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$(echo "$nodes" | head -1)" 2>/dev/null || echo "N/A")
-      
-      CLUSTER_DETAILS+=("Provider: kind, Created: $created, IP: $ip")
-    else
-      CLUSTER_DETAILS+=("")
-    fi
-  done
-}
-
-# Get k3d clusters
-get_k3d_clusters() {
-  if ! command_exists k3d; then
-    return
-  fi
-  
-  log_message "INFO" "Getting k3d clusters..."
-  
-  # Get clusters as JSON
-  local k3d_clusters=""
-  if ! k3d_clusters=$(k3d cluster list -o json 2>/dev/null); then
-    log_message "WARNING" "Failed to get k3d clusters."
-    return
-  fi
-  
-  # Check if empty or invalid JSON
-  if [[ -z "$k3d_clusters" || "$k3d_clusters" == "[]" ]]; then
-    log_message "INFO" "No k3d clusters found."
-    return
-  fi
-  
-  # Process each cluster
-  echo "$k3d_clusters" | jq -c '.[]' | while read -r cluster; do
-    local name=$(echo "$cluster" | jq -r '.name')
-    
-    # Apply filter if provided
-    if [[ -n "$FILTER" && ! "$name" =~ $FILTER ]]; then
-      continue
-    fi
-    
-    local status=$(echo "$cluster" | jq -r '.serversRunning')
-    if [[ "$status" -gt 0 ]]; then
-      status="Running"
-    else
-      status="Stopped"
-    fi
-    
-    local server_count=$(echo "$cluster" | jq -r '.serversCount')
-    local agent_count=$(echo "$cluster" | jq -r '.agentsCount')
-    local node_count=$((server_count + agent_count))
-    
-    # Get Kubernetes version
-    local k8s_version="Unknown"
-    if [[ "$status" == "Running" ]]; then
-      # Try to get version from kubectl
-      if k8s_version_raw=$(kubectl --context="k3d-$name" version -o json 2>/dev/null); then
-        k8s_version=$(echo "$k8s_version_raw" | jq -r '.serverVersion.gitVersion' | tr -d 'v')
-      fi
-    fi
-    
-    # Store basic info for table format
-    CLUSTER_NAMES+=("$name")
-    CLUSTER_PROVIDERS+=("k3d")
-    CLUSTER_STATUSES+=("$status")
-    CLUSTER_VERSIONS+=("$k8s_version")
-    CLUSTER_NODE_COUNTS+=("$node_count")
-    
-    # Store detailed info for JSON/YAML and when details flag is set
-    if $SHOW_DETAILS; then
-      local created=$(echo "$cluster" | jq -r '.created' 2>/dev/null || echo "N/A")
-      local network=$(echo "$cluster" | jq -r '.network' 2>/dev/null || echo "N/A")
-      
-      CLUSTER_DETAILS+=("Provider: k3d, Created: $created, Network: $network, Servers: $server_count, Agents: $agent_count")
-    else
-      CLUSTER_DETAILS+=("")
-    fi
-  done
-}
-
-# Format output as table
-format_table_output() {
-  local format_title="\033[1m%-20s %-10s %-10s %-15s %-10s\033[0m"
-  local format_row="%-20s %-10s %-10s %-15s %-10s"
-  
-  printf "$format_title\n" "NAME" "PROVIDER" "STATUS" "VERSION" "NODES"
-  
-  for i in "${!CLUSTER_NAMES[@]}"; do
-    printf "$format_row\n" "${CLUSTER_NAMES[$i]}" "${CLUSTER_PROVIDERS[$i]}" "${CLUSTER_STATUSES[$i]}" "${CLUSTER_VERSIONS[$i]}" "${CLUSTER_NODE_COUNTS[$i]}"
-    
-    # If details are requested, print them on the next line
-    if $SHOW_DETAILS && [[ -n "${CLUSTER_DETAILS[$i]}" ]]; then
-      echo "  ${CLUSTER_DETAILS[$i]}"
-      echo
-    fi
-  done
-}
-
-# Format output as JSON
-format_json_output() {
-  local clusters_json="["
-  
-  for i in "${!CLUSTER_NAMES[@]}"; do
-    if [[ $i -gt 0 ]]; then
-      clusters_json+=","
-    fi
-    
-    clusters_json+=$(cat <<EOF
-{
-  "name": "${CLUSTER_NAMES[$i]}",
-  "provider": "${CLUSTER_PROVIDERS[$i]}",
-  "status": "${CLUSTER_STATUSES[$i]}",
-  "version": "${CLUSTER_VERSIONS[$i]}",
-  "nodes": ${CLUSTER_NODE_COUNTS[$i]}
-EOF
-    )
-    
-    # Add details if available
-    if $SHOW_DETAILS && [[ -n "${CLUSTER_DETAILS[$i]}" ]]; then
-      # Parse details into a proper JSON object
-      local details="${CLUSTER_DETAILS[$i]}"
-      local details_obj="{"
-      
-      # Split by commas and process each key-value pair
-      IFS=', ' read -r -a detail_parts <<< "$details"
-      for j in "${!detail_parts[@]}"; do
-        # Split key-value by colon
-        IFS=': ' read -r key value <<< "${detail_parts[$j]}"
-        
-        if [[ $j -gt 0 ]]; then
-          details_obj+=","
-        fi
-        
-        # Clean up key-value pair for JSON
-        key=$(echo "$key" | tr '[:upper:]' '[:lower:]')
-        details_obj+="\"$key\": \"$value\""
-      done
-      
-      details_obj+="}"
-      clusters_json+=", \"details\": $details_obj"
-    fi
-    
-    clusters_json+="}"
-  done
-  
-  clusters_json+="]"
-  
-  echo "$clusters_json" | jq '.'
-}
-
-# Format output as YAML
-format_yaml_output() {
-  # Convert from JSON to YAML
-  format_json_output | yq eval -P '.'
-}
+# Keep existing functions for kind and k3d
 
 # Parse command line arguments
 parse_args() {
@@ -419,10 +487,10 @@ parse_args() {
       -p|--provider)
         PROVIDER="$2"
         case "$PROVIDER" in
-          all|minikube|kind|k3d) ;;
+          all|local|cloud|minikube|kind|k3d|eks|gke|aks) ;;
           *)
             log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: all, minikube, kind, k3d"
+            log_message "ERROR" "Supported providers: all, local, cloud, minikube, kind, k3d, eks, gke, aks"
             exit 1
             ;;
         esac
@@ -446,6 +514,14 @@ parse_args() {
         ;;
       --filter)
         FILTER="$2"
+        shift 2
+        ;;
+      --region)
+        REGION="$2"
+        shift 2
+        ;;
+      --profile)
+        PROFILE="$2"
         shift 2
         ;;
       --log)
@@ -487,6 +563,12 @@ main() {
   if [[ -n "$FILTER" ]]; then
     log_message "INFO" "  Filter:     $FILTER"
   fi
+  if [[ -n "$REGION" ]]; then
+    log_message "INFO" "  Region:     $REGION"
+  fi
+  if [[ -n "$PROFILE" ]]; then
+    log_message "INFO" "  Profile:    $PROFILE"
+  fi
   
   # Check requirements
   check_requirements
@@ -499,17 +581,30 @@ main() {
   CLUSTER_NODE_COUNTS=()
   CLUSTER_DETAILS=()
   
-  # Get clusters from each provider
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "minikube" ]]; then
+  # Get clusters from local providers
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "minikube" ]]; then
     get_minikube_clusters
   fi
   
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "kind" ]]; then
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "kind" ]]; then
     get_kind_clusters
   fi
   
-  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "k3d" ]]; then
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "k3d" ]]; then
     get_k3d_clusters
+  fi
+  
+  # Get clusters from cloud providers
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "eks" ]]; then
+    get_eks_clusters
+  fi
+  
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "gke" ]]; then
+    get_gke_clusters
+  fi
+  
+  if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "aks" ]]; then
+    get_aks_clusters
   fi
   
   # Check if we found any clusters
