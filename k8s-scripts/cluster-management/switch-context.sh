@@ -35,7 +35,7 @@ SHOW_ALL=false
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Context Switching Tool"
+  print_with_separator "Kubernetes Context Switching Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script makes it easy to switch between different Kubernetes contexts."
   echo
@@ -314,10 +314,10 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Context Switcher"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Context Switcher Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

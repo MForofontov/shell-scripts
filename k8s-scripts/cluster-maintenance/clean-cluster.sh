@@ -47,7 +47,7 @@ VERBOSE=false
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Cluster Cleaning Tool"
+  print_with_separator "Kubernetes Cluster Cleaning Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script resets a Kubernetes cluster to a clean state by removing non-system workloads,"
   echo "  cleaning persistent volumes, and resetting custom configurations."
@@ -643,10 +643,10 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Cluster Cleaning"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Cluster Cleaning Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

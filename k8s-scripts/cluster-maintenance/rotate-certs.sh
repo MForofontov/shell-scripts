@@ -55,7 +55,7 @@ PROVIDER_COMMANDS=(
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Certificate Rotation Tool"
+  print_with_separator "Kubernetes Certificate Rotation Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script checks and rotates Kubernetes cluster certificates before expiration."
   echo
@@ -866,10 +866,10 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Certificate Rotation"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Certificate Rotation Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

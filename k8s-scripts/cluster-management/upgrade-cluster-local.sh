@@ -600,10 +600,10 @@ display_cluster_info() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Cluster Upgrade"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Cluster Upgrade Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

@@ -275,8 +275,10 @@ apply_manifests() {
 }
 
 main() {
-  print_with_separator "Create and Apply Kubernetes Cluster"
+  # Parse command line arguments
   parse_args "$@"
+
+  print_with_separator "Create and Apply Kubernetes Cluster Script"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

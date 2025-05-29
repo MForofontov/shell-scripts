@@ -41,7 +41,7 @@ INTERACTIVE=false
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Kubeconfig Export Tool"
+  print_with_separator "Kubernetes Kubeconfig Export Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script exports kubeconfig files from Kubernetes clusters for sharing."
   echo
@@ -423,11 +423,11 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Kubeconfig Export"
-  
   # Parse arguments
   parse_args "$@"
   
+  print_with_separator "Kubernetes Kubeconfig Export Script"
+
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then

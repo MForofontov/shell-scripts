@@ -377,10 +377,10 @@ display_cluster_info() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Cluster Restart"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Cluster Restart"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

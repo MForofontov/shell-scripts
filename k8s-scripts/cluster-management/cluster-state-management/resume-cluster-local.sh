@@ -546,11 +546,11 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Cluster Resume"
-  
   # Parse arguments
   parse_args "$@"
   
+  print_with_separator "Kubernetes Cluster Resume Script"
+
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
