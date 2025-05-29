@@ -159,14 +159,28 @@ apply_manifests() {
   local ns_dir="$MANIFEST_ROOT/namespace"
   local cm_dir="$MANIFEST_ROOT/configmaps"
   local secret_dir="$MANIFEST_ROOT/secrets"
-  local pvc_dir="$MANIFEST_ROOT/persistent-volume-claims"
+  local pvc_dir="$MANIFEST_ROOT/persistentvolumeclaims"
   local svc_dir="$MANIFEST_ROOT/services"
   local deploy_dir="$MANIFEST_ROOT/deployments"
   local sts_dir="$MANIFEST_ROOT/statefulsets"
   local ingress_dir="$MANIFEST_ROOT/ingress"
+  local daemonset_dir="$MANIFEST_ROOT/daemonsets"
+  local job_dir="$MANIFEST_ROOT/jobs"
+  local cronjob_dir="$MANIFEST_ROOT/cronjobs"
+  local netpol_dir="$MANIFEST_ROOT/networkpolicies"
+  local sa_dir="$MANIFEST_ROOT/serviceaccounts"
+  local role_dir="$MANIFEST_ROOT/roles"
+  local rolebinding_dir="$MANIFEST_ROOT/rolebindings"
+  local clusterrole_dir="$MANIFEST_ROOT/clusterroles"
+  local clusterrolebinding_dir="$MANIFEST_ROOT/clusterrolebindings"
+  local quota_dir="$MANIFEST_ROOT/resourcequotas"
+  local limitrange_dir="$MANIFEST_ROOT/limitranges"
+  local hpa_dir="$MANIFEST_ROOT/horizontalpodautoscalers"
+  local pdb_dir="$MANIFEST_ROOT/poddisruptionbudgets"
+  local crd_dir="$MANIFEST_ROOT/customresourcedefinitions"
 
   if [ -d "$ns_dir" ]; then
-    log_message "INFO" "Applying namespaces..."
+    log_message "INFO" "Applying Namespaces..."
     kubectl apply -f "$ns_dir"
   fi
   if [ -d "$cm_dir" ]; then
@@ -196,6 +210,62 @@ apply_manifests() {
   if [ -d "$ingress_dir" ]; then
     log_message "INFO" "Applying Ingress..."
     kubectl apply -f "$ingress_dir"
+  fi
+  if [ -d "$daemonset_dir" ]; then
+    log_message "INFO" "Applying DaemonSets..."
+    kubectl apply -f "$daemonset_dir"
+  fi
+  if [ -d "$job_dir" ]; then
+    log_message "INFO" "Applying Jobs..."
+    kubectl apply -f "$job_dir"
+  fi
+  if [ -d "$cronjob_dir" ]; then
+    log_message "INFO" "Applying CronJobs..."
+    kubectl apply -f "$cronjob_dir"
+  fi
+  if [ -d "$netpol_dir" ]; then
+    log_message "INFO" "Applying NetworkPolicies..."
+    kubectl apply -f "$netpol_dir"
+  fi
+  if [ -d "$sa_dir" ]; then
+    log_message "INFO" "Applying ServiceAccounts..."
+    kubectl apply -f "$sa_dir"
+  fi
+  if [ -d "$role_dir" ]; then
+    log_message "INFO" "Applying Roles..."
+    kubectl apply -f "$role_dir"
+  fi
+  if [ -d "$rolebinding_dir" ]; then
+    log_message "INFO" "Applying RoleBindings..."
+    kubectl apply -f "$rolebinding_dir"
+  fi
+  if [ -d "$clusterrole_dir" ]; then
+    log_message "INFO" "Applying ClusterRoles..."
+    kubectl apply -f "$clusterrole_dir"
+  fi
+  if [ -d "$clusterrolebinding_dir" ]; then
+    log_message "INFO" "Applying ClusterRoleBindings..."
+    kubectl apply -f "$clusterrolebinding_dir"
+  fi
+  if [ -d "$quota_dir" ]; then
+    log_message "INFO" "Applying ResourceQuotas..."
+    kubectl apply -f "$quota_dir"
+  fi
+  if [ -d "$limitrange_dir" ]; then
+    log_message "INFO" "Applying LimitRanges..."
+    kubectl apply -f "$limitrange_dir"
+  fi
+  if [ -d "$hpa_dir" ]; then
+    log_message "INFO" "Applying HorizontalPodAutoscalers..."
+    kubectl apply -f "$hpa_dir"
+  fi
+  if [ -d "$pdb_dir" ]; then
+    log_message "INFO" "Applying PodDisruptionBudgets..."
+    kubectl apply -f "$pdb_dir"
+  fi
+  if [ -d "$crd_dir" ]; then
+    log_message "INFO" "Applying CustomResourceDefinitions..."
+    kubectl apply -f "$crd_dir"
   fi
 
   wait_for_resources_ready
