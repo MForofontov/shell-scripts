@@ -27,7 +27,7 @@ IMAGE_LIST="images.txt"
 LOG_FILE="/dev/null"
 
 usage() {
-  print_with_separator "Push Images to Minikube Registry Script"
+  print_with_separator "Load Images into Minikube Script"
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 -n <minikube-profile> -f <images.txt>"
   echo
@@ -65,41 +65,18 @@ if [[ ! -f "$IMAGE_LIST" ]]; then
   exit 1
 fi
 
-log_message "INFO" "Enabling minikube registry addon for profile: $PROFILE"
-minikube -p "$PROFILE" addons enable registry
-
-# Patch registry service to NodePort if not already
-log_message "INFO" "Ensuring registry service is NodePort..."
-svc_type=$(kubectl -n kube-system get svc registry -o jsonpath='{.spec.type}' 2>/dev/null || echo "")
-if [[ "$svc_type" != "NodePort" ]]; then
-  kubectl -n kube-system patch svc registry -p '{"spec": {"type": "NodePort"}}'
-  log_message "INFO" "Patched registry service to NodePort."
-fi
-
-# Wait for registry service and nodePort to be ready
-log_message "INFO" "Waiting for registry service and port to be ready..."
-while true; do
-  REGISTRY_PORT=$(kubectl -n kube-system get svc registry -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
-  if [[ -n "$REGISTRY_PORT" && "$REGISTRY_PORT" != "null" ]]; then
-    break
-  fi
-  sleep 2
-done
-log_message "INFO" "Detected registry port: $REGISTRY_PORT"
-REGISTRY="localhost:$REGISTRY_PORT"
-log_message "INFO" "Using registry at $REGISTRY"
-
-log_message "INFO" "Building and pushing images from $IMAGE_LIST"
+log_message "INFO" "Building and loading images from $IMAGE_LIST into minikube profile: $PROFILE"
 while IFS= read -r line || [ -n "$line" ]; do
   [[ -z "$line" || "$line" =~ ^# ]] && continue
   image_name=$(echo "$line" | cut -d: -f1)
   context_path=$(echo "$line" | cut -d: -f2-)
-  registry_image="$REGISTRY/$image_name:latest"
-  log_message "INFO" "Building $registry_image from $context_path"
-  docker build -t "$registry_image" "$context_path"
-  log_message "INFO" "Pushing $registry_image"
-  docker push "$registry_image"
+  log_message "INFO" "Building $image_name:latest from $context_path"
+  docker build -t "$image_name:latest" "$context_path"
+  log_message "INFO" "Loading $image_name:latest into minikube"
+  minikube -p "$PROFILE" image load "$image_name:latest"
 done < "$IMAGE_LIST"
 
-log_message "SUCCESS" "All images built and pushed to $REGISTRY"
-log_message "INFO" "Use image references like: $REGISTRY/<your-image>:latest in your Kubernetes manifests."
+log_message "SUCCESS" "All images built and loaded into minikube profile: $PROFILE"
+log_message "INFO" "Use image references like: <image-name>:latest in your Kubernetes manifests."
+log_message "INFO" "Images available in minikube profile: $PROFILE"
+minikube -p "$PROFILE" image list
