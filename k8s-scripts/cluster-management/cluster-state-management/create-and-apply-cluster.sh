@@ -119,7 +119,7 @@ build_images_from_file() {
   fi
 
   log_message "INFO" "Building Docker images from $IMAGE_BUILD_FILE..."
-  while IFS= read -r line; do
+  while IFS= read -r line || [[ -n "$line" ]]; do
     # Skip empty lines and comments
     [[ -z "$line" || "$line" =~ ^# ]] && continue
     image_name=$(echo "$line" | cut -d: -f1)
