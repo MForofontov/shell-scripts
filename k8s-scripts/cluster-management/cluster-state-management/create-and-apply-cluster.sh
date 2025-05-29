@@ -118,14 +118,27 @@ build_images_from_file() {
     return
   fi
 
-  log_message "INFO" "Building Docker images from $IMAGE_BUILD_FILE..."
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    # Skip empty lines and comments
-    [[ -z "$line" || "$line" =~ ^# ]] && continue
+  if [[ "$PROVIDER" == "minikube" ]]; then
+    # Enable the registry addon (safe to run even if already enabled)
+    log_message "INFO" "Enabling minikube registry addon..."
+    minikube -p "$CLUSTER_NAME" addons enable registry
+
+    # Get the registry IP and port (localhost:5000 works for most setups)
+    local registry="localhost:5000"
+  fi
+
+  log_message "INFO" "Building and pushing Docker images to local minikube registry ($registry) from $IMAGE_BUILD_FILE..."
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ""|\#*) continue ;;
+    esac
     image_name=$(echo "$line" | cut -d: -f1)
     context_path=$(echo "$line" | cut -d: -f2-)
-    log_message "INFO" "Building image $image_name from context $context_path"
-    docker build -t "$image_name:latest" "$context_path"
+    registry_image="$registry/$image_name:latest"
+    log_message "INFO" "Building image $registry_image from context $context_path"
+    docker build -t "$registry_image" "$context_path"
+    log_message "INFO" "Pushing image $registry_image to local registry"
+    docker push "$registry_image"
   done < "$IMAGE_BUILD_FILE"
 }
 
@@ -313,8 +326,8 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  build_images_from_file
   create_cluster
+  build_images_from_file
   switch_kubectl_context
   apply_manifests
 
