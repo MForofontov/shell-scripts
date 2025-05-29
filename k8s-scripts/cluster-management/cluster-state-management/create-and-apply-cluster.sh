@@ -1,6 +1,6 @@
 #!/bin/bash
 # create-and-apply-cluster.sh
-# Script to create a Kubernetes cluster (minikube, kind, k3d), optionally build images, and apply manifests in order
+# Script to create a Kubernetes cluster (minikube, kind, k3d) and apply manifests in order
 
 set -euo pipefail
 
@@ -33,7 +33,6 @@ WAIT_TIMEOUT=300
 MANIFEST_ROOT="k8s"
 LOG_FILE="/dev/null"
 SWITCH_CONTEXT=true
-IMAGE_BUILD_FILE=""
 
 usage() {
   print_with_separator "Create and Apply Kubernetes Cluster Script"
@@ -47,7 +46,6 @@ usage() {
   echo -e "  \033[1;33m-v, --version <VERSION>\033[0m    Kubernetes version (default: ${K8S_VERSION})"
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m        Path to provider config file"
   echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      Root directory for manifests (default: k8s)"
-  echo -e "  \033[1;33m-b, --build-file <FILE>\033[0m    File with image_name:path_to_context (one per line, optional)"
   echo -e "  \033[1;33m-t, --timeout <SECONDS>\033[0m    Timeout for cluster readiness (default: ${WAIT_TIMEOUT})"
   echo -e "  \033[1;33m--log <FILE>\033[0m               Log output to specified file"
   echo -e "  \033[1;33m--no-context-switch\033[0m        Do not switch kubectl context after cluster creation"
@@ -87,10 +85,6 @@ parse_args() {
         MANIFEST_ROOT="$2"
         shift 2
         ;;
-      -b|--build-file)
-        IMAGE_BUILD_FILE="$2"
-        shift 2
-        ;;
       -t|--timeout)
         WAIT_TIMEOUT="$2"
         shift 2
@@ -109,37 +103,6 @@ parse_args() {
         ;;
     esac
   done
-}
-
-# Build Docker images from a file if provided
-build_images_from_file() {
-  if [[ -z "$IMAGE_BUILD_FILE" || ! -f "$IMAGE_BUILD_FILE" ]]; then
-    log_message "INFO" "No image build file provided, skipping image build phase."
-    return
-  fi
-
-  if [[ "$PROVIDER" == "minikube" ]]; then
-    # Enable the registry addon (safe to run even if already enabled)
-    log_message "INFO" "Enabling minikube registry addon..."
-    minikube -p "$CLUSTER_NAME" addons enable registry
-
-    # Get the registry IP and port (localhost:5000 works for most setups)
-    local registry="localhost:5000"
-  fi
-
-  log_message "INFO" "Building and pushing Docker images to local minikube registry ($registry) from $IMAGE_BUILD_FILE..."
-  while IFS= read -r line || [ -n "$line" ]; do
-    case "$line" in
-      ""|\#*) continue ;;
-    esac
-    image_name=$(echo "$line" | cut -d: -f1)
-    context_path=$(echo "$line" | cut -d: -f2-)
-    registry_image="$registry/$image_name:latest"
-    log_message "INFO" "Building image $registry_image from context $context_path"
-    docker build -t "$registry_image" "$context_path"
-    log_message "INFO" "Pushing image $registry_image to local registry"
-    docker push "$registry_image"
-  done < "$IMAGE_BUILD_FILE"
 }
 
 # Switch kubectl context to the new cluster
@@ -327,7 +290,6 @@ main() {
   fi
 
   create_cluster
-  build_images_from_file
   switch_kubectl_context
   apply_manifests
 
