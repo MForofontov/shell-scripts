@@ -538,10 +538,10 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Clusters List"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Clusters List Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

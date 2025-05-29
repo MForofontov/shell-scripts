@@ -6,8 +6,8 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -38,7 +38,7 @@ FORCE=false
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Kubeconfig Merge Tool"
+  print_with_separator "Kubernetes Kubeconfig Merge Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script merges multiple kubeconfig files into a single file with deduplication."
   echo
@@ -462,11 +462,11 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Kubeconfig Merge"
-  
   # Parse arguments
   parse_args "$@"
   
+  print_with_separator "Kubernetes Kubeconfig Merge Script"
+
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then

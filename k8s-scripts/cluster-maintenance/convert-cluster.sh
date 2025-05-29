@@ -53,7 +53,7 @@ LOG_FILE="/dev/null"
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Cluster Conversion Tool"
+  print_with_separator "Kubernetes Cluster Conversion Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script assists in converting/migrating between Kubernetes cluster providers."
   echo "  It exports resources from a source cluster and imports them to a target cluster."
@@ -1148,10 +1148,10 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Cluster Conversion"
-  
   # Parse arguments
   parse_args "$@"
+
+  print_with_separator "Kubernetes Cluster Conversion Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then

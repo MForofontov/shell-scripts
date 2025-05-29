@@ -5,8 +5,8 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source logging and utility functions
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -275,8 +275,10 @@ apply_manifests() {
 }
 
 main() {
-  print_with_separator "Create and Apply Kubernetes Cluster"
+  # Parse command line arguments
   parse_args "$@"
+
+  print_with_separator "Create and Apply Kubernetes Cluster Script"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
