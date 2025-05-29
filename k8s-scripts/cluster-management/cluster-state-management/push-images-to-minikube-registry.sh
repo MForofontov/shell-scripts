@@ -1,6 +1,5 @@
 #!/bin/bash
-# Script: push-images-to-minikube-registry.sh
-# Usage: ./push-images-to-minikube-registry.sh -n <minikube-profile> -f <images.txt>
+# push-images-to-minikube-registry.sh
 # images.txt format: image-name:path/to/context
 
 set -euo pipefail
@@ -25,6 +24,7 @@ fi
 
 PROFILE="minikube"
 IMAGE_LIST="images.txt"
+LOG_FILE="/dev/null"
 
 usage() {
   print_with_separator "Push Images to Minikube Registry Script"
@@ -68,10 +68,24 @@ fi
 log_message "INFO" "Enabling minikube registry addon for profile: $PROFILE"
 minikube -p "$PROFILE" addons enable registry
 
-log_message "INFO" "Waiting for registry service to be ready..."
-until kubectl -n kube-system get svc registry &>/dev/null; do sleep 2; done
+# Patch registry service to NodePort if not already
+log_message "INFO" "Ensuring registry service is NodePort..."
+svc_type=$(kubectl -n kube-system get svc registry -o jsonpath='{.spec.type}' 2>/dev/null || echo "")
+if [[ "$svc_type" != "NodePort" ]]; then
+  kubectl -n kube-system patch svc registry -p '{"spec": {"type": "NodePort"}}'
+  log_message "INFO" "Patched registry service to NodePort."
+fi
 
-REGISTRY_PORT=$(kubectl -n kube-system get svc registry -o jsonpath='{.spec.ports[0].nodePort}')
+# Wait for registry service and nodePort to be ready
+log_message "INFO" "Waiting for registry service and port to be ready..."
+while true; do
+  REGISTRY_PORT=$(kubectl -n kube-system get svc registry -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+  if [[ -n "$REGISTRY_PORT" && "$REGISTRY_PORT" != "null" ]]; then
+    break
+  fi
+  sleep 2
+done
+log_message "INFO" "Detected registry port: $REGISTRY_PORT"
 REGISTRY="localhost:$REGISTRY_PORT"
 log_message "INFO" "Using registry at $REGISTRY"
 
