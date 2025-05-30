@@ -42,7 +42,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 google.com github.com --log custom_log.log"
   echo "  $0 example.com"
-  print_with_separator "End of DNS Resolver Script"
+  print_with_separator
   exit 1
 }
 

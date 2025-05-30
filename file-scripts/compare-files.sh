@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
   echo "  $0 /path/to/source_file /path/to/target_file"
-  print_with_separator "End of Compare Files Script"
+  print_with_separator
   exit 1
 }
 

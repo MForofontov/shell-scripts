@@ -39,7 +39,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 --log conflict_finder.log"
-  print_with_separator "End of Git Conflict Finder Script"
+  print_with_separator
   exit 1
 }
 

@@ -42,7 +42,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/inputlog.log --log extracted_ips.txt"
   echo "  $0 /path/to/inputlog.log"
-  print_with_separator "End of IP Extractor Script"
+  print_with_separator
   exit 1
 }
 

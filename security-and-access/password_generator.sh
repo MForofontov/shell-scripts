@@ -42,7 +42,7 @@ usage() {
   echo "  $0 --length 20 --log password.log"
   echo "  $0 --length 12"
   echo "  $0"
-  print_with_separator "End of Password Generator Script"
+  print_with_separator
   exit 1
 }
 

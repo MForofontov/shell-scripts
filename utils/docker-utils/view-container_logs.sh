@@ -47,7 +47,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_container --follow"
   echo "  $0 my_container --since 1h --until 10m --log logs.txt"
-  print_with_separator "End of View Docker Container Logs Script"
+  print_with_separator
   exit 1
 }
 

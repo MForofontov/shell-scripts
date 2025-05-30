@@ -42,7 +42,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 requirements.txt               # Update dependencies without logging."
   echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
-  print_with_separator "End of Python Dependency Updater Script"
+  print_with_separator
   exit 1
 }
 

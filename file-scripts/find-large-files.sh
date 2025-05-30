@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/directory +100M --log custom_log.log"
   echo "  $0 /path/to/directory +500K"
-  print_with_separator "End of Find Large Files Script"
+  print_with_separator
   exit 1
 }
 

@@ -39,7 +39,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_group_access.log"
   echo "  $0"
-  print_with_separator "End of Group Access Auditor Script"
+  print_with_separator
   exit 1
 }
 

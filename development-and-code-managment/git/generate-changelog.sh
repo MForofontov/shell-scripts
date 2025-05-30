@@ -42,7 +42,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 CHANGELOG.md --log changelog.log"
-  print_with_separator "End of Generate Changelog Script"
+  print_with_separator
   exit 1
 }
 

@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/archive.zip /path/to/destination --log custom_log.log"
   echo "  $0 /path/to/archive.zip /path/to/destination"
-  print_with_separator "End of Extract Zip Archive Script"
+  print_with_separator
   exit 1
 }
 
