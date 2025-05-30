@@ -548,8 +548,6 @@ parse_args() {
 main() {
   # Parse arguments
   parse_args "$@"
-  
-  print_with_separator "Kubernetes Cluster Resume Script"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -561,6 +559,8 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
+  print_with_separator "Kubernetes Cluster Resume Script"
+
   log_message "INFO" "Starting cluster resume process..."
   
   # If state file is provided, extract cluster name and provider from it

@@ -603,17 +603,16 @@ main() {
   # Parse arguments
   parse_args "$@"
 
-  print_with_separator "Kubernetes Cluster Upgrade Script"
-  
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
       exit 1
     fi
-    # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
+
+  print_with_separator "Kubernetes Cluster Upgrade Script"
   
   log_message "INFO" "Starting Kubernetes cluster upgrade..."
   

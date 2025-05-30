@@ -8,7 +8,6 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
-# Source logging and utility functions
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -39,37 +38,28 @@ usage() {
   exit 1
 }
 
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    -m|--manifests)
-      MANIFEST_ROOT="$2"
-      shift 2
-      ;;
-    --log)
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
-      ;;
-  esac
-done
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --help)
+        usage
+        ;;
+      -m|--manifests)
+        MANIFEST_ROOT="$2"
+        shift 2
+        ;;
+      --log)
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
+        usage
+        ;;
+    esac
+  done
+}
 
-# Configure log file
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-    exit 1
-  fi
-  exec > >(tee -a "$LOG_FILE") 2>&1
-fi
-
-# Wait for all deployments and statefulsets to be ready
 wait_for_resources_ready() {
   local ns
   for ns in $(kubectl get ns --no-headers -o custom-columns=":metadata.name"); do
@@ -84,7 +74,6 @@ wait_for_resources_ready() {
   done
 }
 
-# Apply manifests in order
 apply_manifests() {
   print_with_separator "Applying Kubernetes Manifests"
   local ns_dir="$MANIFEST_ROOT/namespace"
@@ -206,7 +195,7 @@ apply_manifests() {
 }
 
 main() {
-  print_with_separator "Apply Kubernetes Configuration Script"
+  parse_args "$@"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -217,8 +206,11 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  apply_manifests
+  print_with_separator "Apply Kubernetes Configuration Script"
 
+  log_message "INFO" "Starting to apply Kubernetes manifests from $MANIFEST_ROOT"
+
+  apply_manifests
   print_with_separator "Application Deployment Complete"
   log_message "SUCCESS" "Manifests applied."
 }
