@@ -2,14 +2,12 @@
 # real_time_container_logs.sh
 # Script to follow logs of a specified Docker container in real-time.
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+CONTAINER_NAME=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Real-Time Docker Logs Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -42,88 +41,89 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_container --log logs.txt"
   echo "  $0 my_container"
-  print_with_separator
+  print_with_separator "End of Real-Time Docker Logs Script"
   exit 1
 }
 
-# Default values
-CONTAINER_NAME=""
-LOG_FILE="/dev/null"
-
-# Parse input arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      if [ -z "$CONTAINER_NAME" ]; then
-        CONTAINER_NAME="$1"
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      shift
-      ;;
-  esac
-done
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        if [ -z "$CONTAINER_NAME" ]; then
+          CONTAINER_NAME="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate required arguments
-if [ -z "$CONTAINER_NAME" ]; then
-  log_message "ERROR" "The <container_name> argument is required."
-  usage
-fi
+main() {
+  parse_args "$@"
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Real-Time Docker Logs Script"
+  log_message "INFO" "Starting Real-Time Docker Logs Script..."
+
+  # Validate required arguments
+  if [ -z "$CONTAINER_NAME" ]; then
+    log_message "ERROR" "The <container_name> argument is required."
+    print_with_separator "End of Real-Time Docker Logs Script"
+    usage
+  fi
+
+  # Check if Docker is installed
+  if ! command -v docker &> /dev/null; then
+    log_message "ERROR" "Docker is not installed. Please install Docker first."
+    print_with_separator "End of Real-Time Docker Logs Script"
     exit 1
   fi
-  exec > >(tee -a "$LOG_FILE") 2>&1
-fi
 
-log_message "INFO" "Starting real-time log monitoring for container: $CONTAINER_NAME"
-print_with_separator "Real-Time Docker Logs"
+  # Check if the container exists
+  if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    log_message "ERROR" "Container '$CONTAINER_NAME' does not exist."
+    print_with_separator "End of Real-Time Docker Logs Script"
+    exit 1
+  fi
 
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-  log_message "ERROR" "Docker is not installed. Please install Docker first."
-  exit 1
-fi
+  # Check if the container is running
+  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    log_message "ERROR" "Container '$CONTAINER_NAME' is not running."
+    print_with_separator "End of Real-Time Docker Logs Script"
+    exit 1
+  fi
 
-# Check if the container exists
-if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  log_message "ERROR" "Container '$CONTAINER_NAME' does not exist."
-  exit 1
-fi
-
-# Check if the container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-  log_message "ERROR" "Container '$CONTAINER_NAME' is not running."
-  exit 1
-fi
-
-# Follow logs of the specified container
-log_message "INFO" "Following logs of container: $CONTAINER_NAME"
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  docker logs -f "$CONTAINER_NAME" | tee -a "$LOG_FILE"
-else
+  log_message "INFO" "Following logs of container: $CONTAINER_NAME"
   docker logs -f "$CONTAINER_NAME"
-fi
 
-# Notify user
-print_with_separator "End of Real-Time Docker Logs"
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  log_message "SUCCESS" "Real-time logs have been written to $LOG_FILE."
-else
-  log_message "INFO" "Real-time logs displayed on the console."
-fi
+  print_with_separator "End of Real-Time Docker Logs Script"
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    log_message "SUCCESS" "Real-time logs have been written to $LOG_FILE."
+  else
+    log_message "INFO" "Real-time logs displayed on the console."
+  fi
+}
+
+main "$@"
