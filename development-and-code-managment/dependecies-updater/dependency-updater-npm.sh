@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
   echo "  $0                        # Run the script without logging to a file"
-  print_with_separator
+  print_with_separator "End of NPM Dependency Updater Script"
   exit 1
 }
 
@@ -86,46 +86,44 @@ main() {
   # Validate if npm is installed
   if ! command -v npm &> /dev/null; then
     log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
+    print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
   # Validate if the script is run in a directory with a package.json file
   if [ ! -f "package.json" ]; then
     log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
+    print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
-  log_message "INFO" "Starting npm dependency update..."
+  log_message "INFO" "Updating npm dependencies..."
 
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
+  log_message "INFO" "$TIMESTAMP: Running npm update..."
 
   # Update npm dependencies
-  print_with_separator "npm update output"
   if npm update; then
-    print_with_separator "End of npm update"
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    print_with_separator "End of npm update"
     log_message "ERROR" "Failed to update dependencies!"
+    print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
   # Generate a summary of updated packages
   log_message "INFO" "Generating summary of updated packages..."
-  print_with_separator "npm outdated output"
   UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
 
   if [ -n "$UPDATED_PACKAGES" ] && [ "$UPDATED_PACKAGES" != "null" ]; then
     log_message "INFO" "Summary of updated packages:"
     echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
-    print_with_separator "End of npm outdated"
   else
-    print_with_separator "End of npm outdated"
     log_message "INFO" "No packages were updated."
   fi
 
   log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
+  print_with_separator "End of NPM Dependency Updater Script"
 }
 
 main "$@"

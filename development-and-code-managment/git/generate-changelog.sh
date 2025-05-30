@@ -42,7 +42,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 CHANGELOG.md --log changelog.log"
-  print_with_separator
+  print_with_separator "End of Generate Changelog Script"
   exit 1
 }
 
@@ -92,18 +92,21 @@ main() {
   # Validate required arguments
   if [ -z "$OUTPUT_FILE" ]; then
     log_message "ERROR" "<output_file> is required."
+    print_with_separator "End of Generate Changelog Script"
     usage
   fi
 
   # Validate output file
   if ! touch "$OUTPUT_FILE" 2>/dev/null; then
     log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
+    print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
 
   # Validate git is available
   if ! command -v git &> /dev/null; then
     log_message "ERROR" "git is not installed or not available in the PATH."
+    print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
 
@@ -120,16 +123,16 @@ main() {
     echo
   } > "$OUTPUT_FILE"
 
-  # Append the git log to the changelog with separators
-  print_with_separator "git log output"
+  # Append the git log to the changelog
   if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE"; then
-    print_with_separator "End of git log"
     log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
   else
-    print_with_separator "End of git log"
     log_message "ERROR" "Failed to generate changelog."
+    print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
+
+  print_with_separator "End of Generate Changelog Script"
 }
 
 main "$@"

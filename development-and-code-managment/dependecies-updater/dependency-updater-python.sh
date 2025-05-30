@@ -42,7 +42,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 requirements.txt               # Update dependencies without logging."
   echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
-  print_with_separator
+  print_with_separator "End of Python Dependency Updater Script"
   exit 1
 }
 
@@ -92,34 +92,36 @@ main() {
   # Validate requirements file argument
   if [ -z "$REQUIREMENTS_FILE" ]; then
     log_message "ERROR" "Requirements file is required."
+    print_with_separator "End of Python Dependency Updater Script"
     usage
   fi
 
   if [ ! -f "$REQUIREMENTS_FILE" ]; then
     log_message "ERROR" "Requirements file '$REQUIREMENTS_FILE' does not exist."
+    print_with_separator "End of Python Dependency Updater Script"
     exit 1
   fi
 
   # Validate if pip is installed
   if ! command -v pip &> /dev/null; then
     log_message "ERROR" "pip is not installed or not available in the PATH. Please install pip and try again."
+    print_with_separator "End of Python Dependency Updater Script"
     exit 1
   fi
 
   log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
   log_message "INFO" "Starting dependency update process..."
 
-  print_with_separator "pip install output"
   if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
-    print_with_separator "End of pip install"
     log_message "SUCCESS" "Dependencies updated successfully!"
   else
-    print_with_separator "End of pip install"
     log_message "ERROR" "Failed to update dependencies!"
+    print_with_separator "End of Python Dependency Updater Script"
     exit 1
   fi
 
   log_message "INFO" "Dependency update process completed."
+  print_with_separator "End of Python Dependency Updater Script"
 }
 
 main "$@"
