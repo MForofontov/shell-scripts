@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
   echo "  $0 /path/to/source /path/to/output.tar.gz"
-  print_with_separator "End of Compress Directory Script"
+  print_with_separator
   exit 1
 }
 

@@ -41,7 +41,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 'Initial commit' --log commit_validation.log"
-  print_with_separator "End of Git Commit Validator Script"
+  print_with_separator
   exit 1
 }
 

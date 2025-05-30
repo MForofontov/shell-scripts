@@ -47,7 +47,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 example.com --start 1 --end 1000 --output scan_results.txt --log scan_log.txt"
   echo "  $0 example.com"
-  print_with_separator "End of Port Scanner Script"
+  print_with_separator
   exit 1
 }
 

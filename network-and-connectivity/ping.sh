@@ -46,7 +46,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
   echo "  $0"
-  print_with_separator "End of Ping Script"
+  print_with_separator
   exit 1
 }
 

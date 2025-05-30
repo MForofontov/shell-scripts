@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 https://example.com/file.txt /path/to/destination/file.txt --log custom_log.log"
   echo "  $0 https://example.com/file.txt /path/to/destination/file.txt"
-  print_with_separator "End of Download File Script"
+  print_with_separator
   exit 1
 }
 

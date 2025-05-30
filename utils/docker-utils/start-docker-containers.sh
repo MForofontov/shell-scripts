@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 container1 container2 --log start_containers.log"
   echo "  $0 container1 container2"
-  print_with_separator "End of Start Docker Containers Script"
+  print_with_separator
   exit 1
 }
 

@@ -41,7 +41,7 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 'Initial commit' --log git_operations.log"
-  print_with_separator "End of Git Add, Commit, and Push Script"
+  print_with_separator
   exit 1
 }
 

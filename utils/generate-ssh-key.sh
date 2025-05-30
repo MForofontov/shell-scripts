@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_key /path/to/keys --log generate_ssh.log"
   echo "  $0 my_key /path/to/keys"
-  print_with_separator "End of Generate SSH Key Script"
+  print_with_separator
   exit 1
 }
 

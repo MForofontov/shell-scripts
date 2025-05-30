@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 nginx --log process_check.log"
   echo "  $0 apache2"
-  print_with_separator "End of Check Process Script"
+  print_with_separator
   exit 1
 }
 

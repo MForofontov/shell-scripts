@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 container my_container --log inspect.log"
   echo "  $0 network my_network"
-  print_with_separator "End of Docker Resource Inspection Script"
+  print_with_separator
   exit 1
 }
 

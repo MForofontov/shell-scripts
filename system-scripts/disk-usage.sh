@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 80 user@example.com --log disk_usage.log"
   echo "  $0 90 admin@example.com"
-  print_with_separator "End of Disk Usage Monitor Script"
+  print_with_separator
   exit 1
 }
 

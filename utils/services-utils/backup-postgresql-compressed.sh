@@ -47,7 +47,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_database my_user my_password /path/to/backup --log backup.log"
   echo "  $0 my_database my_user my_password /path/to/backup"
-  print_with_separator "End of PostgreSQL Backup Script"
+  print_with_separator
   exit 1
 }
 

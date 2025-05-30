@@ -39,7 +39,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log npm_clean_cache.log"
   echo "  $0"
-  print_with_separator "End of NPM Clean Cache Script"
+  print_with_separator
   exit 1
 }
 

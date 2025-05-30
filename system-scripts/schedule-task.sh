@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/script.sh '0 5 * * *' --log schedule_task.log"
   echo "  $0 /path/to/script.sh '0 5 * * *'"
-  print_with_separator "End of Schedule Task Script"
+  print_with_separator
   exit 1
 }
 

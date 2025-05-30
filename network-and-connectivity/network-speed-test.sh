@@ -40,7 +40,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log"
   echo "  $0"
-  print_with_separator "End of Network Speed Test Script"
+  print_with_separator
   exit 1
 }
 

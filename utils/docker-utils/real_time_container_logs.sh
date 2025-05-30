@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_container --log logs.txt"
   echo "  $0 my_container"
-  print_with_separator "End of Real-Time Docker Logs Script"
+  print_with_separator
   exit 1
 }
 

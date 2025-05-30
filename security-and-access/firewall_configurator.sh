@@ -41,7 +41,7 @@ usage() {
   echo "  $0 --log firewall.log 8080 3306"
   echo "  $0 8080"
   echo "  $0"
-  print_with_separator "End of Firewall Configurator Script"
+  print_with_separator
   exit 1
 }
 

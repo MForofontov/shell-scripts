@@ -42,7 +42,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 https://google.com https://github.com --log custom_log.log"
   echo "  $0 https://example.com"
-  print_with_separator "End of HTTP Status Code Checker Script"
+  print_with_separator
   exit 1
 }
 

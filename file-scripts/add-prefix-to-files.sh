@@ -44,7 +44,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/directory my_prefix --log custom_log.log"
   echo "  $0 /path/to/directory my_prefix"
-  print_with_separator "End of Add Prefix to Files Script"
+  print_with_separator
   exit 1
 }
 

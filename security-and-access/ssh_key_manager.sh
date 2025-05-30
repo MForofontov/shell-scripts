@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 user user@hostname --log ssh_key_manager.log"
   echo "  $0 user user@hostname"
-  print_with_separator "End of SSH Key Manager Script"
+  print_with_separator
   exit 1
 }
 

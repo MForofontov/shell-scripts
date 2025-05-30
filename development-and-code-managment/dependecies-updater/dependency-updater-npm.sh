@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
   echo "  $0                        # Run the script without logging to a file"
-  print_with_separator "End of NPM Dependency Updater Script"
+  print_with_separator
   exit 1
 }
 

@@ -43,7 +43,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/docker-compose my_session --log docker_compose.log"
   echo "  $0 /path/to/docker-compose my_session"
-  print_with_separator "End of Start Docker Compose in Tmux Script"
+  print_with_separator
   exit 1
 }
 

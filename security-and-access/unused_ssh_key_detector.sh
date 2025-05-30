@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --ssh_dir /home --log unused_ssh_keys.log"
   echo "  $0"
-  print_with_separator "End of Unused SSH Key Detector Script"
+  print_with_separator
   exit 1
 }
 

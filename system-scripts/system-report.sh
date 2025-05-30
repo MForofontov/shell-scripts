@@ -41,7 +41,7 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/report.txt --log system_report.log"
   echo "  $0 /path/to/report.txt"
-  print_with_separator "End of System Report Script"
+  print_with_separator
   exit 1
 }
 
