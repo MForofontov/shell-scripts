@@ -2,14 +2,12 @@
 # check-process.sh
 # Script to check if a specific process is running.
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+PROCESS_NAME=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Check Process Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -42,64 +41,69 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 nginx --log process_check.log"
   echo "  $0 apache2"
-  print_with_separator
+  print_with_separator "End of Check Process Script"
   exit 1
 }
 
-# Default values
-PROCESS_NAME=""
-LOG_FILE="/dev/null"
-
-# Parse input arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      if [ -z "$PROCESS_NAME" ]; then
-        PROCESS_NAME="$1"
-        shift
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      ;;
-  esac
-done
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        if [ -z "$PROCESS_NAME" ]; then
+          PROCESS_NAME="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate process name
-if [ -z "$PROCESS_NAME" ]; then
-  log_message "ERROR" "Process name is required."
-  usage
-fi
+main() {
+  parse_args "$@"
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-    exit 1
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
   fi
-  exec > >(tee -a "$LOG_FILE") 2>&1
-fi
 
-log_message "INFO" "Checking if process $PROCESS_NAME is running..."
-print_with_separator "Process Check"
+  print_with_separator "Check Process Script"
+  log_message "INFO" "Starting Check Process Script..."
 
-# Check if the process is running
-if pgrep "$PROCESS_NAME" > /dev/null; then
-  log_message "SUCCESS" "Process $PROCESS_NAME is running."
-else
-  log_message "ERROR" "Process $PROCESS_NAME is not running."
-fi
+  # Validate process name
+  if [ -z "$PROCESS_NAME" ]; then
+    log_message "ERROR" "Process name is required."
+    print_with_separator "End of Check Process Script"
+    usage
+  fi
 
-print_with_separator "End of Process Check"
-log_message "INFO" "Process check completed."
+  log_message "INFO" "Checking if process $PROCESS_NAME is running..."
+
+  if pgrep "$PROCESS_NAME" > /dev/null; then
+    log_message "SUCCESS" "Process $PROCESS_NAME is running."
+  else
+    log_message "ERROR" "Process $PROCESS_NAME is not running."
+  fi
+
+  print_with_separator "End of Check Process Script"
+  log_message "INFO" "Process check completed."
+}
+
+main "$@"
