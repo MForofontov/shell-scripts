@@ -2,14 +2,12 @@
 # active-host-scanner.sh
 # Script to scan a network for active hosts
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+NETWORK=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Active Host Scanner Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,73 +42,38 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 192.168.1 --log custom_log.log"
   echo "  $0 192.168.1"
-  print_with_separator
+  print_with_separator "End of Active Host Scanner Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-  log_message "ERROR" "<network_prefix> is required."
-  usage
-fi
-
-# Initialize variables
-NETWORK=""
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$NETWORK" ]; then
-        NETWORK="$1"
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      shift
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$NETWORK" ]; then
+          NETWORK="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate network prefix
-if ! [[ "$NETWORK" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then
-  log_message "ERROR" "Invalid network prefix format: $NETWORK. Expected format: X.X.X (e.g., 192.168.1)"
-  usage
-fi
-
-# Extract octets and validate their range
-IFS='.' read -r A B C <<< "$NETWORK"
-if (( A < 0 || A > 255 || B < 0 || B > 255 || C < 0 || C > 255 )); then
-  log_message "ERROR" "Network prefix out of range: $NETWORK. Each octet must be between 0 and 255."
-  usage
-fi
-
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
-    exit 1
-  fi
-fi
-
-# Log start of the scan
-log_message "INFO" "Scanning network $NETWORK.0/24 for active hosts..."
-print_with_separator "Active Host Scan Output"
-
-# Function to scan for active hosts
 scan_network() {
   for IP in $(seq 1 254); do
     TARGET="$NETWORK.$IP"
@@ -120,12 +84,46 @@ scan_network() {
   done
 }
 
-# Perform the network scan
-if ! scan_network; then
-  print_with_separator "End of Active Host Scan Output"
-  log_message "ERROR" "Failed to scan network $NETWORK.0/24."
-  exit 1
-else
-  print_with_separator "End of Active Host Scan Output"
-  log_message "SUCCESS" "Network scan complete."
-fi
+main() {
+  parse_args "$@"
+
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Active Host Scanner Script"
+  log_message "INFO" "Starting Active Host Scanner Script..."
+
+  # Validate arguments
+  if [ -z "$NETWORK" ]; then
+    log_message "ERROR" "<network_prefix> is required."
+    print_with_separator "End of Active Host Scanner Script"
+    exit 1
+  fi
+
+  if ! [[ "$NETWORK" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then
+    log_message "ERROR" "Invalid network prefix format: $NETWORK. Expected format: X.X.X (e.g., 192.168.1)"
+    print_with_separator "End of Active Host Scanner Script"
+    exit 1
+  fi
+
+  IFS='.' read -r A B C <<< "$NETWORK"
+  if (( A < 0 || A > 255 || B < 0 || B > 255 || C < 0 || C > 255 )); then
+    log_message "ERROR" "Network prefix out of range: $NETWORK. Each octet must be between 0 and 255."
+    print_with_separator "End of Active Host Scanner Script"
+    exit 1
+  fi
+
+  log_message "INFO" "Scanning network $NETWORK.0/24 for active hosts..."
+
+  scan_network
+
+  print_with_separator "End of Active Host Scanner Script"
+}
+
+main "$@"

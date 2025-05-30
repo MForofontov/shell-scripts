@@ -2,14 +2,12 @@
 # ping.sh
 # Script to ping a list of servers/websites and check their reachability
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,14 +22,12 @@ else
   exit 1
 fi
 
-# Default list of servers/websites to ping
 DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
-
-# Default number of ping attempts and timeout
 PING_COUNT=3
 TIMEOUT=5
+WEBSITES=()
+LOG_FILE="/dev/null"
 
-# Function to display usage instructions
 usage() {
   print_with_separator "Ping Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -51,75 +46,57 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --websites google.com,example.com --count 5 --timeout 3 --log ping_results.txt"
   echo "  $0"
-  print_with_separator
+  print_with_separator "End of Ping Script"
   exit 1
 }
 
-# Parse input arguments
-WEBSITES=("${DEFAULT_WEBSITES[@]}")
-LOG_FILE="/dev/null"
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --websites)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No websites provided after --websites."
+parse_args() {
+  WEBSITES=("${DEFAULT_WEBSITES[@]}")
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      IFS=',' read -r -a WEBSITES <<< "$2"
-      shift 2
-      ;;
-    --count)
-      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
-        log_message "ERROR" "Invalid count value: $2"
+        ;;
+      --websites)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No websites provided after --websites."
+          usage
+        fi
+        IFS=',' read -r -a WEBSITES <<< "$2"
+        shift 2
+        ;;
+      --count)
+        if ! [[ "${2:-}" =~ ^[0-9]+$ ]]; then
+          log_message "ERROR" "Invalid count value: $2"
+          usage
+        fi
+        PING_COUNT="$2"
+        shift 2
+        ;;
+      --timeout)
+        if ! [[ "${2:-}" =~ ^[0-9]+$ ]]; then
+          log_message "ERROR" "Invalid timeout value: $2"
+          usage
+        fi
+        TIMEOUT="$2"
+        shift 2
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
         usage
-      fi
-      PING_COUNT="$2"
-      shift 2
-      ;;
-    --timeout)
-      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
-        log_message "ERROR" "Invalid timeout value: $2"
-        usage
-      fi
-      TIMEOUT="$2"
-      shift 2
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
-        usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
-      ;;
-  esac
-done
+        ;;
+    esac
+  done
+}
 
-# Validate websites
-if [ "${#WEBSITES[@]}" -eq 0 ]; then
-  log_message "ERROR" "At least one website is required."
-  usage
-fi
-
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
-    exit 1
-  fi
-fi
-
-log_message "INFO" "Starting ping test..."
-print_with_separator "Ping Test Output"
-
-# Function to ping websites
 ping_websites() {
   for SITE in "${WEBSITES[@]}"; do
     TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
@@ -132,21 +109,37 @@ ping_websites() {
   done
 }
 
-# Ping websites and handle errors
-if ! ping_websites; then
-  print_with_separator "End of Ping Test Output"
-  log_message "ERROR" "Failed to ping websites."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-print_with_separator "End of Ping Test Output"
-
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if [ -f "$LOG_FILE" ]; then
-    log_message "SUCCESS" "Ping results have been appended to $LOG_FILE"
-  else
-    log_message "SUCCESS" "Ping results have been written to $LOG_FILE"
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
   fi
-else
-  log_message "INFO" "Ping results displayed on the console"
-fi
+
+  print_with_separator "Ping Script"
+  log_message "INFO" "Starting Ping Script..."
+
+  # Validate websites
+  if [ "${#WEBSITES[@]}" -eq 0 ]; then
+    log_message "ERROR" "At least one website is required."
+    print_with_separator "End of Ping Script"
+    exit 1
+  fi
+
+  if ping_websites; then
+    log_message "SUCCESS" "Ping test completed."
+  else
+    log_message "ERROR" "Failed to ping websites."
+    print_with_separator "End of Ping Script"
+    exit 1
+  fi
+
+  print_with_separator "End of Ping Script"
+}
+
+main "$@"
