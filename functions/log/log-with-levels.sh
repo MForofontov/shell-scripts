@@ -39,7 +39,7 @@ log_message() {
 
   # Log to file and console using tee
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    echo "$PLAIN_MESSAGE" | tee -a "$LOG_FILE"
+    echo "$PLAIN_MESSAGE"
   else
     echo -e "$FORMATTED_MESSAGE"
   fi
