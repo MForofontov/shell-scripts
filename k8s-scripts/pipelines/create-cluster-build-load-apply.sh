@@ -5,11 +5,11 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
-CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/cluster-management/cluster-state-management/create-cluster-local.sh"
-BUILD_LOAD_SCRIPT="$SCRIPT_DIR/image-management/build-and-load-images-into-minikube.sh"
-APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/apply-k8s-configuration.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster-local.sh"
+BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images-into-minikube.sh"
+APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
@@ -49,13 +49,13 @@ usage() {
   echo -e "  \033[1;33m-c, --nodes <COUNT>\033[0m        Number of nodes (default: ${NODE_COUNT})"
   echo -e "  \033[1;33m-v, --version <VERSION>\033[0m    Kubernetes version (default: ${K8S_VERSION})"
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m        Path to provider config file"
-  echo -e "  \033[1;33m--images <FILE>\033[0m            Path to images.txt file to build/load images"
-  echo -e "  \033[1;33m--manifests <DIR>\033[0m          Root directory for manifests to apply"
+  echo -e "  \033[1;33m-i, --images <FILE>\033[0m        Images file to build/load"
+  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      Manifests directory to apply"
   echo -e "  \033[1;33m--log <FILE>\033[0m               Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                     Show this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 -n mycluster --images images.txt --manifests k8s --log pipeline.log"
+  echo "  $0 -n mycluster -i images.txt -m k8s --log pipeline.log"
   echo "  $0 --provider kind --nodes 2"
   print_with_separator
   exit 1
@@ -84,11 +84,11 @@ parse_args() {
         CONFIG_FILE="$2"
         shift 2
         ;;
-      --images)
+      -i|--images)
         IMAGE_LIST="$2"
         shift 2
         ;;
-      --manifests)
+      -m|--manifests)
         MANIFEST_ROOT="$2"
         shift 2
         ;;
