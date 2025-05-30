@@ -2,14 +2,12 @@
 # sync-directories.sh
 # Script to synchronize two directories using rsync
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,10 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+SOURCE_DIR=""
+DEST_DIR=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Synchronize Directories Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -44,79 +44,89 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/source /path/to/destination --log custom_log.log"
   echo "  $0 /path/to/source /path/to/destination"
-  print_with_separator
+  print_with_separator "End of Synchronize Directories Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 2 ]; then
-  log_message "ERROR" "<source_directory> and <destination_directory> are required."
-  usage
-fi
-
-# Initialize variables
-SOURCE_DIR=""
-DEST_DIR=""
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$SOURCE_DIR" ]; then
-        SOURCE_DIR="$1"
-      elif [ -z "$DEST_DIR" ]; then
-        DEST_DIR="$1"
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      shift
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$SOURCE_DIR" ]; then
+          SOURCE_DIR="$1"
+          shift
+        elif [ -z "$DEST_DIR" ]; then
+          DEST_DIR="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate source directory
-if [ ! -d "$SOURCE_DIR" ]; then
-  log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-# Validate destination directory
-if [ ! -d "$DEST_DIR" ]; then
-  log_message "ERROR" "Destination directory $DEST_DIR does not exist."
-  exit 1
-fi
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+  print_with_separator "Synchronize Directories Script"
+  log_message "INFO" "Starting Synchronize Directories Script..."
+
+  # Validate arguments
+  if [ -z "$SOURCE_DIR" ] || [ -z "$DEST_DIR" ]; then
+    log_message "ERROR" "<source_directory> and <destination_directory> are required."
+    print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
-fi
 
-# Synchronize directories
-log_message "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
-print_with_separator "Synchronization Output"
+  if [ ! -d "$SOURCE_DIR" ]; then
+    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+    print_with_separator "End of Synchronize Directories Script"
+    exit 1
+  fi
 
-if rsync -av --delete "$SOURCE_DIR/" "$DEST_DIR/" 2>&1 | tee -a "$LOG_FILE"; then
-  print_with_separator "End of Synchronization Output"
-  log_message "SUCCESS" "Synchronization complete from $SOURCE_DIR to $DEST_DIR."
-else
-  print_with_separator "End of Synchronization Output"
-  log_message "ERROR" "Failed to synchronize directories."
-  exit 1
-fi
+  if [ ! -d "$DEST_DIR" ]; then
+    log_message "ERROR" "Destination directory $DEST_DIR does not exist."
+    print_with_separator "End of Synchronize Directories Script"
+    exit 1
+  fi
+
+  log_message "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
+  print_with_separator "Synchronization Output"
+
+  if rsync -av --delete "$SOURCE_DIR/" "$DEST_DIR/"; then
+    print_with_separator "End of Synchronization Output"
+    log_message "SUCCESS" "Synchronization complete from $SOURCE_DIR to $DEST_DIR."
+  else
+    print_with_separator "End of Synchronization Output"
+    log_message "ERROR" "Failed to synchronize directories."
+    print_with_separator "End of Synchronize Directories Script"
+    exit 1
+  fi
+
+  print_with_separator "End of Synchronize Directories Script"
+}
+
+main "$@"

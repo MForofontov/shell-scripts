@@ -2,14 +2,12 @@
 # find-large-files.sh
 # Script to find and list files larger than a specified size
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,10 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+DIRECTORY=""
+SIZE=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Find Large Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -44,84 +44,94 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/directory +100M --log custom_log.log"
   echo "  $0 /path/to/directory +500K"
-  print_with_separator
+  print_with_separator "End of Find Large Files Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 2 ]; then
-  log_message "ERROR" "<directory> and <size> are required."
-  usage
-fi
-
-# Initialize variables
-DIRECTORY=""
-SIZE=""
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$DIRECTORY" ]; then
-        DIRECTORY="$1"
-      elif [ -z "$SIZE" ]; then
-        SIZE="$1"
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      shift
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$DIRECTORY" ]; then
+          DIRECTORY="$1"
+          shift
+        elif [ -z "$SIZE" ]; then
+          SIZE="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate directory
-if [ ! -d "$DIRECTORY" ]; then
-  log_message "ERROR" "Directory $DIRECTORY does not exist."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-# Validate size format
-if ! [[ "$SIZE" =~ ^\+?[0-9]+[KMG]$ ]]; then
-  log_message "ERROR" "Invalid size format. Use +<size>[KMG] (e.g., +100M)."
-  exit 1
-fi
-# Validate size value
-if ! [[ "${SIZE:1}" =~ ^[0-9]+$ ]]; then
-  log_message "ERROR" "Size value must be a valid positive number."
-  exit 1
-fi
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+  print_with_separator "Find Large Files Script"
+  log_message "INFO" "Starting Find Large Files Script..."
+
+  # Validate arguments
+  if [ -z "$DIRECTORY" ] || [ -z "$SIZE" ]; then
+    log_message "ERROR" "<directory> and <size> are required."
+    print_with_separator "End of Find Large Files Script"
     exit 1
   fi
-fi
 
-# Find files larger than the specified size
-log_message "INFO" "Finding files larger than $SIZE in $DIRECTORY..."
-print_with_separator "Large Files Output"
+  if [ ! -d "$DIRECTORY" ]; then
+    log_message "ERROR" "Directory $DIRECTORY does not exist."
+    print_with_separator "End of Find Large Files Script"
+    exit 1
+  fi
 
-if find "$DIRECTORY" -type f -size "$SIZE" -exec ls -lh {} \; | awk '{ print $9 ": " $5 }' | tee -a "$LOG_FILE"; then
-  print_with_separator "End of Large Files Output"
-  log_message "SUCCESS" "Large files in $DIRECTORY have been listed."
-else
-  print_with_separator "End of Large Files Output"
-  log_message "ERROR" "Failed to find large files in $DIRECTORY."
-  exit 1
-fi
+  if ! [[ "$SIZE" =~ ^\+?[0-9]+[KMG]$ ]]; then
+    log_message "ERROR" "Invalid size format. Use +<size>[KMG] (e.g., +100M)."
+    print_with_separator "End of Find Large Files Script"
+    exit 1
+  fi
+
+  if ! [[ "${SIZE:1}" =~ ^[0-9]+$ ]]; then
+    log_message "ERROR" "Size value must be a valid positive number."
+    print_with_separator "End of Find Large Files Script"
+    exit 1
+  fi
+
+  log_message "INFO" "Finding files larger than $SIZE in $DIRECTORY..."
+  print_with_separator "Large Files Output"
+
+  if find "$DIRECTORY" -type f -size "$SIZE" -exec ls -lh {} \; | awk '{ print $9 ": " $5 }'; then
+    print_with_separator "End of Large Files Output"
+    log_message "SUCCESS" "Large files in $DIRECTORY have been listed."
+  else
+    print_with_separator "End of Large Files Output"
+    log_message "ERROR" "Failed to find large files in $DIRECTORY."
+    exit 1
+  fi
+
+  print_with_separator "End of Find Large Files Script"
+}
+
+main "$@"
