@@ -116,7 +116,7 @@ main() {
 
   log_message "INFO" "Removing files older than $DAYS days from $DIRECTORY..."
 
-  if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \;; then
+  if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; ; then
     log_message "SUCCESS" "Successfully removed files older than $DAYS days from $DIRECTORY."
   else
     log_message "ERROR" "Failed to remove some files from $DIRECTORY."
