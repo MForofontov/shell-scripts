@@ -1,16 +1,13 @@
 #!/bin/bash
-
 # generate-changelog.sh
 # Script to generate a changelog from the Git log
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -18,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -26,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+OUTPUT_FILE=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Generate Changelog Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,88 +43,93 @@ usage() {
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 CHANGELOG.md --log changelog.log"
   print_with_separator
-  exit 0
+  exit 1
 }
 
-# Check if at least one argument is provided
-if [ "$#" -lt 1 ]; then
-  log_message "ERROR" "<output_file> is required."
-  usage
-fi
-
-# Initialize variables
-OUTPUT_FILE=""
-LOG_FILE="/dev/null"
-
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$OUTPUT_FILE" ]; then
-        OUTPUT_FILE="$1"
-        shift
-      else
-        log_message "ERROR" "Unknown option: $1"
-        usage
-      fi
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$OUTPUT_FILE" ]; then
+          OUTPUT_FILE="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate required arguments
-if [ -z "$OUTPUT_FILE" ]; then
-  log_message "ERROR" "<output_file> is required."
-  usage
-fi
+main() {
+  parse_args "$@"
 
-# Validate output file
-if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-  log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
-  exit 1
-fi
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+  print_with_separator "Generate Changelog Script"
+  log_message "INFO" "Starting Generate Changelog Script..."
+
+  # Validate required arguments
+  if [ -z "$OUTPUT_FILE" ]; then
+    log_message "ERROR" "<output_file> is required."
+    usage
+  fi
+
+  # Validate output file
+  if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+    log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
     exit 1
   fi
-fi
 
-# Get the project name from the current directory
-PROJECT_NAME=$(basename "$(pwd)")
+  # Validate git is available
+  if ! command -v git &> /dev/null; then
+    log_message "ERROR" "git is not installed or not available in the PATH."
+    exit 1
+  fi
 
-# Get the current date
-CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+  # Get the project name from the current directory
+  PROJECT_NAME=$(basename "$(pwd)")
+  CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-log_message "INFO" "Generating changelog for $PROJECT_NAME..."
+  log_message "INFO" "Generating changelog for $PROJECT_NAME..."
 
-# Add a header to the changelog
-{
-  echo "# Changelog for $PROJECT_NAME"
-  echo "Generated on $CURRENT_DATE"
-  echo
-} > "$OUTPUT_FILE"
+  # Add a header to the changelog
+  {
+    echo "# Changelog for $PROJECT_NAME"
+    echo "Generated on $CURRENT_DATE"
+    echo
+  } > "$OUTPUT_FILE"
 
-# Append the git log to the changelog with separators
-print_with_separator "git log output"
-if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE" | tee -a "$LOG_FILE"; then
-  print_with_separator "End of git log"
-  log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
-else
-  print_with_separator "End of git log"
-  log_message "ERROR" "Failed to generate changelog. Check the log file for details: $LOG_FILE"
-  exit 1
-fi
+  # Append the git log to the changelog with separators
+  print_with_separator "git log output"
+  if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE"; then
+    print_with_separator "End of git log"
+    log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
+  else
+    print_with_separator "End of git log"
+    log_message "ERROR" "Failed to generate changelog."
+    exit 1
+  fi
+}
+
+main "$@"
