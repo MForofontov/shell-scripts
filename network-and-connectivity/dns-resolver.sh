@@ -2,14 +2,12 @@
 # dns-resolver.sh
 # Script to test DNS resolution for a list of domains
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+DOMAINS=()
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "DNS Resolver Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,60 +42,33 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 google.com github.com --log custom_log.log"
   echo "  $0 example.com"
-  print_with_separator
+  print_with_separator "End of DNS Resolver Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-  log_message "ERROR" "<domain1> <domain2> ... is required."
-  usage
-fi
-
-# Initialize variables
-DOMAINS=()
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      DOMAINS+=("$1")
-      shift
-      ;;
-  esac
-done
+        ;;
+      *)
+        DOMAINS+=("$1")
+        shift
+        ;;
+    esac
+  done
+}
 
-# Validate domains
-if [ "${#DOMAINS[@]}" -eq 0 ]; then
-  log_message "ERROR" "At least one domain is required."
-  usage
-fi
-
-# Validate log file if provided
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
-    exit 1
-  fi
-fi
-
-log_message "INFO" "Testing DNS resolution for the following domains: ${DOMAINS[*]}"
-print_with_separator "DNS Resolution Output"
-
-# Function to resolve domains
 resolve_domains() {
   for DOMAIN in "${DOMAINS[@]}"; do
     TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
@@ -109,12 +81,39 @@ resolve_domains() {
   done
 }
 
-# Resolve domains and handle errors
-if ! resolve_domains; then
-  print_with_separator "End of DNS Resolution Output"
-  log_message "ERROR" "Failed to resolve domains."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-print_with_separator "End of DNS Resolution Output"
-log_message "SUCCESS" "DNS resolution complete."
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "DNS Resolver Script"
+  log_message "INFO" "Starting DNS Resolver Script..."
+
+  # Validate domains
+  if [ "${#DOMAINS[@]}" -eq 0 ]; then
+    log_message "ERROR" "At least one domain is required."
+    print_with_separator "End of DNS Resolver Script"
+    exit 1
+  fi
+
+  log_message "INFO" "Testing DNS resolution for the following domains: ${DOMAINS[*]}"
+
+  if resolve_domains; then
+    log_message "SUCCESS" "DNS resolution complete."
+  else
+    log_message "ERROR" "Failed to resolve domains."
+    print_with_separator "End of DNS Resolver Script"
+    exit 1
+  fi
+
+  print_with_separator "End of DNS Resolver Script"
+}
+
+main "$@"

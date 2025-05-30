@@ -316,8 +316,6 @@ parse_args() {
 main() {
   # Parse arguments
   parse_args "$@"
-
-  print_with_separator "Kubernetes Context Switcher Script"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -329,6 +327,8 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
+  print_with_separator "Kubernetes Context Switcher Script"
+
   log_message "INFO" "Starting Kubernetes context switching..."
   
   # Check requirements

@@ -2,14 +2,12 @@
 # generate-ssh-key.sh
 # Script to generate an SSH key pair.
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,10 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+KEY_NAME=""
+KEY_DIR=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Generate SSH Key Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -36,88 +36,93 @@ usage() {
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m<key_name>\033[0m       (Required) Name of the SSH key."
-  echo -e "  \033[1;33m<key_dir>\033[0m       (Required) Directory to save the SSH key."
+  echo -e "  \033[1;33m<key_dir>\033[0m        (Required) Directory to save the SSH key."
   echo -e "  \033[1;33m--log <log_file>\033[0m (Optional) Path to save the log messages."
   echo -e "  \033[1;33m--help\033[0m           (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 my_key /path/to/keys --log generate_ssh.log"
   echo "  $0 my_key /path/to/keys"
-  print_with_separator
+  print_with_separator "End of Generate SSH Key Script"
   exit 1
 }
 
-# Default values
-LOG_FILE="/dev/null"
-
-# Parse input arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      if [ -z "$KEY_NAME" ]; then
-        KEY_NAME="$1"
-      elif [ -z "$KEY_DIR" ]; then
-        KEY_DIR="$1"
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      shift
-      ;;
-  esac
-done
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        if [ -z "$KEY_NAME" ]; then
+          KEY_NAME="$1"
+        elif [ -z "$KEY_DIR" ]; then
+          KEY_DIR="$1"
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        shift
+        ;;
+    esac
+  done
+}
 
-# Validate required arguments
-if [ -z "$KEY_NAME" ] || [ -z "$KEY_DIR" ]; then
-  log_message "ERROR" "Both <key_name> and <key_dir> are required."
-  usage
-fi
+main() {
+  parse_args "$@"
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Generate SSH Key Script"
+  log_message "INFO" "Starting Generate SSH Key Script..."
+
+  # Validate required arguments
+  if [ -z "$KEY_NAME" ] || [ -z "$KEY_DIR" ]; then
+    log_message "ERROR" "Both <key_name> and <key_dir> are required."
+    print_with_separator "End of Generate SSH Key Script"
+    usage
+  fi
+
+  # Check if ssh-keygen is installed
+  if ! command -v ssh-keygen &> /dev/null; then
+    log_message "ERROR" "ssh-keygen is not installed. Please install OpenSSH tools."
+    print_with_separator "End of Generate SSH Key Script"
     exit 1
   fi
-  exec > >(tee -a "$LOG_FILE") 2>&1
-fi
 
-log_message "INFO" "Starting SSH key generation process..."
-print_with_separator "Generate SSH Key"
+  # Ensure the key directory exists
+  log_message "INFO" "Ensuring the key directory exists: $KEY_DIR"
+  mkdir -p "$KEY_DIR"
 
-# Check if ssh-keygen is installed
-if ! command -v ssh-keygen &> /dev/null; then
-  log_message "ERROR" "ssh-keygen is not installed. Please install OpenSSH tools."
-  exit 1
-fi
+  # Generate SSH key pair
+  log_message "INFO" "Generating SSH key pair..."
+  if ssh-keygen -t rsa -b 4096 -f "$KEY_DIR/$KEY_NAME" -N ""; then
+    log_message "SUCCESS" "SSH key pair generated successfully at:"
+    log_message "SUCCESS" "Private key: $KEY_DIR/$KEY_NAME"
+    log_message "SUCCESS" "Public key: $KEY_DIR/${KEY_NAME}.pub"
+  else
+    print_with_separator "End of Generate SSH Key Script"
+    log_message "ERROR" "Failed to generate SSH key pair."
+    exit 1
+  fi
 
-# Ensure the key directory exists
-log_message "INFO" "Ensuring the key directory exists: $KEY_DIR"
-mkdir -p "$KEY_DIR"
+  print_with_separator "End of Generate SSH Key Script"
+  log_message "SUCCESS" "SSH key generation process completed successfully."
+}
 
-# Generate SSH key pair
-log_message "INFO" "Generating SSH key pair..."
-if ssh-keygen -t rsa -b 4096 -f "$KEY_DIR/$KEY_NAME" -N ""; then
-  log_message "SUCCESS" "SSH key pair generated successfully at:"
-  log_message "Private key: $KEY_DIR/$KEY_NAME"
-  log_message "Public key: $KEY_DIR/${KEY_NAME}.pub"
-else
-  print_with_separator "End of Generate SSH Key"
-  log_message "ERROR" "Failed to generate SSH key pair."
-  exit 1
-fi
-
-# Notify user
-print_with_separator "End of Generate SSH Key"
-log_message "SUCCESS" "SSH key generation process completed successfully."
+main "$@"

@@ -2,14 +2,12 @@
 # count-files.sh
 # Script to count the number of files and directories in a given path
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+DIRECTORY=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Count Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,70 +42,75 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 /path/to/directory --log custom_log.log"
   echo "  $0 /path/to/directory"
-  print_with_separator
+  print_with_separator "End of Count Files Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-  log_message "ERROR" "<directory> is required."
-  usage
-fi
-
-# Initialize variables
-DIRECTORY=""
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$DIRECTORY" ]; then
-        DIRECTORY="$1"
-        shift
-      else
-        log_message "ERROR" "Unknown option or too many arguments: $1"
-        usage
-      fi
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$DIRECTORY" ]; then
+          DIRECTORY="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option or too many arguments: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate directory
-if [ ! -d "$DIRECTORY" ]; then
-  log_message "ERROR" "Directory $DIRECTORY does not exist."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Count Files Script"
+  log_message "INFO" "Starting Count Files Script..."
+
+  # Validate arguments
+  if [ -z "$DIRECTORY" ]; then
+    log_message "ERROR" "<directory> is required."
+    print_with_separator "End of Count Files Script"
     exit 1
   fi
-fi
 
-# Count files and directories
-log_message "INFO" "Counting files and directories in $DIRECTORY..."
-print_with_separator "Counting Output"
+  if [ ! -d "$DIRECTORY" ]; then
+    log_message "ERROR" "Directory $DIRECTORY does not exist."
+    print_with_separator "End of Count Files Script"
+    exit 1
+  fi
 
-FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
-DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
+  log_message "INFO" "Counting files and directories in $DIRECTORY..."
 
-# Log and print counts
-log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
-log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
+  FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
+  DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
 
-print_with_separator "End of Counting"
+  log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
+  log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
+
+  print_with_separator "End of Count Files Script"
+}
+
+main "$@"

@@ -2,14 +2,12 @@
 # http-status-code-checker.sh
 # Script to check HTTP status codes for a list of URLs
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+URLS=()
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "HTTP Status Code Checker Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,60 +42,33 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 https://google.com https://github.com --log custom_log.log"
   echo "  $0 https://example.com"
-  print_with_separator
+  print_with_separator "End of HTTP Status Code Checker Script"
   exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -eq 0 ]; then
-  log_message "ERROR" "<url1> <url2> ... are required."
-  usage
-fi
-
-# Initialize variables
-URLS=()
-LOG_FILE="/dev/null"
-
-# Parse arguments using while and case
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      URLS+=("$1")
-      shift
-      ;;
-  esac
-done
+        ;;
+      *)
+        URLS+=("$1")
+        shift
+        ;;
+    esac
+  done
+}
 
-# Validate URLs
-if [ "${#URLS[@]}" -eq 0 ]; then
-  log_message "ERROR" "At least one URL is required."
-  usage
-fi
-
-# Validate log file if provided
-if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
-    exit 1
-  fi
-fi
-
-log_message "INFO" "Checking HTTP status codes for the following URLs: ${URLS[*]}"
-print_with_separator "HTTP Status Code Output"
-
-# Function to check HTTP status codes
 check_status_codes() {
   for URL in "${URLS[@]}"; do
     TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
@@ -109,12 +81,37 @@ check_status_codes() {
   done
 }
 
-# Check status codes and handle errors
-if ! check_status_codes; then
-  print_with_separator "End of HTTP Status Code Output"
-  log_message "ERROR" "Failed to check HTTP status codes."
-  exit 1
-fi
+main() {
+  parse_args "$@"
 
-print_with_separator "End of HTTP Status Code Output"
-log_message "SUCCESS" "HTTP status code check complete."
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "HTTP Status Code Checker Script"
+  log_message "INFO" "Starting HTTP Status Code Checker Script..."
+
+  # Validate URLs
+  if [ "${#URLS[@]}" -eq 0 ]; then
+    log_message "ERROR" "At least one URL is required."
+    print_with_separator "End of HTTP Status Code Checker Script"
+    exit 1
+  fi
+
+  if check_status_codes; then
+    log_message "SUCCESS" "HTTP status code check complete."
+  else
+    log_message "ERROR" "Failed to check HTTP status codes."
+    print_with_separator "End of HTTP Status Code Checker Script"
+    exit 1
+  fi
+
+  print_with_separator "End of HTTP Status Code Checker Script"
+}
+
+main "$@"

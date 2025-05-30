@@ -2,14 +2,12 @@
 # scale-workloads.sh
 # Script to intelligently scale Kubernetes workloads based on metrics or schedules
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,6 @@ else
   exit 1
 fi
 
-# Default values
 WORKLOAD_TYPE="deployment"          # Default workload type to scale
 WORKLOAD_NAME=""                    # Name of the workload to scale
 NAMESPACE=""                        # Namespace of the workload
@@ -56,7 +52,6 @@ DRY_RUN=false                       # Whether to perform a dry run
 FORCE=false                         # Whether to force scaling without confirmation
 LOG_FILE="/dev/null"                # Log file location
 
-# Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Workload Scaling Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -1052,22 +1047,20 @@ parse_args() {
   esac
 }
 
-# Main function
 main() {
-  print_with_separator "Kubernetes Workload Scaling"
-  
   # Parse arguments
   parse_args "$@"
-  
+
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
       exit 1
     fi
-    # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
+  
+  print_with_separator "Kubernetes Workload Scaling Script"
   
   log_message "INFO" "Starting workload scaling in ${SCALE_MODE} mode..."
   
@@ -1325,5 +1318,4 @@ main() {
   print_with_separator
 }
 
-# Run the main function
 main "$@"

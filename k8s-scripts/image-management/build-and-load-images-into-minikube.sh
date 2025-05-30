@@ -1,6 +1,7 @@
 #!/bin/bash
 # push-images-to-minikube-registry.sh
 # images.txt format: image-name:path/to/context
+# Script to build and load images into a Minikube profile
 
 set -euo pipefail
 

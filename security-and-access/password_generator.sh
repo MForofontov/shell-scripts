@@ -2,14 +2,12 @@
 # password_generator.sh
 # Script to generate strong, random passwords.
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+LENGTH=16
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Password Generator Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,65 +42,68 @@ usage() {
   echo "  $0 --length 20 --log password.log"
   echo "  $0 --length 12"
   echo "  $0"
-  print_with_separator
+  print_with_separator "End of Password Generator Script"
   exit 1
 }
 
-# Default values
-LENGTH=16
-LOG_FILE="/dev/null"
-
-# Parse input arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --length)
-      if [ -z "$2" ] || ! [[ "$2" =~ ^[0-9]+$ ]] || [ "$2" -le 0 ]; then
-        log_message "ERROR" "Invalid length value: $2"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      LENGTH="$2"
-      shift 2
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
+        ;;
+      --length)
+        if [ -z "${2:-}" ] || ! [[ "$2" =~ ^[0-9]+$ ]] || [ "$2" -le 0 ]; then
+          log_message "ERROR" "Invalid length value: $2"
+          usage
+        fi
+        LENGTH="$2"
+        shift 2
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
         usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
-      ;;
-  esac
-done
+        ;;
+    esac
+  done
+}
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE."
-    exit 1
-  fi
-fi
-
-log_message "INFO" "Generating a password of length $LENGTH..."
-print_with_separator "Password Generation"
-
-# Function to generate a random password
 generate_password() {
   local length=$1
   LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()_+{}[]' < /dev/urandom | head -c "$length"
 }
 
-# Generate the password
-PASSWORD=$(generate_password "$LENGTH")
+main() {
+  parse_args "$@"
 
-# Display the generated password
-log_message "INFO"  "Generated password: $PASSWORD"
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
 
-print_with_separator "End of Password Generation"
-log_message "SUCCESS" "Password generation completed successfully."
+  print_with_separator "Password Generator Script"
+  log_message "INFO" "Starting Password Generator Script..."
+
+  log_message "INFO" "Generating a password of length $LENGTH..."
+
+  PASSWORD=$(generate_password "$LENGTH")
+
+  log_message "INFO" "Generated password: $PASSWORD"
+
+  print_with_separator "End of Password Generator Script"
+  log_message "SUCCESS" "Password generation completed successfully."
+}
+
+main "$@"

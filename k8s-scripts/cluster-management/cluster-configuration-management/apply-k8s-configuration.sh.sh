@@ -1,6 +1,6 @@
 #!/bin/bash
-# create-and-apply-cluster.sh
-# Script to create a Kubernetes cluster (minikube, kind, k3d) and apply manifests in order
+# apply-k8s-configuration.sh
+# Script to apply Kubernetes manifests in order (no cluster creation)
 
 set -euo pipefail
 
@@ -8,7 +8,6 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
-# Source logging and utility functions
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -23,79 +22,35 @@ else
   exit 1
 fi
 
-# Default values
-CLUSTER_NAME="k8s-cluster"
-PROVIDER="minikube"
-NODE_COUNT=1
-K8S_VERSION="latest"
-CONFIG_FILE=""
-WAIT_TIMEOUT=300
 MANIFEST_ROOT="k8s"
 LOG_FILE="/dev/null"
-SWITCH_CONTEXT=true
 
 usage() {
-  print_with_separator "Create and Apply Kubernetes Cluster Script"
+  print_with_separator "Apply Kubernetes Configuration Script"
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-n, --name <NAME>\033[0m          Cluster name (default: ${CLUSTER_NAME})"
-  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  Provider: minikube, kind, k3d (default: ${PROVIDER})"
-  echo -e "  \033[1;33m-c, --nodes <COUNT>\033[0m        Number of nodes (default: ${NODE_COUNT})"
-  echo -e "  \033[1;33m-v, --version <VERSION>\033[0m    Kubernetes version (default: ${K8S_VERSION})"
-  echo -e "  \033[1;33m-f, --config <FILE>\033[0m        Path to provider config file"
   echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      Root directory for manifests (default: k8s)"
-  echo -e "  \033[1;33m-t, --timeout <SECONDS>\033[0m    Timeout for cluster readiness (default: ${WAIT_TIMEOUT})"
   echo -e "  \033[1;33m--log <FILE>\033[0m               Log output to specified file"
-  echo -e "  \033[1;33m--no-context-switch\033[0m        Do not switch kubectl context after cluster creation"
   echo -e "  \033[1;33m--help\033[0m                     Show this help message"
   print_with_separator
   exit 1
 }
 
-# Parse arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --help)
         usage
         ;;
-      -n|--name)
-        CLUSTER_NAME="$2"
-        shift 2
-        ;;
-      -p|--provider)
-        PROVIDER="$2"
-        shift 2
-        ;;
-      -c|--nodes)
-        NODE_COUNT="$2"
-        shift 2
-        ;;
-      -v|--version)
-        K8S_VERSION="$2"
-        shift 2
-        ;;
-      -f|--config)
-        CONFIG_FILE="$2"
-        shift 2
-        ;;
       -m|--manifests)
         MANIFEST_ROOT="$2"
-        shift 2
-        ;;
-      -t|--timeout)
-        WAIT_TIMEOUT="$2"
         shift 2
         ;;
       --log)
         LOG_FILE="$2"
         shift 2
-        ;;
-      --no-context-switch)
-        SWITCH_CONTEXT=false
-        shift 1
         ;;
       *)
         log_message "ERROR" "Unknown option: $1"
@@ -105,40 +60,6 @@ parse_args() {
   done
 }
 
-# Switch kubectl context to the new cluster
-switch_kubectl_context() {
-  if [ "$SWITCH_CONTEXT" = true ]; then
-    case "$PROVIDER" in
-      minikube)
-        log_message "INFO" "Switching kubectl context to minikube profile: $CLUSTER_NAME"
-        kubectl config use-context "$CLUSTER_NAME" || true
-        ;;
-      kind)
-        log_message "INFO" "Switching kubectl context to kind cluster: kind-$CLUSTER_NAME"
-        kubectl config use-context "kind-$CLUSTER_NAME" || true
-        ;;
-      k3d)
-        log_message "INFO" "Switching kubectl context to k3d cluster: k3d-$CLUSTER_NAME"
-        kubectl config use-context "k3d-$CLUSTER_NAME" || true
-        ;;
-    esac
-  fi
-}
-
-# Create cluster using the existing script
-create_cluster() {
-  log_message "INFO" "Creating cluster with provider: $PROVIDER"
-  "$SCRIPT_DIR/create-cluster-local.sh" \
-    --name "$CLUSTER_NAME" \
-    --provider "$PROVIDER" \
-    --nodes "$NODE_COUNT" \
-    --version "$K8S_VERSION" \
-    ${CONFIG_FILE:+--config "$CONFIG_FILE"} \
-    --timeout "$WAIT_TIMEOUT" \
-    --log "$LOG_FILE"
-}
-
-# Wait for all deployments and statefulsets to be ready
 wait_for_resources_ready() {
   local ns
   for ns in $(kubectl get ns --no-headers -o custom-columns=":metadata.name"); do
@@ -153,7 +74,6 @@ wait_for_resources_ready() {
   done
 }
 
-# Apply manifests in order
 apply_manifests() {
   print_with_separator "Applying Kubernetes Manifests"
   local ns_dir="$MANIFEST_ROOT/namespace"
@@ -275,10 +195,7 @@ apply_manifests() {
 }
 
 main() {
-  # Parse command line arguments
   parse_args "$@"
-
-  print_with_separator "Create and Apply Kubernetes Cluster Script"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -289,12 +206,13 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  create_cluster
-  switch_kubectl_context
-  apply_manifests
+  print_with_separator "Apply Kubernetes Configuration Script"
 
-  print_with_separator "Cluster and Application Deployment Complete"
-  log_message "SUCCESS" "Cluster created and manifests applied."
+  log_message "INFO" "Starting to apply Kubernetes manifests from $MANIFEST_ROOT"
+
+  apply_manifests
+  print_with_separator "Application Deployment Complete"
+  log_message "SUCCESS" "Manifests applied."
 }
 
 main "$@"

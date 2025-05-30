@@ -1,15 +1,13 @@
 #!/bin/bash
-# Git Commit Validator
+# git-commit-validator.sh
 # Script to validate and commit changes with a proper commit message
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,9 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+COMMIT_MESSAGE=""
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Git Commit Validator Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -42,84 +41,95 @@ usage() {
   echo
   echo -e "\033[1;34mExample:\033[0m"
   echo "  $0 'Initial commit' --log commit_validation.log"
-  print_with_separator
-  exit 0
+  print_with_separator "End of Git Commit Validator Script"
+  exit 1
 }
 
-# Check if no arguments are provided
-if [ "$#" -lt 1 ]; then
-  log_message "ERROR" "<commit_message> is required."
-  usage
-fi
-
-# Initialize variables
-COMMIT_MESSAGE=""
-LOG_FILE="/dev/null"
-
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      if [ -z "$COMMIT_MESSAGE" ]; then
-        COMMIT_MESSAGE="$1"
-        shift
-      else
-        log_message "ERROR" "Unknown option: $1"
-        usage
-      fi
-      ;;
-  esac
-done
+        ;;
+      *)
+        if [ -z "$COMMIT_MESSAGE" ]; then
+          COMMIT_MESSAGE="$1"
+          shift
+        else
+          log_message "ERROR" "Unknown option: $1"
+          usage
+        fi
+        ;;
+    esac
+  done
+}
 
-# Validate required arguments
-if [ -z "$COMMIT_MESSAGE" ]; then
-  log_message "ERROR" "<commit_message> is required."
-  usage
-fi
+main() {
+  parse_args "$@"
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Git Commit Validator Script"
+  log_message "INFO" "Starting Git Commit Validator Script..."
+
+  # Validate required arguments
+  if [ -z "$COMMIT_MESSAGE" ]; then
+    log_message "ERROR" "<commit_message> is required."
+    print_with_separator "End of Git Commit Validator Script"
+    usage
+  fi
+
+  # Validate git is available
+  if ! command -v git &> /dev/null; then
+    log_message "ERROR" "git is not installed or not available in the PATH."
+    print_with_separator "End of Git Commit Validator Script"
     exit 1
   fi
-fi
 
-# Validate commit message format (example: must start with a capital letter and be at least 10 characters long)
-if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
-  log_message "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
-  exit 1
-fi
+  # Validate commit message format (example: must start with a capital letter and be at least 10 characters long)
+  if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
+    log_message "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
+    print_with_separator "End of Git Commit Validator Script"
+    exit 1
+  fi
 
-# Check if there are changes staged for commit
-log_message "INFO" "Validating staged changes..."
-if git diff --cached --quiet; then
-  log_message "ERROR" "No changes staged for commit!"
-  exit 1
-fi
+  # Check if there are changes staged for commit
+  log_message "INFO" "Validating staged changes..."
+  if git diff --cached --quiet; then
+    log_message "ERROR" "No changes staged for commit!"
+    print_with_separator "End of Git Commit Validator Script"
+    exit 1
+  fi
 
-# Get the current timestamp
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+  TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
-# Commit the changes with separators
-print_with_separator "git commit output"
-if git commit -m "$COMMIT_MESSAGE" 2>&1 | tee -a "$LOG_FILE"; then
-  print_with_separator "End of git commit"
-  log_message "SUCCESS" "Commit successful!"
-else
-  print_with_separator "End of git commit"
-  log_message "ERROR" "Failed to commit changes."
-  exit 1
-fi
+  # Commit the changes
+  if git commit -m "$COMMIT_MESSAGE"; then
+    log_message "SUCCESS" "Commit successful!"
+  else
+    log_message "ERROR" "Failed to commit changes."
+    print_with_separator "End of Git Commit Validator Script"
+    exit 1
+  fi
+
+  log_message "INFO" "$TIMESTAMP: Commit process completed."
+  print_with_separator "End of Git Commit Validator Script"
+}
+
+main "$@"

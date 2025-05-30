@@ -379,8 +379,6 @@ display_cluster_info() {
 main() {
   # Parse arguments
   parse_args "$@"
-
-  print_with_separator "Kubernetes Cluster Restart"
   
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -392,6 +390,8 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
+  print_with_separator "Kubernetes Cluster Restart"
+
   log_message "INFO" "Starting Kubernetes cluster restart..."
   
   # Display configuration

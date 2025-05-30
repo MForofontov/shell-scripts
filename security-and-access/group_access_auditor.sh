@@ -2,14 +2,12 @@
 # group_access_auditor.sh
 # Script to list all groups and their members.
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,7 +22,8 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+LOG_FILE="/dev/null"
+
 usage() {
   print_with_separator "Group Access Auditor Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -41,58 +39,60 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_group_access.log"
   echo "  $0"
-  print_with_separator
+  print_with_separator "End of Group Access Auditor Script"
   exit 1
 }
 
-# Parse input arguments
-LOG_FILE="/dev/null"
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --help)
-      usage
-      ;;
-    --log)
-      if [ -z "$2" ]; then
-        log_message "ERROR" "No log file provided after --log."
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --help)
         usage
-      fi
-      LOG_FILE="$2"
-      shift 2
-      ;;
-    *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
-      ;;
-  esac
-done
+        ;;
+      --log)
+        if [ -z "${2:-}" ]; then
+          log_message "ERROR" "No log file provided after --log."
+          usage
+        fi
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
+        usage
+        ;;
+    esac
+  done
+}
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE."
+list_groups() {
+  cat /etc/group | awk -F: '{ print $1 ": " $4 }'
+}
+
+main() {
+  parse_args "$@"
+
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "Group Access Auditor Script"
+  log_message "INFO" "Starting Group Access Auditor Script..."
+
+  if list_groups; then
+    log_message "SUCCESS" "Group access audit completed successfully."
+  else
+    log_message "ERROR" "Failed to list groups and their members."
+    print_with_separator "End of Group Access Auditor Script"
     exit 1
   fi
-fi
 
-log_message "INFO" "Starting group access audit..."
-print_with_separator "Group Access Audit Results"
-
-# List all groups and their members
-list_groups() {
-  if [ -n "$LOG_FILE" ]; then
-    cat /etc/group | awk -F: '{ print $1 ": " $4 }' | tee -a "$LOG_FILE"
-  else
-    cat /etc/group | awk -F: '{ print $1 ": " $4 }'
-  fi
+  print_with_separator "End of Group Access Auditor Script"
 }
 
-# Perform the group access audit
-if ! list_groups; then
-  print_with_separator "End of Group Access Audit Results"
-  log_message "ERROR" "Failed to list groups and their members."
-  exit 1
-fi
-
-print_with_separator "End of Group Access Audit Results"
-log_message "INFO" "Group access audit completed successfully."
+main "$@"

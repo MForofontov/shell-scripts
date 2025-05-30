@@ -230,8 +230,6 @@ parse_args() {
 main() {
   # Parse arguments
   parse_args "$@"
-  
-  print_with_separator "Kubernetes Cluster Deletion Script"
 
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
@@ -242,6 +240,8 @@ main() {
     # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
+
+  print_with_separator "Kubernetes Cluster Deletion Script"
   
   log_message "INFO" "Starting Kubernetes cluster deletion..."
   

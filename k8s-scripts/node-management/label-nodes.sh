@@ -62,7 +62,7 @@ LABEL_TEMPLATES=(
 
 # Function to display usage instructions
 usage() {
-  print_with_separator "Kubernetes Node Label Management Tool"
+  print_with_separator "Kubernetes Node Label Management Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script manages Kubernetes node labels with batch operations and templates."
   echo
@@ -645,20 +645,19 @@ parse_args() {
 
 # Main function
 main() {
-  print_with_separator "Kubernetes Node Label Management"
-  
   # Parse arguments
   parse_args "$@"
-  
+
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
       exit 1
     fi
-    # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
+  
+  print_with_separator "Kubernetes Node Label Management Script"
   
   log_message "INFO" "Starting node label management..."
   

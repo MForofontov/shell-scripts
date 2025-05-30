@@ -2,14 +2,12 @@
 # dependency-updater-npm.sh
 # Script to update npm dependencies and generate a summary of updated packages
 
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+set -euo pipefail
 
-# Construct the path to the logger and utility files relative to the script's directory
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -17,7 +15,6 @@ else
   exit 1
 fi
 
-# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -25,9 +22,10 @@ else
   exit 1
 fi
 
-# Function to display usage instructions
+LOG_FILE="/dev/null"
+
 usage() {
-  print_with_separator "NPM Dependency Updater"
+  print_with_separator "NPM Dependency Updater Script"
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script updates npm dependencies and generates a summary of updated packages."
   echo "  It must be run in a directory containing a 'package.json' file."
@@ -43,83 +41,89 @@ usage() {
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
   echo "  $0                        # Run the script without logging to a file"
-  print_with_separator
+  print_with_separator "End of NPM Dependency Updater Script"
   exit 1
 }
 
-# Initialize variables
-LOG_FILE="/dev/null"
-
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    --log)
-      if [[ -n "$2" ]]; then
-        LOG_FILE="$2"
-        shift 2
-      else
-        log_message "ERROR" "Missing argument for --log"
+parse_args() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --log)
+        if [[ -n "${2:-}" ]]; then
+          LOG_FILE="$2"
+          shift 2
+        else
+          log_message "ERROR" "Missing argument for --log"
+          usage
+        fi
+        ;;
+      --help)
         usage
-      fi
-      ;;
-    --help)
-      usage
-      ;;
-    *)
-      log_message "ERROR" "Unknown option: $1"
-      usage
-      ;;
-  esac
-done
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
+        usage
+        ;;
+    esac
+  done
+}
 
-# Validate log file if provided
-if [ -n "$LOG_FILE" ]; then
-  if ! touch "$LOG_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to log file $LOG_FILE"
+main() {
+  parse_args "$@"
+
+  # Configure log file
+  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
+    if ! touch "$LOG_FILE" 2>/dev/null; then
+      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
+      exit 1
+    fi
+    exec > >(tee -a "$LOG_FILE") 2>&1
+  fi
+
+  print_with_separator "NPM Dependency Updater Script"
+  log_message "INFO" "Starting NPM Dependency Updater Script..."
+
+  # Validate if npm is installed
+  if ! command -v npm &> /dev/null; then
+    log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
+    print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
-fi
 
-# Validate if npm is installed
-if ! command -v npm &> /dev/null; then
-  log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
-  exit 1
-fi
+  # Validate if the script is run in a directory with a package.json file
+  if [ ! -f "package.json" ]; then
+    log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
+    print_with_separator "End of NPM Dependency Updater Script"
+    exit 1
+  fi
 
-# Validate if the script is run in a directory with a package.json file
-if [ ! -f "package.json" ]; then
-  log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
-  exit 1
-fi
+  log_message "INFO" "Updating npm dependencies..."
 
-# Log the start of the update process
-log_message "INFO" "Starting npm dependency update..."
-TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-log_message "INFO" "$TIMESTAMP: Updating npm dependencies..."
+  TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+  log_message "INFO" "$TIMESTAMP: Running npm update..."
 
-# Update npm dependencies
-print_with_separator "npm update output"
-if npm update 2>&1 | tee -a "$LOG_FILE"; then
-  print_with_separator "End of npm update"
-  log_message "SUCCESS" "Dependencies updated successfully!"
-else
-  print_with_separator "End of npm update"
-  log_message "ERROR" "Failed to update dependencies! Check the log file for details: $LOG_FILE"
-  exit 1
-fi
+  # Update npm dependencies
+  if npm update; then
+    log_message "SUCCESS" "Dependencies updated successfully!"
+  else
+    log_message "ERROR" "Failed to update dependencies!"
+    print_with_separator "End of NPM Dependency Updater Script"
+    exit 1
+  fi
 
-# Generate a summary of updated packages
-log_message "INFO" "Generating summary of updated packages..."
-print_with_separator "npm outdated output"
-UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
+  # Generate a summary of updated packages
+  log_message "INFO" "Generating summary of updated packages..."
+  UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
 
-if [ -n "$UPDATED_PACKAGES" ]; then
-  log_message "INFO" "Summary of updated packages:"
-  echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"' | tee -a "$LOG_FILE"
-  print_with_separator "End of npm outdated"
-else
-  print_with_separator "End of npm outdated"
-  log_message "INFO" "No packages were updated."
-fi
+  if [ -n "$UPDATED_PACKAGES" ] && [ "$UPDATED_PACKAGES" != "null" ]; then
+    log_message "INFO" "Summary of updated packages:"
+    echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
+  else
+    log_message "INFO" "No packages were updated."
+  fi
 
-log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
+  log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
+  print_with_separator "End of NPM Dependency Updater Script"
+}
+
+main "$@"
