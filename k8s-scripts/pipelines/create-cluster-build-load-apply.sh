@@ -8,7 +8,7 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster-local.sh"
-BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images-into-minikube.sh"
+BUILD_PUSH_SCRIPT="$SCRIPT_DIR/../image-management/build-and-push-images-to-dockerhub.sh"
 APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 
 if [ -f "$LOG_FUNCTION_FILE" ]; then
@@ -34,6 +34,8 @@ WAIT_TIMEOUT=300
 LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
+DOCKER_USERNAME=""
+DOCKER_PAT=""
 
 usage() {
   print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
@@ -51,13 +53,15 @@ usage() {
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m        Path to provider config file"
   echo -e "  \033[1;33m-i, --images <FILE>\033[0m        Images file to build/load"
   echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      Manifests directory to apply"
+  echo -e "  \033[1;33m--username <USERNAME>\033[0m      Docker registry username (required for Docker Hub push)"
+  echo -e "  \033[1;33m--pat <PAT>\033[0m                Docker registry Personal Access Token (required for Docker Hub push)"
   echo -e "  \033[1;33m--log <FILE>\033[0m               Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                     Show this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 -n mycluster -i images.txt -m k8s --log pipeline.log"
+  echo "  $0 -n mycluster -i images.txt -m k8s --username myuser --pat mytoken --log pipeline.log"
   echo "  $0 --provider kind --nodes 2"
-  print_with_separator
+  print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
   exit 1
 }
 
@@ -90,6 +94,14 @@ parse_args() {
         ;;
       -m|--manifests)
         MANIFEST_ROOT="$2"
+        shift 2
+        ;;
+      --username)
+        DOCKER_USERNAME="$2"
+        shift 2
+        ;;
+      --pat)
+        DOCKER_PAT="$2"
         shift 2
         ;;
       --log)
@@ -130,30 +142,52 @@ main() {
   log_message "INFO" "Creating cluster: ${CLUSTER_NAME} with provider: ${PROVIDER}"
   "${CREATE_CMD[@]}"
 
-  # If images file is provided, build and load images
+  TMP_MANIFEST_DIR=""
+  # If images file is provided, build and load images, and capture the temp manifest dir if manifests are used
   if [[ -n "$IMAGE_LIST" ]]; then
-    if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
-      log_message "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
+    if [ ! -f "$BUILD_PUSH_SCRIPT" ]; then
+      log_message "ERROR" "Image build/load script not found: $BUILD_PUSH_SCRIPT"
       print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
       exit 1
     fi
-    BUILD_CMD=("$BUILD_LOAD_SCRIPT" -n "$CLUSTER_NAME" -f "$IMAGE_LIST")
+    BUILD_CMD=("$BUILD_PUSH_SCRIPT" -f "$IMAGE_LIST")
+    [[ -n "$DOCKER_USERNAME" ]] && BUILD_CMD+=(--username "$DOCKER_USERNAME")
+    [[ -n "$DOCKER_PAT" ]] && BUILD_CMD+=(--pat "$DOCKER_PAT")
+    if [[ -n "$MANIFEST_ROOT" ]]; then
+      BUILD_CMD+=(-m "$MANIFEST_ROOT")
+    fi
     [ -n "$LOG_FILE" ] && BUILD_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Building and loading images from $IMAGE_LIST into minikube profile: $CLUSTER_NAME"
-    "${BUILD_CMD[@]}"
+
+    if [[ -n "$MANIFEST_ROOT" ]]; then
+      TMP_MANIFEST_DIR=$(
+        { "${BUILD_CMD[@]}" | tee /dev/tty; } | tail -n 1
+      )
+      TMP_MANIFEST_DIR=$(echo "$TMP_MANIFEST_DIR" | tail -n 1)
+    else
+      "${BUILD_CMD[@]}"
+    fi
   fi
 
-  # If manifests directory is provided, apply manifests
+  # If manifests directory is provided, apply manifests from the temp dir if it exists, else from the original
   if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
       log_message "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
       print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
       exit 1
     fi
-    APPLY_CMD=("$APPLY_MANIFESTS_SCRIPT" --manifests "$MANIFEST_ROOT")
+    MANIFESTS_TO_APPLY="$MANIFEST_ROOT"
+    if [[ -n "$TMP_MANIFEST_DIR" && -d "$TMP_MANIFEST_DIR" ]]; then
+      MANIFESTS_TO_APPLY="$TMP_MANIFEST_DIR"
+    fi
+    APPLY_CMD=("$APPLY_MANIFESTS_SCRIPT" --manifests "$MANIFESTS_TO_APPLY")
     [ -n "$LOG_FILE" ] && APPLY_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Applying manifests from $MANIFEST_ROOT"
+    log_message "INFO" "Applying manifests from $MANIFESTS_TO_APPLY"
     "${APPLY_CMD[@]}"
+    # Clean up the temp manifest directory if it was used
+    if [[ -n "$TMP_MANIFEST_DIR" && -d "$TMP_MANIFEST_DIR" ]]; then
+      log_message "INFO" "Deleting temporary manifest directory $TMP_MANIFEST_DIR"
+      rm -rf "$TMP_MANIFEST_DIR"
+    fi
   fi
 
   log_message "SUCCESS" "Cluster creation, image loading, and manifest application complete."
