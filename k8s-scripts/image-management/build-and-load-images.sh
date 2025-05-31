@@ -1,15 +1,12 @@
 #!/bin/bash
-# create-cluster-build-load-apply.sh
-# Script to create a cluster, build/load images into the cluster, and apply manifests if files are given.
+# build-and-load-images.sh
+# Build Docker images and load them into a local Kubernetes cluster (minikube, kind, or k3d)
 
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
-CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster.sh"
-BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images.sh"
-APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
@@ -25,39 +22,28 @@ else
   exit 1
 fi
 
+IMAGE_LIST=""
 CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"
-NODE_COUNT=1
-K8S_VERSION="latest"
-CONFIG_FILE=""
-WAIT_TIMEOUT=300
-LOG_FILE=""
-IMAGE_LIST=""
-MANIFEST_ROOT=""
+LOG_FILE="/dev/null"
 
 usage() {
-  print_with_separator "Kubernetes Cluster Build/Load/Apply Tool"
+  print_with_separator "Build and Load Images Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script creates a Kubernetes cluster, optionally builds and loads images into the cluster,"
-  echo "  and optionally applies manifests."
+  echo "  Build Docker images and load them into a local Kubernetes cluster (minikube, kind, or k3d)."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 -f <images.txt> [--provider <minikube|kind|k3d>] [--name <cluster>] [--log <file>]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m-n, --name <NAME>\033[0m           (Optional) Cluster name (default: ${CLUSTER_NAME})"
-  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m   (Optional) Provider: minikube, kind, k3d (default: ${PROVIDER})"
-  echo -e "  \033[1;33m-c, --nodes <COUNT>\033[0m         (Optional) Number of nodes (default: ${NODE_COUNT})"
-  echo -e "  \033[1;33m-v, --version <VERSION>\033[0m     (Optional) Kubernetes version (default: ${K8S_VERSION})"
-  echo -e "  \033[1;33m-f, --config <FILE>\033[0m         (Optional) Path to provider config file"
-  echo -e "  \033[1;33m-i, --images <FILE>\033[0m         (Optional) Images file to build/load"
-  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m       (Optional) Manifests directory to apply"
-  echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                      (Optional) Show this help message"
+  echo -e "  \033[1;33m-f, --file <FILE>\033[0m        File listing images to build (format: <image>:<tag> <dockerfile-dir>)"
+  echo -e "  \033[1;33m--provider <PROVIDER>\033[0m    Cluster provider (minikube, kind, k3d) (default: minikube)"
+  echo -e "  \033[1;33m--name <NAME>\033[0m           Cluster name (default: k8s-cluster)"
+  echo -e "  \033[1;33m--log <FILE>\033[0m            Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                  Show this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 -n mycluster -i images.txt -m k8s --log pipeline.log"
-  echo "  $0 --provider kind --nodes 2"
+  echo "  $0 -f images.txt --provider kind --name my-cluster"
   print_with_separator
   exit 1
 }
@@ -65,32 +51,16 @@ usage() {
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -n|--name)
-        CLUSTER_NAME="$2"
-        shift 2
-        ;;
-      -p|--provider)
-        PROVIDER="$2"
-        shift 2
-        ;;
-      -c|--nodes)
-        NODE_COUNT="$2"
-        shift 2
-        ;;
-      -v|--version)
-        K8S_VERSION="$2"
-        shift 2
-        ;;
-      -f|--config)
-        CONFIG_FILE="$2"
-        shift 2
-        ;;
-      -i|--images)
+      -f|--file)
         IMAGE_LIST="$2"
         shift 2
         ;;
-      -m|--manifests)
-        MANIFEST_ROOT="$2"
+      --provider)
+        PROVIDER="$2"
+        shift 2
+        ;;
+      --name)
+        CLUSTER_NAME="$2"
         shift 2
         ;;
       --log)
@@ -106,12 +76,80 @@ parse_args() {
         ;;
     esac
   done
+
+  if [[ -z "$IMAGE_LIST" ]]; then
+    log_message "ERROR" "Image list file is required."
+    usage
+  fi
+}
+
+check_requirements() {
+  log_message "INFO" "Checking requirements..."
+  if ! command -v docker &>/dev/null; then
+    log_message "ERROR" "docker not found. Please install Docker."
+    exit 1
+  fi
+  case "$PROVIDER" in
+    minikube)
+      if ! command -v minikube &>/dev/null; then
+        log_message "ERROR" "minikube not found. Please install minikube."
+        exit 1
+      fi
+      ;;
+    kind)
+      if ! command -v kind &>/dev/null; then
+        log_message "ERROR" "kind not found. Please install kind."
+        exit 1
+      fi
+      ;;
+    k3d)
+      if ! command -v k3d &>/dev/null; then
+        log_message "ERROR" "k3d not found. Please install k3d."
+        exit 1
+      fi
+      ;;
+    *)
+      log_message "ERROR" "Unsupported provider: $PROVIDER"
+      exit 1
+      ;;
+  esac
+  log_message "SUCCESS" "All required tools are available."
+}
+
+build_and_load_images() {
+  while read -r line; do
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+    image=$(echo "$line" | awk '{print $1}')
+    dir=$(echo "$line" | awk '{print $2}')
+    if [[ -z "$image" || -z "$dir" ]]; then
+      log_message "WARNING" "Skipping invalid line: $line"
+      continue
+    fi
+    log_message "INFO" "Building image $image from directory $dir"
+    docker build -t "$image" "$dir"
+    log_message "SUCCESS" "Built image $image"
+
+    case "$PROVIDER" in
+      minikube)
+        log_message "INFO" "Loading image $image into minikube ($CLUSTER_NAME)"
+        minikube image load "$image" -p "$CLUSTER_NAME"
+        ;;
+      kind)
+        log_message "INFO" "Loading image $image into kind ($CLUSTER_NAME)"
+        kind load docker-image "$image" --name "$CLUSTER_NAME"
+        ;;
+      k3d)
+        log_message "INFO" "Importing image $image into k3d ($CLUSTER_NAME)"
+        k3d image import "$image" -c "$CLUSTER_NAME"
+        ;;
+    esac
+    log_message "SUCCESS" "Loaded image $image into $PROVIDER"
+  done < "$IMAGE_LIST"
 }
 
 main() {
   parse_args "$@"
 
-  # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
@@ -120,50 +158,17 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
-  log_message "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
+  print_with_separator "Build and Load Images Script"
+  log_message "INFO" "Starting build and load process..."
+  log_message "INFO" "  Provider:     $PROVIDER"
+  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
+  log_message "INFO" "  Image List:   $IMAGE_LIST"
 
-  # Use external create-cluster.sh script
-  if [ ! -f "$CREATE_CLUSTER_SCRIPT" ]; then
-    log_message "ERROR" "Cluster creation script not found: $CREATE_CLUSTER_SCRIPT"
-    exit 1
-  fi
-  CREATE_CMD=("$CREATE_CLUSTER_SCRIPT" --name "$CLUSTER_NAME" --provider "$PROVIDER" --nodes "$NODE_COUNT" --version "$K8S_VERSION")
-  [ -n "$CONFIG_FILE" ] && CREATE_CMD+=(--config "$CONFIG_FILE")
-  [ -n "$LOG_FILE" ] && CREATE_CMD+=(--log "$LOG_FILE")
-  log_message "INFO" "Invoking cluster creation script: ${CREATE_CMD[*]}"
-  "${CREATE_CMD[@]}"
+  check_requirements
+  build_and_load_images
 
-  # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
-  if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
-    if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
-      log_message "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
-      print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
-      exit 1
-    fi
-    BUILD_CMD=("$BUILD_LOAD_SCRIPT" -f "$IMAGE_LIST" --provider "$PROVIDER" --name "$CLUSTER_NAME")
-    [ -n "$LOG_FILE" ] && BUILD_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Building and loading images from $IMAGE_LIST (single-node cluster)"
-    "${BUILD_CMD[@]}"
-  elif [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -ne 1 ]]; then
-    log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters. e.g build-and-push-images-to-dockerhub.sh"
-  fi
-
-  # If manifests directory is provided, apply manifests
-  if [[ -n "$MANIFEST_ROOT" ]]; then
-    if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
-      log_message "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
-      print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
-      exit 1
-    fi
-    APPLY_CMD=("$APPLY_MANIFESTS_SCRIPT" --manifests "$MANIFEST_ROOT")
-    [ -n "$LOG_FILE" ] && APPLY_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Applying manifests from $MANIFEST_ROOT"
-    "${APPLY_CMD[@]}"
-  fi
-
-  log_message "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
-  print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
+  print_with_separator "End of Build and Load Images Script"
+  log_message "SUCCESS" "All images built and loaded successfully."
 }
 
 main "$@"
