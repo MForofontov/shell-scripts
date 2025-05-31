@@ -27,13 +27,20 @@ LOG_FILE="/dev/null"
 
 usage() {
   print_with_separator "Apply Kubernetes Configuration Script"
+  echo -e "\033[1;34mDescription:\033[0m"
+  echo "  This script applies Kubernetes manifests in order (no cluster creation)."
+  echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      Root directory for manifests (default: k8s)"
-  echo -e "  \033[1;33m--log <FILE>\033[0m               Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                     Show this help message"
+  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      (Optional) Root directory for manifests (default: k8s)"
+  echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                     (Optional) Show this help message"
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 --manifests my-manifests"
+  echo "  $0 --log apply.log"
   print_with_separator
   exit 1
 }
