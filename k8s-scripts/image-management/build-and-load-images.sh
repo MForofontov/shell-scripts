@@ -7,6 +7,7 @@ set -euo pipefail
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
+CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster.sh"
 BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images.sh"
 APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 
@@ -107,36 +108,6 @@ parse_args() {
   done
 }
 
-create_cluster() {
-  print_with_separator "Creating Kubernetes Cluster"
-  log_message "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
-
-  case "$PROVIDER" in
-    minikube)
-      minikube start -p "$CLUSTER_NAME" --nodes="$NODE_COUNT" --kubernetes-version="$K8S_VERSION" ${CONFIG_FILE:+--config "$CONFIG_FILE"}
-      ;;
-    kind)
-      if [[ -n "$CONFIG_FILE" ]]; then
-        kind create cluster --name "$CLUSTER_NAME" --config "$CONFIG_FILE" --image "kindest/node:$K8S_VERSION"
-      else
-        kind create cluster --name "$CLUSTER_NAME" --image "kindest/node:$K8S_VERSION"
-      fi
-      ;;
-    k3d)
-      if [[ -n "$CONFIG_FILE" ]]; then
-        k3d cluster create "$CLUSTER_NAME" --config "$CONFIG_FILE"
-      else
-        k3d cluster create "$CLUSTER_NAME" --servers "$NODE_COUNT"
-      fi
-      ;;
-    *)
-      log_message "ERROR" "Unsupported provider: $PROVIDER"
-      exit 1
-      ;;
-  esac
-  log_message "SUCCESS" "Cluster $CLUSTER_NAME created."
-}
-
 main() {
   parse_args "$@"
 
@@ -152,7 +123,16 @@ main() {
   print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
   log_message "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
 
-  create_cluster
+  # Use external create-cluster.sh script
+  if [ ! -f "$CREATE_CLUSTER_SCRIPT" ]; then
+    log_message "ERROR" "Cluster creation script not found: $CREATE_CLUSTER_SCRIPT"
+    exit 1
+  fi
+  CREATE_CMD=("$CREATE_CLUSTER_SCRIPT" --name "$CLUSTER_NAME" --provider "$PROVIDER" --nodes "$NODE_COUNT" --version "$K8S_VERSION")
+  [ -n "$CONFIG_FILE" ] && CREATE_CMD+=(--config "$CONFIG_FILE")
+  [ -n "$LOG_FILE" ] && CREATE_CMD+=(--log "$LOG_FILE")
+  log_message "INFO" "Invoking cluster creation script: ${CREATE_CMD[*]}"
+  "${CREATE_CMD[@]}"
 
   # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
   if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
@@ -166,7 +146,7 @@ main() {
     log_message "INFO" "Building and loading images from $IMAGE_LIST (single-node cluster)"
     "${BUILD_CMD[@]}"
   elif [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -ne 1 ]]; then
-    log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
+    log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters. e.g build-and-push-images-to-dockerhub.sh"
   fi
 
   # If manifests directory is provided, apply manifests
