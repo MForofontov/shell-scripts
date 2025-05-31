@@ -41,18 +41,23 @@ usage() {
   echo "  and optionally applies manifests."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m-n, --name <NAME>\033[0m           (Optional) Cluster name (default: ${CLUSTER_NAME})"
+  echo -e "  \033[1;33m-n, --name <NAME>\033[0m           (Optional) Cluster name (default: ${CLUSTER_NAME})"
   echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m   (Optional) Provider: minikube, kind, k3d (default: ${PROVIDER})"
   echo -e "  \033[1;33m-c, --nodes <COUNT>\033[0m         (Optional) Number of nodes (default: ${NODE_COUNT})"
   echo -e "  \033[1;33m-v, --version <VERSION>\033[0m     (Optional) Kubernetes version (default: ${K8S_VERSION})"
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m         (Optional) Path to provider config file"
-  echo -e "  \033[1;33m-i, --images <FILE>\033[0m         (Optional) Images file to build/load"
-  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m       (Optional) Manifests directory to apply"
+  echo -e "  \033[1;36m-i, --images <FILE>\033[0m         (Required for image build/load) Images file to build/load"
+  echo -e "  \033[1;36m-m, --manifests <DIR>\033[0m       (Required for manifest apply) Manifests directory to apply"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Show this help message"
+  echo
+  echo -e "\033[1;34mNotes:\033[0m"
+  echo "  - All options are optional unless you want to build/load images or apply manifests."
+  echo "  - \033[1;36m-i, --images\033[0m is required only if you want to build/load images."
+  echo "  - \033[1;36m-m, --manifests\033[0m is required only if you want to apply manifests."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -n mycluster -i images.txt -m k8s --log pipeline.log"
