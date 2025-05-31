@@ -41,11 +41,11 @@ usage() {
   echo "  This script creates Kubernetes clusters using various providers (minikube, kind, k3d)."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m-n, --name <NAME>\033[0m          (Optional) Cluster name (default: ${CLUSTER_NAME})"
-  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to use (minikube, kind, k3d) (default: ${PROVIDER})"
+  echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to use: minikube, kind, k3d (default: ${PROVIDER})"
   echo -e "  \033[1;33m-c, --nodes <COUNT>\033[0m        (Optional) Number of nodes (default: ${NODE_COUNT})"
   echo -e "  \033[1;33m-v, --version <VERSION>\033[0m    (Optional) Kubernetes version (default: ${K8S_VERSION})"
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m        (Optional) Path to custom config file"
