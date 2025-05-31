@@ -36,11 +36,11 @@ usage() {
   echo "  $0 -f <images.txt> [--provider <minikube|kind|k3d>] [--name <cluster>] [--log <file>]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-f, --file <FILE>\033[0m        File listing images to build (format: <image>:<tag> <dockerfile-dir>)"
-  echo -e "  \033[1;33m--provider <PROVIDER>\033[0m    Cluster provider (minikube, kind, k3d) (default: minikube)"
-  echo -e "  \033[1;33m--name <NAME>\033[0m           Cluster name (default: k8s-cluster)"
-  echo -e "  \033[1;33m--log <FILE>\033[0m            Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                  Show this help message"
+  echo -e "  \033[1;36m-f, --file <FILE>\033[0m        (Required) File listing images to build (format: <image>:<tag> <dockerfile-dir>)"
+  echo -e "  \033[1;33m--provider <PROVIDER>\033[0m    (Optional) Cluster provider (minikube, kind, k3d) (default: minikube)"
+  echo -e "  \033[1;33m--name <NAME>\033[0m            (Optional) Cluster name (default: k8s-cluster)"
+  echo -e "  \033[1;33m--log <FILE>\033[0m             (Optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                   (Optional) Show this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -f images.txt --provider kind --name my-cluster"
