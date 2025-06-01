@@ -38,18 +38,23 @@ usage() {
   echo "  and creates a Kubernetes docker-registry secret for pulling images."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  build-and-push-images-to-dockerhub.sh -u <docker-username> -p <docker-pat> -e <email> -j <project-name> -f <images.txt> -m <manifest-dir> [--log <log_file>]"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m-u, --username <USERNAME>\033[0m    Docker registry username (required)"
-  echo -e "  \033[1;33m-p, --pat <PAT>\033[0m             Docker registry Personal Access Token (required)"
-  echo -e "  \033[1;33m-e, --email <EMAIL>\033[0m         Docker Hub email (required for secret)"
-  echo -e "  \033[1;33m-j, --project <PROJECT>\033[0m     Kubernetes project/namespace (required for secret)"
-  echo -e "  \033[1;33m-f, --file <FILE>\033[0m           Path to images.txt file (default: images.txt)"
-  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m       Path to manifest directory (optional)"
-  echo -e "  \033[1;33m--log <FILE>\033[0m                Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                      Show this help message"
-  print_with_separator "End of Build and Push Images to Docker Registry Script"
+  echo -e "  \033[1;36m-u, --username <USERNAME>\033[0m   (Required) Docker registry username"
+  echo -e "  \033[1;36m-p, --pat <PAT>\033[0m            (Required) Docker registry Personal Access Token"
+  echo -e "  \033[1;36m-e, --email <EMAIL>\033[0m        (Required) Docker Hub email (for secret)"
+  echo -e "  \033[1;36m-j, --project <PROJECT>\033[0m    (Required) Kubernetes project/namespace (for secret)"
+  echo -e "  \033[1;36m-f, --file <FILE>\033[0m          (Required) Path to images.txt file (format: <image>:<tag> <dockerfile-dir>)"
+  echo -e "  \033[1;33m-m, --manifests <DIR>\033[0m      (Optional) Path to manifest directory"
+  echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                     (Optional) Show this help message"
+  echo
+  echo -e "\033[1;34mExamples:\033[0m"
+  echo "  $0 -u myuser -p mypat -e me@email.com -j myns -f images.txt"
+  echo "  $0 --username myuser --pat mypat --email me@email.com --project myns --file images.txt --manifests ./manifests"
+  echo "  $0 -u myuser -p mypat -e me@email.com -j myns -f images.txt --log build.log"
+  print_with_separator
   exit 1
 }
 
