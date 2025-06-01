@@ -2,6 +2,9 @@
 # label-nodes.sh
 # Script to manage Kubernetes node labels with batch operations and templates
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 NODES=()
 LABELS=()
 REMOVE_LABELS=()
@@ -41,6 +46,9 @@ SELECTOR=""
 SAVE_TEMPLATE=""
 TEMPLATES_DIR="$HOME/.kube/label-templates"
 
+#=====================================================================
+# LABEL TEMPLATES
+#=====================================================================
 # Define common label templates
 declare -A LABEL_TEMPLATES
 LABEL_TEMPLATES=(
@@ -60,6 +68,9 @@ LABEL_TEMPLATES=(
   ["staging"]="environment=staging"
 )
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Node Label Management Script"
@@ -100,6 +111,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -129,6 +143,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# TEMPLATE MANAGEMENT
+#=====================================================================
 # List available templates
 list_templates() {
   print_with_separator "Available Label Templates"
@@ -189,6 +206,9 @@ save_template() {
   return 0
 }
 
+#=====================================================================
+# NODE SELECTION
+#=====================================================================
 # Get nodes by selector
 get_nodes_by_selector() {
   local selector="$1"
@@ -236,6 +256,9 @@ validate_nodes() {
   log_message "SUCCESS" "Found $valid_count valid nodes."
 }
 
+#=====================================================================
+# LABEL VALIDATION
+#=====================================================================
 # Validate label format
 validate_label_format() {
   local label="$1"
@@ -373,6 +396,9 @@ check_label_consistency() {
   return 0
 }
 
+#=====================================================================
+# LABEL OPERATIONS
+#=====================================================================
 # Apply labels to a node
 apply_labels() {
   local node="$1"
@@ -567,6 +593,9 @@ process_template() {
   return 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -643,6 +672,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
