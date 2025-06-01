@@ -2,6 +2,9 @@
 # merge-kubeconfig.sh
 # Script to merge multiple kubeconfig files into a single file
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 INPUT_FILES=()
 OUTPUT_FILE="$HOME/.kube/merged-config.yaml"
@@ -36,6 +42,9 @@ TEMP_DIR=$(mktemp -d)
 LOG_FILE="/dev/null"
 FORCE=false
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Kubeconfig Merge Script"
@@ -65,6 +74,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -79,6 +91,9 @@ cleanup() {
 # Register cleanup function to run on exit
 trap cleanup EXIT
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -98,6 +113,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# INPUT VALIDATION
+#=====================================================================
 # Validate input files
 validate_input_files() {
   log_message "INFO" "Validating input files..."
@@ -137,6 +155,9 @@ validate_input_files() {
   log_message "SUCCESS" "Found $valid_count valid input files."
 }
 
+#=====================================================================
+# FILE OPERATIONS
+#=====================================================================
 # Create backup of output file if it exists
 backup_existing_config() {
   if [[ "$BACKUP" == true && -f "$OUTPUT_FILE" ]]; then
@@ -175,6 +196,13 @@ merge_kubeconfig_files() {
   echo "$merged_config"
 }
 
+#=====================================================================
+# PROCESSING FUNCTIONS
+#=====================================================================
+
+#---------------------------------------------------------------------
+# DEDUPLICATION
+#---------------------------------------------------------------------
 # Deduplicate contexts and clusters
 deduplicate_entries() {
   local input_file="$1"
@@ -226,6 +254,9 @@ deduplicate_entries() {
   echo "$deduplicated_config"
 }
 
+#---------------------------------------------------------------------
+# ORGANIZATION
+#---------------------------------------------------------------------
 # Organize contexts by provider (add comments and sort)
 organize_contexts_by_provider() {
   local input_file="$1"
@@ -293,6 +324,9 @@ organize_contexts_by_provider() {
   echo "$organized_config"
 }
 
+#---------------------------------------------------------------------
+# VALIDATION
+#---------------------------------------------------------------------
 # Validate merged config
 validate_merged_config() {
   local input_file="$1"
@@ -379,6 +413,9 @@ validate_merged_config() {
   echo "$validated_config"
 }
 
+#=====================================================================
+# OUTPUT HANDLING
+#=====================================================================
 # Write final config to output file
 write_output_file() {
   local input_file="$1"
@@ -412,6 +449,9 @@ write_output_file() {
   fi
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -460,6 +500,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
