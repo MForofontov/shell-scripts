@@ -40,7 +40,7 @@ usage() {
   echo "  This script makes it easy to switch between different Kubernetes contexts."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m-c, --context <CONTEXT>\033[0m    (Optional) Switch to specified context"
