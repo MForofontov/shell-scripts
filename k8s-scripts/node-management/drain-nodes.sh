@@ -2,6 +2,9 @@
 # drain-nodes.sh
 # Script to safely cordon and drain Kubernetes nodes for maintenance
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 NODES=()
 IGNORE_DAEMONSETS=true
 DELETE_LOCAL_DATA=false
@@ -42,6 +47,9 @@ NAMESPACE_FILTER=""
 SELECTOR_FILTER=""
 MAX_UNAVAILABLE_PODS=0
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Node Drain Script"
@@ -79,6 +87,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -103,6 +114,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# NODE SELECTION AND VALIDATION
+#=====================================================================
 # Get nodes by selector
 get_nodes_by_selector() {
   local selector="$1"
@@ -155,6 +169,9 @@ validate_nodes() {
   log_message "SUCCESS" "Found $valid_count valid nodes."
 }
 
+#=====================================================================
+# POD MANAGEMENT
+#=====================================================================
 # Check pods on node
 check_pods_on_node() {
   local node="$1"
@@ -197,6 +214,9 @@ check_pods_on_node() {
   return 0
 }
 
+#=====================================================================
+# NODE OPERATIONS
+#=====================================================================
 # Cordon a node
 cordon_node() {
   local node="$1"
@@ -370,6 +390,9 @@ process_node() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -452,6 +475,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
@@ -468,16 +494,6 @@ main() {
   fi
   
   print_with_separator "Kubernetes Node Drain Script"
-
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    # Redirect stdout/stderr to log file and console
-    exec > >(tee -a "$LOG_FILE") 2>&1
-  fi
   
   log_message "INFO" "Starting node drain process..."
   
