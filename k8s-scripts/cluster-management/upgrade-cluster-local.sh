@@ -1,7 +1,10 @@
 #!/bin/bash
-# upgrade-cluster.sh
+# upgrade-cluster-local.sh
 # Script to upgrade Kubernetes clusters across various providers
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 K8S_VERSION=""       # Target Kubernetes version for upgrade
@@ -34,6 +39,9 @@ FORCE=false
 BACKUP=true          # Create backup/snapshot before upgrading if possible
 WAIT_TIMEOUT=600     # 10 minutes timeout for upgrade to complete
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Upgrade Script"
@@ -62,6 +70,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -111,6 +122,9 @@ check_requirements() {
   log_message "SUCCESS" "Required tools are available."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
   log_message "INFO" "Checking if cluster exists..."
@@ -216,6 +230,9 @@ get_cluster_info() {
   return 0
 }
 
+#=====================================================================
+# BACKUP OPERATIONS
+#=====================================================================
 # Create backup before upgrade
 create_backup() {
   if [ "$BACKUP" != true ]; then
@@ -287,6 +304,9 @@ create_backup() {
   BACKUP_DIR="$backup_dir"
 }
 
+#=====================================================================
+# PROVIDER-SPECIFIC UPGRADE OPERATIONS
+#=====================================================================
 # Upgrade minikube cluster
 upgrade_minikube_cluster() {
   log_message "INFO" "Upgrading minikube cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
@@ -407,6 +427,9 @@ upgrade_k3d_cluster() {
   fi
 }
 
+#=====================================================================
+# VERIFICATION AND MONITORING
+#=====================================================================
 # Wait for cluster to be ready
 wait_for_cluster() {
   log_message "INFO" "Waiting for cluster to be ready after upgrade (timeout: ${WAIT_TIMEOUT}s)..."
@@ -495,6 +518,25 @@ verify_upgrade() {
   fi
 }
 
+# Display cluster info
+display_cluster_info() {
+  print_with_separator "Cluster Information After Upgrade"
+  
+  log_message "INFO" "Kubernetes Version:"
+  kubectl version
+  
+  log_message "INFO" "Nodes:"
+  kubectl get nodes
+  
+  log_message "INFO" "Cluster Info:"
+  kubectl cluster-info
+  
+  print_with_separator
+}
+
+#=====================================================================
+# USER INTERACTION
+#=====================================================================
 # Confirm upgrade with user
 confirm_upgrade() {
   if [ "$FORCE" = true ]; then
@@ -520,6 +562,9 @@ confirm_upgrade() {
   esac
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -582,22 +627,9 @@ parse_args() {
   fi
 }
 
-# Display cluster info
-display_cluster_info() {
-  print_with_separator "Cluster Information After Upgrade"
-  
-  log_message "INFO" "Kubernetes Version:"
-  kubectl version
-  
-  log_message "INFO" "Nodes:"
-  kubectl get nodes
-  
-  log_message "INFO" "Cluster Info:"
-  kubectl cluster-info
-  
-  print_with_separator
-}
-
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
