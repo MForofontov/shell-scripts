@@ -1,7 +1,10 @@
 #!/bin/bash
-# scale-cluster.sh
+# scale-cluster-local.sh
 # Script to scale Kubernetes clusters by changing the number of nodes
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 NODE_COUNT=0         # Target node count (0 means show current count)
@@ -33,6 +38,9 @@ LOG_FILE="/dev/null"
 FORCE=false
 WAIT_TIMEOUT=300     # 5 minutes timeout for operation to complete
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Scaling Script"
@@ -60,11 +68,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -108,6 +122,9 @@ check_requirements() {
   log_message "SUCCESS" "Required tools are available."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
   log_message "INFO" "Checking if cluster exists..."
@@ -141,6 +158,9 @@ check_cluster_exists() {
   fi
 }
 
+#=====================================================================
+# CLUSTER INFORMATION
+#=====================================================================
 # Get current cluster info
 get_cluster_info() {
   log_message "INFO" "Getting current cluster information..."
@@ -200,6 +220,9 @@ get_cluster_info() {
   fi
 }
 
+#=====================================================================
+# SCALING OPERATIONS: MINIKUBE
+#=====================================================================
 # Scale minikube cluster
 scale_minikube_cluster() {
   if [ "$SCALE_DIRECTION" == "up" ]; then
@@ -238,6 +261,9 @@ scale_minikube_cluster() {
   fi
 }
 
+#=====================================================================
+# SCALING OPERATIONS: KIND
+#=====================================================================
 # Scale kind cluster (requires delete and recreate)
 scale_kind_cluster() {
   log_message "INFO" "Scaling kind cluster '${CLUSTER_NAME}' to ${NODE_COUNT} nodes..."
@@ -295,6 +321,9 @@ scale_kind_cluster() {
   log_message "INFO" "Node scaling complete. Cluster resources may need to be reapplied from $backup_dir"
 }
 
+#=====================================================================
+# SCALING OPERATIONS: K3D
+#=====================================================================
 # Scale k3d cluster
 scale_k3d_cluster() {
   if [ "$SCALE_DIRECTION" == "up" ]; then
@@ -350,6 +379,9 @@ scale_k3d_cluster() {
   fi
 }
 
+#=====================================================================
+# VERIFICATION AND MONITORING
+#=====================================================================
 # Wait for cluster nodes to be ready
 wait_for_cluster() {
   log_message "INFO" "Waiting for all nodes to be ready (timeout: ${WAIT_TIMEOUT}s)..."
@@ -405,6 +437,22 @@ wait_for_cluster() {
   log_message "SUCCESS" "All ${NODE_COUNT} nodes are ready."
 }
 
+# Display cluster info
+display_cluster_info() {
+  print_with_separator "Cluster Information After Scaling"
+  
+  log_message "INFO" "Nodes:"
+  kubectl get nodes
+  
+  log_message "INFO" "Node Resources:"
+  kubectl top nodes 2>/dev/null || echo "Metrics not available (metrics-server may not be installed)"
+  
+  print_with_separator
+}
+
+#=====================================================================
+# USER INTERACTION
+#=====================================================================
 # Confirm scaling with user
 confirm_scaling() {
   if [ "$FORCE" = true ]; then
@@ -453,6 +501,9 @@ confirm_scaling() {
   esac
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -516,19 +567,9 @@ parse_args() {
   fi
 }
 
-# Display cluster info
-display_cluster_info() {
-  print_with_separator "Cluster Information After Scaling"
-  
-  log_message "INFO" "Nodes:"
-  kubectl get nodes
-  
-  log_message "INFO" "Node Resources:"
-  kubectl top nodes 2>/dev/null || echo "Metrics not available (metrics-server may not be installed)"
-  
-  print_with_separator
-}
-
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
