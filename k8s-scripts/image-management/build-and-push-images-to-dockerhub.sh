@@ -48,25 +48,16 @@ PROJECT_NAME=""           # Kubernetes namespace for the secret
 # Function to display usage instructions
 usage() {
   print_with_separator "Build and Push Images to Docker Registry Script"
-  
-  #---------------------------------------------------------------------
-  # DESCRIPTION
-  #---------------------------------------------------------------------
+
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script builds Docker images, pushes them to Docker Hub (or any Docker registry),"
   echo "  and creates a Kubernetes docker-registry secret for pulling images."
   echo
-  
-  #---------------------------------------------------------------------
-  # USAGE SYNTAX
-  #---------------------------------------------------------------------
+
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [options]"
   echo
   
-  #---------------------------------------------------------------------
-  # OPTIONS
-  #---------------------------------------------------------------------
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m-u, --username <USERNAME>\033[0m   (Required) Docker registry username"
   echo -e "  \033[1;36m-p, --pat <PAT>\033[0m            (Required) Docker registry Personal Access Token"
@@ -77,10 +68,7 @@ usage() {
   echo -e "  \033[1;33m--log <FILE>\033[0m               (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                     (Optional) Show this help message"
   echo
-  
-  #---------------------------------------------------------------------
-  # EXAMPLES
-  #---------------------------------------------------------------------
+
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -u myuser -p mypat -e me@email.com -j myns -f images.txt"
   echo "  $0 --username myuser --pat mypat --email me@email.com --project myns --file images.txt --manifests ./manifests"
