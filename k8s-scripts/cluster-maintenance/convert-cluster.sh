@@ -2,6 +2,9 @@
 # convert-cluster.sh
 # Script to convert/migrate between Kubernetes cluster providers
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 SOURCE_PROVIDER=""
 TARGET_PROVIDER=""
@@ -51,6 +57,9 @@ TIMEOUT=600
 BACKUP_DIR=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Conversion Script"
@@ -97,11 +106,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if a command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -123,6 +138,9 @@ check_requirements() {
     log_message "WARNING" "yq not found. Some YAML processing capabilities may be limited."
   fi
   
+  #---------------------------------------------------------------------
+  # SOURCE PROVIDER REQUIREMENTS
+  #---------------------------------------------------------------------
   # Check for provider-specific tools
   case "$SOURCE_PROVIDER" in
     minikube)
@@ -163,6 +181,9 @@ check_requirements() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # TARGET PROVIDER REQUIREMENTS
+  #---------------------------------------------------------------------
   case "$TARGET_PROVIDER" in
     minikube)
       if ! command_exists minikube; then
@@ -205,6 +226,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Validate cluster exists and is accessible
 validate_cluster() {
   local provider="$1"
@@ -287,6 +311,9 @@ validate_cluster() {
   return 0
 }
 
+#=====================================================================
+# CLUSTER CREATION
+#=====================================================================
 # Create target cluster if it doesn't exist
 create_target_cluster() {
   if [[ "$CREATE_TARGET" != true ]]; then
@@ -310,6 +337,9 @@ create_target_cluster() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC CREATION
+  #---------------------------------------------------------------------
   # Version flag for different providers
   local version_flag=""
   if [[ -n "$TARGET_K8S_VERSION" ]]; then
@@ -384,6 +414,9 @@ create_target_cluster() {
   return 0
 }
 
+#=====================================================================
+# NAMESPACE MANAGEMENT
+#=====================================================================
 # Get list of namespaces to migrate
 get_namespaces() {
   log_message "INFO" "Determining namespaces to migrate..."
@@ -414,6 +447,9 @@ get_namespaces() {
     ns_list=("${NAMESPACES[@]}")
   fi
   
+  #---------------------------------------------------------------------
+  # NAMESPACE FILTERING
+  #---------------------------------------------------------------------
   # Filter out excluded namespaces
   local filtered_ns=()
   for ns in "${ns_list[@]}"; do
@@ -441,6 +477,9 @@ get_namespaces() {
   echo "${filtered_ns[@]}"
 }
 
+#=====================================================================
+# RESOURCE EXPORT
+#=====================================================================
 # Export resources from source cluster
 export_resources() {
   local namespaces=("$@")
@@ -466,6 +505,9 @@ export_resources() {
     kubeconfig_flag="--kubeconfig=$SOURCE_KUBECONFIG"
   fi
   
+  #---------------------------------------------------------------------
+  # CRD EXPORT
+  #---------------------------------------------------------------------
   # Export CRDs if requested
   if [[ "$CUSTOM_RESOURCES" == true ]]; then
     log_message "INFO" "Exporting Custom Resource Definitions..."
@@ -481,6 +523,9 @@ export_resources() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # NAMESPACE RESOURCE EXPORT
+  #---------------------------------------------------------------------
   # Export resources for each namespace
   for ns in "${namespaces[@]}"; do
     log_message "INFO" "Exporting resources from namespace: $ns"
@@ -519,6 +564,9 @@ export_resources() {
       fi
     done
     
+    #---------------------------------------------------------------------
+    # CUSTOM RESOURCE EXPORT
+    #---------------------------------------------------------------------
     # Export custom resources if requested
     if [[ "$CUSTOM_RESOURCES" == true ]]; then
       log_message "INFO" "Exporting custom resources from namespace $ns..."
@@ -554,6 +602,9 @@ export_resources() {
   log_message "SUCCESS" "Export completed. Resources stored in $BACKUP_DIR"
 }
 
+#=====================================================================
+# RESOURCE CLEANING
+#=====================================================================
 # Clean up exported resources to make them suitable for import
 clean_resources() {
   log_message "INFO" "Cleaning exported resources for import..."
@@ -563,6 +614,9 @@ clean_resources() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # CRD CLEANING
+  #---------------------------------------------------------------------
   # Process CRDs first if they exist
   if [[ -f "$BACKUP_DIR/crds.yaml" ]]; then
     log_message "INFO" "Cleaning Custom Resource Definitions..."
@@ -599,6 +653,9 @@ clean_resources() {
     log_message "SUCCESS" "Cleaned Custom Resource Definitions."
   fi
   
+  #---------------------------------------------------------------------
+  # NAMESPACE RESOURCE CLEANING
+  #---------------------------------------------------------------------
   # Process each namespace directory
   for ns_dir in "$BACKUP_DIR"/*; do
     if [[ ! -d "$ns_dir" ]]; then
@@ -681,6 +738,9 @@ clean_resources() {
       fi
     done
     
+    #---------------------------------------------------------------------
+    # CUSTOM RESOURCE CLEANING
+    #---------------------------------------------------------------------
     # Process custom resources
     if [[ -d "$ns_dir/custom-resources" ]]; then
       for cr_file in "$ns_dir/custom-resources"/*.yaml; do
@@ -725,6 +785,9 @@ clean_resources() {
   log_message "SUCCESS" "Resources cleaned and prepared for import."
 }
 
+#=====================================================================
+# RESOURCE IMPORT
+#=====================================================================
 # Import resources to target cluster
 import_resources() {
   local namespaces=("$@")
@@ -741,6 +804,9 @@ import_resources() {
     kubeconfig_flag="--kubeconfig=$TARGET_KUBECONFIG"
   fi
   
+  #---------------------------------------------------------------------
+  # CRD IMPORT
+  #---------------------------------------------------------------------
   # Import CRDs first if they exist
   if [[ -f "$BACKUP_DIR/crds.yaml" && "$CUSTOM_RESOURCES" == true ]]; then
     log_message "INFO" "Importing Custom Resource Definitions..."
@@ -760,6 +826,9 @@ import_resources() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # NAMESPACE IMPORT
+  #---------------------------------------------------------------------
   # Import resources for each namespace
   for ns in "${namespaces[@]}"; do
     log_message "INFO" "Importing resources for namespace: $ns"
@@ -798,6 +867,9 @@ import_resources() {
       fi
     fi
     
+    #---------------------------------------------------------------------
+    # RESOURCE IMPORT ORDERING
+    #---------------------------------------------------------------------
     # Apply resources in correct order to handle dependencies
     local resource_order=("configmaps" "secrets" "pvc" "services" "deployments" "statefulsets" "daemonsets" "ingresses" "horizontalpodautoscalers")
     
@@ -823,6 +895,9 @@ import_resources() {
       fi
     done
     
+    #---------------------------------------------------------------------
+    # CUSTOM RESOURCE IMPORT
+    #---------------------------------------------------------------------
     # Import custom resources if they exist
     if [[ -d "$BACKUP_DIR/$ns/custom-resources" && "$CUSTOM_RESOURCES" == true ]]; then
       log_message "INFO" "Importing custom resources for namespace $ns..."
@@ -851,6 +926,9 @@ import_resources() {
   log_message "SUCCESS" "Import completed. Resources imported to target cluster."
 }
 
+#=====================================================================
+# VERIFICATION
+#=====================================================================
 # Verify import by checking resources in target cluster
 verify_import() {
   local namespaces=("$@")
@@ -867,6 +945,9 @@ verify_import() {
     kubeconfig_flag="--kubeconfig=$TARGET_KUBECONFIG"
   fi
   
+  #---------------------------------------------------------------------
+  # NAMESPACE VERIFICATION
+  #---------------------------------------------------------------------
   # Check each namespace
   for ns in "${namespaces[@]}"; do
     log_message "INFO" "Verifying resources in namespace: $ns"
@@ -906,6 +987,9 @@ verify_import() {
       fi
     done
     
+    #---------------------------------------------------------------------
+    # POD STATUS VERIFICATION
+    #---------------------------------------------------------------------
     # Check pod status
     log_message "INFO" "Checking pod status in namespace $ns..."
     local pods_total=0
@@ -929,6 +1013,9 @@ verify_import() {
   log_message "SUCCESS" "Verification completed."
 }
 
+#=====================================================================
+# STORAGE MANAGEMENT
+#=====================================================================
 # Transfer persistent volume data (if requested)
 transfer_storage() {
   if [[ "$TRANSFER_STORAGE" != true ]]; then
@@ -945,6 +1032,9 @@ transfer_storage() {
   log_message "WARNING" "Storage transfer is a complex operation that depends on many factors."
   log_message "WARNING" "This script provides basic guidance but may not be suitable for all environments."
   
+  #---------------------------------------------------------------------
+  # ENVIRONMENT DETECTION
+  #---------------------------------------------------------------------
   # Check if both clusters are local or cloud
   local source_is_local=false
   local target_is_local=false
@@ -957,6 +1047,9 @@ transfer_storage() {
     minikube|kind|k3d) target_is_local=true ;;
   esac
   
+  #---------------------------------------------------------------------
+  # LOCAL-TO-LOCAL TRANSFER
+  #---------------------------------------------------------------------
   if [[ "$source_is_local" == true && "$target_is_local" == true ]]; then
     log_message "INFO" "Both clusters are local. Using local data transfer approach."
     
@@ -969,6 +1062,9 @@ transfer_storage() {
     log_message "WARNING" "Automated data transfer between local clusters is not implemented."
     log_message "WARNING" "Please see the documentation for manual steps."
     
+  #---------------------------------------------------------------------
+  # CLOUD-TO-CLOUD TRANSFER
+  #---------------------------------------------------------------------
   elif [[ "$source_is_local" == false && "$target_is_local" == false ]]; then
     log_message "INFO" "Both clusters are cloud-based. Using cloud data transfer approach."
     
@@ -981,6 +1077,9 @@ transfer_storage() {
     log_message "WARNING" "Automated data transfer between cloud clusters is not implemented."
     log_message "WARNING" "Please see the documentation for manual steps."
     
+  #---------------------------------------------------------------------
+  # MIXED ENVIRONMENT TRANSFER
+  #---------------------------------------------------------------------
   else
     log_message "INFO" "Transferring between local and cloud clusters."
     
@@ -998,6 +1097,9 @@ transfer_storage() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -1124,6 +1226,9 @@ parse_args() {
     esac
   done
   
+  #---------------------------------------------------------------------
+  # ARGUMENT VALIDATION
+  #---------------------------------------------------------------------
   # Validate required parameters
   if [[ -z "$SOURCE_PROVIDER" ]]; then
     log_message "ERROR" "Source provider is required. Use --source-provider."
@@ -1146,6 +1251,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
@@ -1165,6 +1273,9 @@ main() {
   
   log_message "INFO" "Starting cluster conversion from $SOURCE_PROVIDER to $TARGET_PROVIDER..."
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Source Provider:    $SOURCE_PROVIDER"
@@ -1207,6 +1318,9 @@ main() {
     log_message "INFO" "  Backup Directory:   $BACKUP_DIR"
   fi
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   # Confirm operation if interactive mode is enabled
   if [[ "$INTERACTIVE" == true && "$FORCE" != true && "$DRY_RUN" != true ]]; then
     log_message "WARNING" "This operation will export resources from the source cluster and import them to the target cluster."
@@ -1218,6 +1332,9 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # EXECUTION PIPELINE
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
