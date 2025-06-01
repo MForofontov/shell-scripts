@@ -71,7 +71,9 @@ LABEL_TEMPLATES=(
 #=====================================================================
 # USAGE AND HELP
 #=====================================================================
-# Function to display usage instructions
+#---------------------------------------------------------------------
+# Display usage information
+#---------------------------------------------------------------------
 usage() {
   print_with_separator "Kubernetes Node Label Management Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -114,27 +116,40 @@ usage() {
 #=====================================================================
 # UTILITY FUNCTIONS
 #=====================================================================
+#---------------------------------------------------------------------
 # Check if command exists
+#---------------------------------------------------------------------
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#---------------------------------------------------------------------
 # Check requirements
+#---------------------------------------------------------------------
 check_requirements() {
   log_message "INFO" "Checking requirements..."
   
+  #---------------------------------------------------------------------
+  # KUBECTL AVAILABILITY
+  #---------------------------------------------------------------------
   if ! command_exists kubectl; then
     log_message "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # CLUSTER CONNECTIVITY
+  #---------------------------------------------------------------------
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
     log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # TEMPLATES DIRECTORY
+  #---------------------------------------------------------------------
   # Create templates directory if it doesn't exist
   if [[ ! -d "$TEMPLATES_DIR" ]]; then
     mkdir -p "$TEMPLATES_DIR"
@@ -146,15 +161,23 @@ check_requirements() {
 #=====================================================================
 # TEMPLATE MANAGEMENT
 #=====================================================================
+#---------------------------------------------------------------------
 # List available templates
+#---------------------------------------------------------------------
 list_templates() {
   print_with_separator "Available Label Templates"
   
+  #---------------------------------------------------------------------
+  # BUILT-IN TEMPLATES
+  #---------------------------------------------------------------------
   echo -e "\033[1;34mBuilt-in Templates:\033[0m"
   for template in "${!LABEL_TEMPLATES[@]}"; do
     echo -e "  \033[1;32m$template\033[0m: ${LABEL_TEMPLATES[$template]}"
   done
   
+  #---------------------------------------------------------------------
+  # CUSTOM TEMPLATES
+  #---------------------------------------------------------------------
   echo
   echo -e "\033[1;34mCustom Templates:\033[0m"
   if [[ -d "$TEMPLATES_DIR" ]]; then
@@ -175,16 +198,24 @@ list_templates() {
   exit 0
 }
 
+#---------------------------------------------------------------------
 # Save current labels as template
+#---------------------------------------------------------------------
 save_template() {
   local template_name="$1"
   local template_content=""
   
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   if [[ -z "$template_name" ]]; then
     log_message "ERROR" "Template name is required"
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # CONTENT PREPARATION
+  #---------------------------------------------------------------------
   # Combine all labels into a single string
   for label in "${LABELS[@]}"; do
     if [[ -n "$template_content" ]]; then
@@ -199,6 +230,9 @@ save_template() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # TEMPLATE STORAGE
+  #---------------------------------------------------------------------
   # Save to template file
   echo "$template_content" > "$TEMPLATES_DIR/$template_name"
   
@@ -206,10 +240,59 @@ save_template() {
   return 0
 }
 
+#---------------------------------------------------------------------
+# Process a template
+#---------------------------------------------------------------------
+process_template() {
+  local template="$1"
+  log_message "INFO" "Processing template: $template"
+  
+  #---------------------------------------------------------------------
+  # BUILT-IN TEMPLATE HANDLING
+  #---------------------------------------------------------------------
+  # Check if it's a built-in template
+  if [[ -n "${LABEL_TEMPLATES[$template]}" ]]; then
+    local template_labels="${LABEL_TEMPLATES[$template]}"
+    log_message "INFO" "Using built-in template: $template_labels"
+    
+    # Split comma-separated labels
+    IFS=',' read -ra TEMPLATE_LABELS <<< "$template_labels"
+    for label in "${TEMPLATE_LABELS[@]}"; do
+      LABELS+=("$label")
+    done
+    
+    return 0
+  fi
+  
+  #---------------------------------------------------------------------
+  # CUSTOM TEMPLATE HANDLING
+  #---------------------------------------------------------------------
+  # Check if it's a custom template
+  if [[ -f "$TEMPLATES_DIR/$template" ]]; then
+    local template_content
+    template_content=$(cat "$TEMPLATES_DIR/$template")
+    log_message "INFO" "Using custom template: $template_content"
+    
+    # Split comma-separated labels
+    IFS=',' read -ra TEMPLATE_LABELS <<< "$template_content"
+    for label in "${TEMPLATE_LABELS[@]}"; do
+      LABELS+=("$label")
+    done
+    
+    return 0
+  fi
+  
+  log_message "ERROR" "Template not found: $template"
+  log_message "INFO" "Use --list-templates to see available templates"
+  return 1
+}
+
 #=====================================================================
 # NODE SELECTION
 #=====================================================================
+#---------------------------------------------------------------------
 # Get nodes by selector
+#---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
   log_message "INFO" "Getting nodes with selector: $selector"
@@ -226,15 +309,23 @@ get_nodes_by_selector() {
   echo "$selected_nodes"
 }
 
+#---------------------------------------------------------------------
 # Validate node names
+#---------------------------------------------------------------------
 validate_nodes() {
   log_message "INFO" "Validating node names..."
   
+  #---------------------------------------------------------------------
+  # EMPTY NODES CHECK
+  #---------------------------------------------------------------------
   if [[ ${#NODES[@]} -eq 0 ]]; then
     log_message "ERROR" "No nodes specified."
     usage
   fi
   
+  #---------------------------------------------------------------------
+  # NODE EXISTENCE VALIDATION
+  #---------------------------------------------------------------------
   local valid_count=0
   local available_nodes
   available_nodes=$(kubectl get nodes -o name | cut -d'/' -f2)
@@ -259,10 +350,15 @@ validate_nodes() {
 #=====================================================================
 # LABEL VALIDATION
 #=====================================================================
+#---------------------------------------------------------------------
 # Validate label format
+#---------------------------------------------------------------------
 validate_label_format() {
   local label="$1"
   
+  #---------------------------------------------------------------------
+  # FORMAT CHECKS
+  #---------------------------------------------------------------------
   # Check basic format: key=value
   if ! echo "$label" | grep -q "^[a-zA-Z0-9][-a-zA-Z0-9_.]*\/\?[a-zA-Z0-9][-a-zA-Z0-9_.]*="; then
     log_message "ERROR" "Invalid label format: $label"
@@ -272,6 +368,9 @@ validate_label_format() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # KEY LENGTH CHECK
+  #---------------------------------------------------------------------
   # Check label key length
   local key
   key=$(echo "$label" | cut -d= -f1)
@@ -281,6 +380,9 @@ validate_label_format() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # VALUE FORMAT CHECK
+  #---------------------------------------------------------------------
   # Check label value format
   local value
   value=$(echo "$label" | cut -d= -f2-)
@@ -293,7 +395,9 @@ validate_label_format() {
   return 0
 }
 
+#---------------------------------------------------------------------
 # Validate all labels
+#---------------------------------------------------------------------
 validate_labels() {
   log_message "INFO" "Validating label formats..."
   
@@ -319,7 +423,9 @@ validate_labels() {
   fi
 }
 
+#---------------------------------------------------------------------
 # Check label consistency across nodes
+#---------------------------------------------------------------------
 check_label_consistency() {
   if [[ "$CHECK_CONSISTENCY" != true ]]; then
     log_message "INFO" "Skipping consistency check as requested"
@@ -328,6 +434,9 @@ check_label_consistency() {
   
   log_message "INFO" "Checking label consistency across nodes..."
   
+  #---------------------------------------------------------------------
+  # CURRENT LABELS COLLECTION
+  #---------------------------------------------------------------------
   local temp_file
   temp_file=$(mktemp)
   
@@ -338,6 +447,9 @@ check_label_consistency() {
     echo "" >> "$temp_file"
   done
   
+  #---------------------------------------------------------------------
+  # CONFLICT DETECTION
+  #---------------------------------------------------------------------
   # Check for conflicting role labels
   local has_conflicts=false
   
@@ -375,8 +487,9 @@ check_label_consistency() {
     has_conflicts=true
   fi
   
-  # Additional consistency checks can be added here
-  
+  #---------------------------------------------------------------------
+  # CONFLICT RESOLUTION
+  #---------------------------------------------------------------------
   # Report conflicts
   if [[ "$has_conflicts" == true ]]; then
     log_message "WARNING" "Label conflicts detected"
@@ -399,16 +512,24 @@ check_label_consistency() {
 #=====================================================================
 # LABEL OPERATIONS
 #=====================================================================
+#---------------------------------------------------------------------
 # Apply labels to a node
+#---------------------------------------------------------------------
 apply_labels() {
   local node="$1"
   log_message "INFO" "Applying labels to node: $node"
   
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   if [[ ${#LABELS[@]} -eq 0 && ${#REMOVE_LABELS[@]} -eq 0 ]]; then
     log_message "WARNING" "No labels to apply or remove"
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # ARGUMENTS PREPARATION
+  #---------------------------------------------------------------------
   # Build label arguments
   local label_args=""
   for label in "${LABELS[@]}"; do
@@ -429,6 +550,9 @@ apply_labels() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # LABEL APPLICATION
+  #---------------------------------------------------------------------
   # Apply labels
   if [[ "$DRY_RUN" == true ]]; then
     log_message "DRY-RUN" "Would run: kubectl label node $node $all_args --overwrite=$OVERWRITE"
@@ -444,16 +568,24 @@ apply_labels() {
   fi
 }
 
+#---------------------------------------------------------------------
 # Import labels from file
+#---------------------------------------------------------------------
 import_labels_from_file() {
   local file="$1"
   log_message "INFO" "Importing labels from file: $file"
   
+  #---------------------------------------------------------------------
+  # FILE VALIDATION
+  #---------------------------------------------------------------------
   if [[ ! -f "$file" ]]; then
     log_message "ERROR" "Import file not found: $file"
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # FILE PROCESSING
+  #---------------------------------------------------------------------
   # Determine file type based on extension
   local file_ext="${file##*.}"
   local imported_labels=""
@@ -490,6 +622,9 @@ import_labels_from_file() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # LABEL ADDITION
+  #---------------------------------------------------------------------
   # Add imported labels to LABELS array
   for label in $imported_labels; do
     LABELS+=("$label")
@@ -499,12 +634,17 @@ import_labels_from_file() {
   return 0
 }
 
+#---------------------------------------------------------------------
 # Export current node labels to file
+#---------------------------------------------------------------------
 export_labels_to_file() {
   local file="$1"
   local nodes="${NODES[*]}"
   log_message "INFO" "Exporting labels for nodes: $nodes to file: $file"
   
+  #---------------------------------------------------------------------
+  # FORMAT SELECTION
+  #---------------------------------------------------------------------
   # Determine file type based on extension
   local file_ext="${file##*.}"
   
@@ -554,49 +694,9 @@ export_labels_to_file() {
   return 0
 }
 
-# Process a template
-process_template() {
-  local template="$1"
-  log_message "INFO" "Processing template: $template"
-  
-  # Check if it's a built-in template
-  if [[ -n "${LABEL_TEMPLATES[$template]}" ]]; then
-    local template_labels="${LABEL_TEMPLATES[$template]}"
-    log_message "INFO" "Using built-in template: $template_labels"
-    
-    # Split comma-separated labels
-    IFS=',' read -ra TEMPLATE_LABELS <<< "$template_labels"
-    for label in "${TEMPLATE_LABELS[@]}"; do
-      LABELS+=("$label")
-    done
-    
-    return 0
-  fi
-  
-  # Check if it's a custom template
-  if [[ -f "$TEMPLATES_DIR/$template" ]]; then
-    local template_content
-    template_content=$(cat "$TEMPLATES_DIR/$template")
-    log_message "INFO" "Using custom template: $template_content"
-    
-    # Split comma-separated labels
-    IFS=',' read -ra TEMPLATE_LABELS <<< "$template_content"
-    for label in "${TEMPLATE_LABELS[@]}"; do
-      LABELS+=("$label")
-    done
-    
-    return 0
-  fi
-  
-  log_message "ERROR" "Template not found: $template"
-  log_message "INFO" "Use --list-templates to see available templates"
-  return 1
-}
-
 #=====================================================================
 # ARGUMENT PARSING
 #=====================================================================
-# Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -666,6 +766,9 @@ parse_args() {
     esac
   done
   
+  #---------------------------------------------------------------------
+  # SELECTOR PROCESSING
+  #---------------------------------------------------------------------
   # Get nodes by selector if specified
   if [[ -n "$SELECTOR" ]]; then
     NODES=($(get_nodes_by_selector "$SELECTOR"))
@@ -675,11 +778,16 @@ parse_args() {
 #=====================================================================
 # MAIN EXECUTION
 #=====================================================================
-# Main function
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   # Parse arguments
   parse_args "$@"
 
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -693,19 +801,31 @@ main() {
   
   log_message "INFO" "Starting node label management..."
   
+  #---------------------------------------------------------------------
+  # REQUIREMENT VERIFICATION
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
+  #---------------------------------------------------------------------
+  # TEMPLATE PROCESSING
+  #---------------------------------------------------------------------
   # Process template if specified
   if [[ -n "$TEMPLATE" ]]; then
     process_template "$TEMPLATE"
   fi
   
+  #---------------------------------------------------------------------
+  # IMPORT PROCESSING
+  #---------------------------------------------------------------------
   # Import labels from file if specified
   if [[ -n "$IMPORT_FILE" ]]; then
     import_labels_from_file "$IMPORT_FILE"
   fi
   
+  #---------------------------------------------------------------------
+  # NODE AND LABEL VALIDATION
+  #---------------------------------------------------------------------
   # Validate nodes
   validate_nodes
   
@@ -715,16 +835,25 @@ main() {
   # Check label consistency
   check_label_consistency
   
+  #---------------------------------------------------------------------
+  # TEMPLATE MANAGEMENT
+  #---------------------------------------------------------------------
   # Save template if requested
   if [[ -n "$SAVE_TEMPLATE" ]]; then
     save_template "$SAVE_TEMPLATE"
   fi
   
+  #---------------------------------------------------------------------
+  # EXPORT PROCESSING
+  #---------------------------------------------------------------------
   # Export labels if requested
   if [[ -n "$EXPORT_FILE" ]]; then
     export_labels_to_file "$EXPORT_FILE"
   fi
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Nodes:             ${NODES[*]}"
@@ -734,6 +863,9 @@ main() {
   log_message "INFO" "  Check Consistency: $CHECK_CONSISTENCY"
   log_message "INFO" "  Dry Run:           $DRY_RUN"
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
     log_message "WARNING" "You are about to modify labels on the following nodes: ${NODES[*]}"
@@ -744,6 +876,9 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # LABEL APPLICATION
+  #---------------------------------------------------------------------
   # Apply labels to each node
   local success_count=0
   local failed_count=0
@@ -760,6 +895,9 @@ main() {
     echo  # Add a blank line for readability
   done
   
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Node Label Management"
   
   # Final summary
@@ -781,5 +919,8 @@ main() {
   echo -e "  \033[1mkubectl get node <node-name> -o jsonpath='{.metadata.labels}' | jq .\033[0m"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"
