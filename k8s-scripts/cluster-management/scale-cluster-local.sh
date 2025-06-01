@@ -165,6 +165,9 @@ check_cluster_exists() {
 get_cluster_info() {
   log_message "INFO" "Getting current cluster information..."
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC INFO GATHERING
+  #---------------------------------------------------------------------
   case "$PROVIDER" in
     minikube)
       # Get minikube node count
@@ -199,6 +202,9 @@ get_cluster_info() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # SCALING DETERMINATION
+  #---------------------------------------------------------------------
   # If node count is 0 (just show current state), exit here
   if [ "$NODE_COUNT" -eq 0 ]; then
     log_message "INFO" "No scaling requested. Current node count: $CURRENT_NODE_COUNT"
@@ -226,6 +232,9 @@ get_cluster_info() {
 # Scale minikube cluster
 scale_minikube_cluster() {
   if [ "$SCALE_DIRECTION" == "up" ]; then
+    #---------------------------------------------------------------------
+    # MINIKUBE SCALE UP
+    #---------------------------------------------------------------------
     # Scaling up - add nodes
     log_message "INFO" "Scaling minikube cluster '${CLUSTER_NAME}' UP to ${NODE_COUNT} nodes..."
     
@@ -242,6 +251,9 @@ scale_minikube_cluster() {
     log_message "SUCCESS" "minikube cluster '${CLUSTER_NAME}' scaled UP to ${NODE_COUNT} nodes."
     
   elif [ "$SCALE_DIRECTION" == "down" ]; then
+    #---------------------------------------------------------------------
+    # MINIKUBE SCALE DOWN
+    #---------------------------------------------------------------------
     # Scaling down - remove nodes
     log_message "INFO" "Scaling minikube cluster '${CLUSTER_NAME}' DOWN to ${NODE_COUNT} nodes..."
     
@@ -269,6 +281,9 @@ scale_kind_cluster() {
   log_message "INFO" "Scaling kind cluster '${CLUSTER_NAME}' to ${NODE_COUNT} nodes..."
   log_message "WARNING" "Kind clusters require recreation to scale. This will cause downtime."
   
+  #---------------------------------------------------------------------
+  # RESOURCE BACKUP
+  #---------------------------------------------------------------------
   # Save cluster configuration and important resources
   log_message "INFO" "Backing up cluster resources before scaling..."
   local backup_dir="${CLUSTER_NAME}-backup-$(date +%Y%m%d%H%M%S)"
@@ -286,6 +301,9 @@ scale_kind_cluster() {
   
   log_message "INFO" "Backup created at $backup_dir"
   
+  #---------------------------------------------------------------------
+  # CLUSTER RECREATION
+  #---------------------------------------------------------------------
   # Delete the existing cluster
   log_message "INFO" "Deleting existing kind cluster for scaling..."
   if ! kind delete cluster --name "${CLUSTER_NAME}"; then
@@ -327,6 +345,9 @@ scale_kind_cluster() {
 # Scale k3d cluster
 scale_k3d_cluster() {
   if [ "$SCALE_DIRECTION" == "up" ]; then
+    #---------------------------------------------------------------------
+    # K3D SCALE UP
+    #---------------------------------------------------------------------
     # Scaling up - add agent nodes
     log_message "INFO" "Scaling k3d cluster '${CLUSTER_NAME}' UP to ${NODE_COUNT} nodes..."
     
@@ -345,6 +366,9 @@ scale_k3d_cluster() {
     log_message "SUCCESS" "k3d cluster '${CLUSTER_NAME}' scaled UP to ${NODE_COUNT} nodes."
     
   elif [ "$SCALE_DIRECTION" == "down" ]; then
+    #---------------------------------------------------------------------
+    # K3D SCALE DOWN
+    #---------------------------------------------------------------------
     # Scaling down - remove agent nodes
     log_message "INFO" "Scaling k3d cluster '${CLUSTER_NAME}' DOWN to ${NODE_COUNT} nodes..."
     
@@ -389,6 +413,9 @@ wait_for_cluster() {
   local start_time=$(date +%s)
   local end_time=$((start_time + WAIT_TIMEOUT))
   
+  #---------------------------------------------------------------------
+  # CONTEXT SETTING
+  #---------------------------------------------------------------------
   # Set correct context based on provider
   case "$PROVIDER" in
     minikube)
@@ -402,6 +429,9 @@ wait_for_cluster() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # NODE READINESS MONITORING
+  #---------------------------------------------------------------------
   while true; do
     # First check if we can connect to the cluster
     if kubectl get nodes &>/dev/null; then
@@ -437,6 +467,9 @@ wait_for_cluster() {
   log_message "SUCCESS" "All ${NODE_COUNT} nodes are ready."
 }
 
+#---------------------------------------------------------------------
+# CLUSTER INFO DISPLAY
+#---------------------------------------------------------------------
 # Display cluster info
 display_cluster_info() {
   print_with_separator "Cluster Information After Scaling"
@@ -467,6 +500,9 @@ confirm_scaling() {
     echo "  Scaling DOWN from $CURRENT_NODE_COUNT to $NODE_COUNT nodes (-$NODES_DELTA)."
   fi
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC WARNINGS
+  #---------------------------------------------------------------------
   # Provider-specific warnings
   case "$PROVIDER" in
     kind)
@@ -488,6 +524,9 @@ confirm_scaling() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   read -p "Are you sure you want to continue? [y/N]: " answer
   
   case "$answer" in
@@ -555,6 +594,9 @@ parse_args() {
     esac
   done
   
+  #---------------------------------------------------------------------
+  # ARGUMENTS VALIDATION
+  #---------------------------------------------------------------------
   # Check if required parameters are provided
   if [ -z "$CLUSTER_NAME" ]; then
     log_message "ERROR" "Cluster name is required. Use -n or --name to specify."
@@ -575,6 +617,9 @@ main() {
   # Parse arguments
   parse_args "$@"
   
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -589,12 +634,18 @@ main() {
   
   log_message "INFO" "Starting Kubernetes cluster scaling..."
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
   log_message "INFO" "  Provider:     $PROVIDER"
   log_message "INFO" "  Target Nodes: $NODE_COUNT"
   
+  #---------------------------------------------------------------------
+  # PREPARATION
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
@@ -612,6 +663,9 @@ main() {
   # Confirm scaling with user
   confirm_scaling
   
+  #---------------------------------------------------------------------
+  # SCALING EXECUTION
+  #---------------------------------------------------------------------
   # Scale the cluster based on the provider
   case "$PROVIDER" in
     minikube)
@@ -625,15 +679,24 @@ main() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # VERIFICATION
+  #---------------------------------------------------------------------
   # Wait for cluster nodes to be ready
   wait_for_cluster
   
   # Display cluster info after scaling
   display_cluster_info
   
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Cluster Scaling"
   log_message "SUCCESS" "Kubernetes cluster scaling completed successfully."
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"
