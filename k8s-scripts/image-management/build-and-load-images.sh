@@ -33,7 +33,7 @@ usage() {
   echo "  Build Docker images and load them into a local Kubernetes cluster (minikube, kind, or k3d)."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 -f <images.txt> [--provider <minikube|kind|k3d>] [--name <cluster>] [--log <file>]"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m-f, --file <FILE>\033[0m        (Required) File listing images to build (format: <image>:<tag> <dockerfile-dir>)"
@@ -44,6 +44,7 @@ usage() {
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -f images.txt --provider kind --name my-cluster"
+  echo "  $0 --file images.txt --log build.log"
   print_with_separator
   exit 1
 }
