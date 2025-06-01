@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -23,6 +26,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 IMAGE_LIST="images.txt"
 MANIFEST_DIR=""
 LOG_FILE="/dev/null"
@@ -31,6 +37,9 @@ DOCKER_PAT=""
 EMAIL=""
 PROJECT_NAME=""
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Build and Push Images to Docker Registry Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -58,6 +67,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -105,6 +117,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# DOCKER OPERATIONS
+#=====================================================================
 build_and_push_images() {
   local docker_username="$1"
   local image_list="$2"
@@ -126,6 +141,9 @@ build_and_push_images() {
   done < "$image_list"
 }
 
+#=====================================================================
+# MANIFEST PREPARATION
+#=====================================================================
 prepare_manifests() {
   local manifest_dir="$1"
   local docker_username="$2"
@@ -140,6 +158,9 @@ prepare_manifests() {
   echo "$TMP_MANIFEST_DIR"
 }
 
+#=====================================================================
+# KUBERNETES OPERATIONS
+#=====================================================================
 create_k8s_secret() {
   local username="$1"
   local pat="$2"
@@ -155,6 +176,9 @@ create_k8s_secret() {
   log_message "SUCCESS" "Docker registry secret 'regcred' created or updated in namespace $project"
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 main() {
   parse_args "$@"
 
@@ -195,4 +219,5 @@ main() {
   print_with_separator "End of Build and Push Images to Docker Registry Script"
 }
 
+# Run the main function
 main "$@"
