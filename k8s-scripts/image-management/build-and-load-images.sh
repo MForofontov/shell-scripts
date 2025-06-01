@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,11 +25,17 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 IMAGE_LIST=""
 CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Build and Load Images Script"
@@ -50,6 +59,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -85,6 +97,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 check_requirements() {
   log_message "INFO" "Checking requirements..."
   if ! command -v docker &>/dev/null; then
@@ -118,6 +133,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# IMAGE OPERATIONS
+#=====================================================================
 build_and_load_images() {
   while read -r line; do
     [[ -z "$line" || "$line" =~ ^# ]] && continue
@@ -149,6 +167,9 @@ build_and_load_images() {
   done < "$IMAGE_LIST"
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 main() {
   parse_args "$@"
 
@@ -173,4 +194,5 @@ main() {
   log_message "SUCCESS" "All images built and loaded successfully."
 }
 
+# Run the main function
 main "$@"
