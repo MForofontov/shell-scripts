@@ -2,6 +2,9 @@
 # taint-nodes.sh
 # Script to manage Kubernetes node taints with batch operations and presets
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 NODES=()
 TAINTS=()
 REMOVE_TAINTS=()
@@ -40,6 +45,9 @@ TEMPLATES_DIR="$HOME/.kube/taint-templates"
 EVICTION_TIMEOUT=30
 SAVE_PRESET=""
 
+#=====================================================================
+# TAINT PRESETS
+#=====================================================================
 # Define common taint presets
 declare -A TAINT_PRESETS
 TAINT_PRESETS=(
@@ -60,6 +68,9 @@ TAINT_PRESETS=(
   ["prefer-no-schedule"]="prefer=true:PreferNoSchedule"
 )
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Node Taint Management Script"
@@ -104,6 +115,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -133,6 +147,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# PRESET MANAGEMENT
+#=====================================================================
 # List available presets
 list_presets() {
   print_with_separator "Available Taint Presets"
@@ -193,6 +210,9 @@ save_preset() {
   return 0
 }
 
+#=====================================================================
+# NODE SELECTION
+#=====================================================================
 # Get nodes by selector
 get_nodes_by_selector() {
   local selector="$1"
@@ -240,6 +260,9 @@ validate_nodes() {
   log_message "SUCCESS" "Found $valid_count valid nodes."
 }
 
+#=====================================================================
+# TAINT VALIDATION
+#=====================================================================
 # Validate taint format
 validate_taint_format() {
   local taint="$1"
@@ -308,6 +331,9 @@ validate_taints() {
   fi
 }
 
+#=====================================================================
+# COMPATIBILITY TESTING
+#=====================================================================
 # Test compatibility with existing pods
 test_pod_compatibility() {
   if [[ "$TEST_COMPATIBILITY" != true ]]; then
@@ -383,6 +409,9 @@ test_pod_compatibility() {
   fi
 }
 
+#=====================================================================
+# TAINT APPLICATION
+#=====================================================================
 # Apply taints to a node
 apply_taints() {
   local node="$1"
@@ -480,6 +509,9 @@ process_preset() {
   return 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -552,6 +584,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
