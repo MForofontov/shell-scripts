@@ -41,13 +41,13 @@ usage() {
   echo "  This script lists all Kubernetes clusters across local and cloud providers."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m  (Optional) Provider to list clusters from:"
-  echo -e "                                 Local: minikube, kind, k3d"
-  echo -e "                                 Cloud: eks, gke, aks"
-  echo -e "                                 Special: all, local, cloud (default: ${PROVIDER})"
+  echo -e "                                   Local: minikube, kind, k3d"
+  echo -e "                                   Cloud: eks, gke, aks"
+  echo -e "                                   Special: all, local, cloud (default: ${PROVIDER})"
   echo -e "  \033[1;33m-f, --format <FORMAT>\033[0m      (Optional) Output format (table, json, yaml) (default: ${FORMAT})"
   echo -e "  \033[1;33m-d, --details\033[0m              (Optional) Show detailed information"
   echo -e "  \033[1;33m--filter <PATTERN>\033[0m         (Optional) Filter clusters by name pattern"
