@@ -7,10 +7,14 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
+# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -18,6 +22,7 @@ else
   exit 1
 fi
 
+# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -28,10 +33,10 @@ fi
 #=====================================================================
 # DEFAULT VALUES
 #=====================================================================
-IMAGE_LIST=""
-CLUSTER_NAME="k8s-cluster"
-PROVIDER="minikube"
-LOG_FILE="/dev/null"
+IMAGE_LIST=""         # File containing list of images to build and load
+CLUSTER_NAME="k8s-cluster"  # Default cluster name
+PROVIDER="minikube"   # Default Kubernetes provider
+LOG_FILE="/dev/null"  # Default log file location
 
 #=====================================================================
 # USAGE AND HELP
@@ -62,7 +67,11 @@ usage() {
 #=====================================================================
 # ARGUMENT PARSING
 #=====================================================================
+# Parse command line arguments
 parse_args() {
+  #---------------------------------------------------------------------
+  # PARAMETER PROCESSING
+  #---------------------------------------------------------------------
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -f|--file)
@@ -91,25 +100,58 @@ parse_args() {
     esac
   done
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   if [[ -z "$IMAGE_LIST" ]]; then
     log_message "ERROR" "Image list file is required."
     usage
   fi
+  
+  # Validate provider
+  case "$PROVIDER" in
+    minikube|kind|k3d) ;;
+    *)
+      log_message "ERROR" "Unsupported provider: $PROVIDER"
+      log_message "ERROR" "Supported providers: minikube, kind, k3d"
+      exit 1
+      ;;
+  esac
+  
+  # Validate image list file exists
+  if [[ ! -f "$IMAGE_LIST" ]]; then
+    log_message "ERROR" "Image list file does not exist: $IMAGE_LIST"
+    exit 1
+  fi
 }
 
 #=====================================================================
-# UTILITY FUNCTIONS
+# REQUIREMENTS CHECKING
 #=====================================================================
+# Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
+  
+  #---------------------------------------------------------------------
+  # DOCKER AVAILABILITY
+  #---------------------------------------------------------------------
   if ! command -v docker &>/dev/null; then
     log_message "ERROR" "docker not found. Please install Docker."
     exit 1
   fi
+  
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC REQUIREMENTS
+  #---------------------------------------------------------------------
   case "$PROVIDER" in
     minikube)
       if ! command -v minikube &>/dev/null; then
         log_message "ERROR" "minikube not found. Please install minikube."
+        exit 1
+      fi
+      # Check if the specified cluster exists
+      if ! minikube profile list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
+        log_message "ERROR" "minikube cluster '$CLUSTER_NAME' not found."
         exit 1
       fi
       ;;
@@ -118,81 +160,217 @@ check_requirements() {
         log_message "ERROR" "kind not found. Please install kind."
         exit 1
       fi
+      # Check if the specified cluster exists
+      if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+        log_message "ERROR" "kind cluster '$CLUSTER_NAME' not found."
+        exit 1
+      fi
       ;;
     k3d)
       if ! command -v k3d &>/dev/null; then
         log_message "ERROR" "k3d not found. Please install k3d."
         exit 1
       fi
-      ;;
-    *)
-      log_message "ERROR" "Unsupported provider: $PROVIDER"
-      exit 1
+      # Check if the specified cluster exists
+      if ! k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
+        log_message "ERROR" "k3d cluster '$CLUSTER_NAME' not found."
+        exit 1
+      fi
       ;;
   esac
+  
   log_message "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
 # IMAGE OPERATIONS
 #=====================================================================
+# Build and load images from the image list file
 build_and_load_images() {
+  log_message "INFO" "Processing image list from $IMAGE_LIST"
+  
+  # Count total images to process
+  local total_images=$(grep -v '^\s*$\|^\s*#' "$IMAGE_LIST" | wc -l | tr -d ' ')
+  local current_image=0
+  
+  #---------------------------------------------------------------------
+  # IMAGE LIST PROCESSING
+  #---------------------------------------------------------------------
   while read -r line; do
+    # Skip empty lines and comments
     [[ -z "$line" || "$line" =~ ^# ]] && continue
+    
+    # Parse image and directory
     image=$(echo "$line" | awk '{print $1}')
     dir=$(echo "$line" | awk '{print $2}')
+    
+    # Validate line format
     if [[ -z "$image" || -z "$dir" ]]; then
       log_message "WARNING" "Skipping invalid line: $line"
       continue
     fi
+    
+    # Increment counter
+    ((current_image++))
+    log_message "INFO" "Processing image $current_image of $total_images: $image"
+    
+    #---------------------------------------------------------------------
+    # IMAGE BUILDING
+    #---------------------------------------------------------------------
     log_message "INFO" "Building image $image from directory $dir"
-    docker build -t "$image" "$dir"
+    
+    # Check if directory exists
+    if [[ ! -d "$dir" ]]; then
+      log_message "ERROR" "Directory does not exist: $dir"
+      continue
+    fi
+    
+    # Check if Dockerfile exists
+    if [[ ! -f "$dir/Dockerfile" ]]; then
+      log_message "ERROR" "Dockerfile not found in directory: $dir"
+      continue
+    fi
+    
+    # Build the image
+    if ! docker build -t "$image" "$dir"; then
+      log_message "ERROR" "Failed to build image $image"
+      continue
+    fi
+    
     log_message "SUCCESS" "Built image $image"
-
+    
+    #---------------------------------------------------------------------
+    # IMAGE LOADING
+    #---------------------------------------------------------------------
+    # Load the image into the cluster based on provider
     case "$PROVIDER" in
       minikube)
         log_message "INFO" "Loading image $image into minikube ($CLUSTER_NAME)"
-        minikube image load "$image" -p "$CLUSTER_NAME"
+        if ! minikube image load "$image" -p "$CLUSTER_NAME"; then
+          log_message "ERROR" "Failed to load image $image into minikube"
+          continue
+        fi
         ;;
       kind)
         log_message "INFO" "Loading image $image into kind ($CLUSTER_NAME)"
-        kind load docker-image "$image" --name "$CLUSTER_NAME"
+        if ! kind load docker-image "$image" --name "$CLUSTER_NAME"; then
+          log_message "ERROR" "Failed to load image $image into kind"
+          continue
+        fi
         ;;
       k3d)
         log_message "INFO" "Importing image $image into k3d ($CLUSTER_NAME)"
-        k3d image import "$image" -c "$CLUSTER_NAME"
+        if ! k3d image import "$image" -c "$CLUSTER_NAME"; then
+          log_message "ERROR" "Failed to import image $image into k3d"
+          continue
+        fi
         ;;
     esac
-    log_message "SUCCESS" "Loaded image $image into $PROVIDER"
+    
+    log_message "SUCCESS" "Loaded image $image into $PROVIDER cluster $CLUSTER_NAME"
   done < "$IMAGE_LIST"
+  
+  #---------------------------------------------------------------------
+  # COMPLETION SUMMARY
+  #---------------------------------------------------------------------
+  log_message "INFO" "Processed $current_image images"
+}
+
+#=====================================================================
+# IMAGE VERIFICATION
+#=====================================================================
+# Verify images are loaded in the cluster
+verify_images() {
+  log_message "INFO" "Verifying images in cluster $CLUSTER_NAME"
+  
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC VERIFICATION
+  #---------------------------------------------------------------------
+  case "$PROVIDER" in
+    minikube)
+      # For minikube, list images in the cluster
+      log_message "INFO" "Images available in minikube cluster:"
+      if ! minikube image ls -p "$CLUSTER_NAME"; then
+        log_message "WARNING" "Failed to list images in minikube"
+      fi
+      ;;
+    kind)
+      # For kind, we need to check inside the nodes
+      log_message "INFO" "Images available in kind cluster (control-plane node):"
+      local control_plane_node="$CLUSTER_NAME-control-plane"
+      if ! docker exec "$control_plane_node" crictl images; then
+        log_message "WARNING" "Failed to list images in kind control plane"
+      fi
+      ;;
+    k3d)
+      # For k3d, we need to check inside the server node
+      log_message "INFO" "Images available in k3d cluster (server node):"
+      local server_node=$(k3d node list | grep "$CLUSTER_NAME.*server" | head -1 | awk '{print $1}')
+      if [[ -n "$server_node" ]]; then
+        if ! docker exec "$server_node" crictl images; then
+          log_message "WARNING" "Failed to list images in k3d server node"
+        fi
+      else
+        log_message "WARNING" "Could not find k3d server node"
+      fi
+      ;;
+  esac
 }
 
 #=====================================================================
 # MAIN EXECUTION
 #=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
+  # Parse command line arguments
   parse_args "$@"
-
+  
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
+  # Configure log file if specified
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
       exit 1
     fi
+    # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
   print_with_separator "Build and Load Images Script"
+  
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   log_message "INFO" "Starting build and load process..."
   log_message "INFO" "  Provider:     $PROVIDER"
   log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
   log_message "INFO" "  Image List:   $IMAGE_LIST"
 
+  #---------------------------------------------------------------------
+  # EXECUTION STAGES
+  #---------------------------------------------------------------------
+  # Check for required tools and cluster existence
   check_requirements
+  
+  # Build and load the images
   build_and_load_images
+  
+  # Verify the images are loaded
+  verify_images
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Build and Load Images Script"
   log_message "SUCCESS" "All images built and loaded successfully."
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"
