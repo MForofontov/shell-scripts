@@ -34,6 +34,7 @@ LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
 
+# Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Build/Load/Apply Tool"
   echo -e "\033[1;34mDescription:\033[0m"

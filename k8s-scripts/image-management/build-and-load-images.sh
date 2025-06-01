@@ -27,6 +27,7 @@ CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"
 LOG_FILE="/dev/null"
 
+# Function to display usage instructions
 usage() {
   print_with_separator "Build and Load Images Script"
   echo -e "\033[1;34mDescription:\033[0m"
