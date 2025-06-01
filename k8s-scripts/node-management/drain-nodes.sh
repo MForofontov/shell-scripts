@@ -95,7 +95,7 @@ usage() {
 # UTILITY FUNCTIONS
 #=====================================================================
 #---------------------------------------------------------------------
-# DEPENDENCY CHECKING
+# CHECK FOR DEPENDENCIES
 #---------------------------------------------------------------------
 # Check if command exists
 command_exists() {
@@ -125,7 +125,7 @@ check_requirements() {
 # NODE SELECTION AND VALIDATION
 #=====================================================================
 #---------------------------------------------------------------------
-# NODE SELECTION
+# GET NODES BY SELECTOR
 #---------------------------------------------------------------------
 # Get nodes by selector
 get_nodes_by_selector() {
@@ -145,7 +145,7 @@ get_nodes_by_selector() {
 }
 
 #---------------------------------------------------------------------
-# NODE VERIFICATION
+# VALIDATE NODE NAMES
 #---------------------------------------------------------------------
 # Validate node names
 validate_nodes() {
@@ -186,7 +186,7 @@ validate_nodes() {
 # POD MANAGEMENT
 #=====================================================================
 #---------------------------------------------------------------------
-# POD ASSESSMENT
+# CHECK PODS ON NODE
 #---------------------------------------------------------------------
 # Check pods on node
 check_pods_on_node() {
@@ -214,7 +214,7 @@ check_pods_on_node() {
   log_message "INFO" "Found $pod_count pods on node $node"
   
   #---------------------------------------------------------------------
-  # CRITICAL POD DETECTION
+  # DETECT CRITICAL PODS
   #---------------------------------------------------------------------
   # Show critical pods that might prevent drain
   log_message "INFO" "Checking for critical pods (no controllers)..."
@@ -237,7 +237,7 @@ check_pods_on_node() {
 # NODE OPERATIONS
 #=====================================================================
 #---------------------------------------------------------------------
-# CORDON OPERATIONS
+# CORDON NODE
 #---------------------------------------------------------------------
 # Cordon a node
 cordon_node() {
@@ -258,6 +258,9 @@ cordon_node() {
   fi
 }
 
+#---------------------------------------------------------------------
+# UNCORDON NODE
+#---------------------------------------------------------------------
 # Uncordon a node
 uncordon_node() {
   local node="$1"
@@ -278,7 +281,7 @@ uncordon_node() {
 }
 
 #---------------------------------------------------------------------
-# DRAIN OPERATIONS
+# DRAIN NODE
 #---------------------------------------------------------------------
 # Drain a node
 drain_node() {
@@ -286,7 +289,7 @@ drain_node() {
   log_message "INFO" "Draining node: $node"
   
   #---------------------------------------------------------------------
-  # DRAIN COMMAND PREPARATION
+  # PREPARE DRAIN COMMAND
   #---------------------------------------------------------------------
   # Build drain command options
   local drain_cmd="kubectl drain $node"
@@ -330,7 +333,7 @@ drain_node() {
   log_message "INFO" "Running: $drain_cmd"
   
   #---------------------------------------------------------------------
-  # DRAIN EXECUTION AND MONITORING
+  # EXECUTE AND MONITOR DRAIN
   #---------------------------------------------------------------------
   # Start drain with timeout
   local start_time=$(date +%s)
@@ -365,7 +368,7 @@ drain_node() {
   done
   
   #---------------------------------------------------------------------
-  # DRAIN COMPLETION CHECK
+  # CHECK DRAIN COMPLETION
   #---------------------------------------------------------------------
   # Check if drain completed successfully
   wait $drain_pid
@@ -381,7 +384,7 @@ drain_node() {
 }
 
 #---------------------------------------------------------------------
-# NODE PROCESSING
+# PROCESS NODE
 #---------------------------------------------------------------------
 # Process a node (cordon and potentially drain)
 process_node() {
@@ -403,7 +406,7 @@ process_node() {
   fi
   
   #---------------------------------------------------------------------
-  # UNCORDON SCHEDULING
+  # SCHEDULE UNCORDON
   #---------------------------------------------------------------------
   # Schedule uncordon if requested
   if [[ "$UNCORDON_AFTER" == true ]]; then
@@ -514,9 +517,6 @@ parse_args() {
     esac
   done
   
-  #---------------------------------------------------------------------
-  # ARGUMENT VALIDATION
-  #---------------------------------------------------------------------
   # If nodes are still empty after processing selectors, show usage
   if [[ ${#NODES[@]} -eq 0 && -z "$SELECTOR" ]]; then
     log_message "ERROR" "No nodes specified via arguments or selector."

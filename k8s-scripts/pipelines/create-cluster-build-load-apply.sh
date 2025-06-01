@@ -127,10 +127,16 @@ parse_args() {
 #=====================================================================
 # CLUSTER MANAGEMENT
 #=====================================================================
+#---------------------------------------------------------------------
+# CREATE A CLUSTER BASED ON THE SELECTED PROVIDER
+#---------------------------------------------------------------------
 create_cluster() {
   print_with_separator "Creating Kubernetes Cluster"
   log_message "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
 
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC CLUSTER CREATION
+  #---------------------------------------------------------------------
   case "$PROVIDER" in
     minikube)
       minikube start -p "$CLUSTER_NAME" --nodes="$NODE_COUNT" --kubernetes-version="$K8S_VERSION" ${CONFIG_FILE:+--config "$CONFIG_FILE"}
@@ -161,8 +167,14 @@ create_cluster() {
 # MAIN EXECUTION
 #=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -175,8 +187,14 @@ main() {
   print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
   log_message "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
 
+  #---------------------------------------------------------------------
+  # CLUSTER CREATION
+  #---------------------------------------------------------------------
   create_cluster
 
+  #---------------------------------------------------------------------
+  # IMAGE BUILDING AND LOADING
+  #---------------------------------------------------------------------
   # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
   if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
     if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
@@ -192,6 +210,9 @@ main() {
     log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
   fi
 
+  #---------------------------------------------------------------------
+  # MANIFEST APPLICATION
+  #---------------------------------------------------------------------
   # If manifests directory is provided, apply manifests
   if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
@@ -205,8 +226,14 @@ main() {
     "${APPLY_CMD[@]}"
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

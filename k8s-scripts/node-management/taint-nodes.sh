@@ -118,14 +118,14 @@ usage() {
 # UTILITY FUNCTIONS
 #=====================================================================
 #---------------------------------------------------------------------
-# Check if command exists
+# CHECK IF COMMAND EXISTS
 #---------------------------------------------------------------------
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
 #---------------------------------------------------------------------
-# Check for required dependencies and permissions
+# CHECK FOR REQUIRED DEPENDENCIES AND PERMISSIONS
 #---------------------------------------------------------------------
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -163,7 +163,7 @@ check_requirements() {
 # PRESET MANAGEMENT
 #=====================================================================
 #---------------------------------------------------------------------
-# List available presets
+# LIST AVAILABLE PRESETS
 #---------------------------------------------------------------------
 list_presets() {
   print_with_separator "Available Taint Presets"
@@ -200,7 +200,7 @@ list_presets() {
 }
 
 #---------------------------------------------------------------------
-# Save current taints as preset
+# SAVE CURRENT TAINTS AS PRESET
 #---------------------------------------------------------------------
 save_preset() {
   local preset_name="$1"
@@ -245,7 +245,7 @@ save_preset() {
 # NODE SELECTION
 #=====================================================================
 #---------------------------------------------------------------------
-# Get nodes by selector
+# GET NODES BY SELECTOR
 #---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
@@ -264,7 +264,7 @@ get_nodes_by_selector() {
 }
 
 #---------------------------------------------------------------------
-# Validate node names
+# VALIDATE NODE NAMES
 #---------------------------------------------------------------------
 validate_nodes() {
   log_message "INFO" "Validating node names..."
@@ -305,7 +305,7 @@ validate_nodes() {
 # TAINT VALIDATION
 #=====================================================================
 #---------------------------------------------------------------------
-# Validate taint format
+# VALIDATE TAINT FORMAT
 #---------------------------------------------------------------------
 validate_taint_format() {
   local taint="$1"
@@ -358,7 +358,7 @@ validate_taint_format() {
 }
 
 #---------------------------------------------------------------------
-# Validate all taints
+# VALIDATE ALL TAINTS
 #---------------------------------------------------------------------
 validate_taints() {
   log_message "INFO" "Validating taint formats..."
@@ -389,7 +389,7 @@ validate_taints() {
 # COMPATIBILITY TESTING
 #=====================================================================
 #---------------------------------------------------------------------
-# Test compatibility with existing pods
+# TEST COMPATIBILITY WITH EXISTING PODS
 #---------------------------------------------------------------------
 test_pod_compatibility() {
   if [[ "$TEST_COMPATIBILITY" != true ]]; then
@@ -478,7 +478,7 @@ test_pod_compatibility() {
 # TAINT APPLICATION
 #=====================================================================
 #---------------------------------------------------------------------
-# Apply taints to a node
+# APPLY TAINTS TO A NODE
 #---------------------------------------------------------------------
 apply_taints() {
   local node="$1"
@@ -547,7 +547,7 @@ apply_taints() {
 }
 
 #---------------------------------------------------------------------
-# Process a preset
+# PROCESS A PRESET
 #---------------------------------------------------------------------
 process_preset() {
   local preset="$1"

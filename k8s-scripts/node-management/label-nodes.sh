@@ -114,14 +114,14 @@ usage() {
 # UTILITY FUNCTIONS
 #=====================================================================
 #---------------------------------------------------------------------
-# Check if command exists
+# CHECK IF COMMAND EXISTS
 #---------------------------------------------------------------------
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
 #---------------------------------------------------------------------
-# Check requirements
+# CHECK REQUIREMENTS
 #---------------------------------------------------------------------
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -159,7 +159,7 @@ check_requirements() {
 # TEMPLATE MANAGEMENT
 #=====================================================================
 #---------------------------------------------------------------------
-# List available templates
+# LIST AVAILABLE TEMPLATES
 #---------------------------------------------------------------------
 list_templates() {
   print_with_separator "Available Label Templates"
@@ -196,7 +196,7 @@ list_templates() {
 }
 
 #---------------------------------------------------------------------
-# Save current labels as template
+# SAVE CURRENT LABELS AS TEMPLATE
 #---------------------------------------------------------------------
 save_template() {
   local template_name="$1"
@@ -238,7 +238,7 @@ save_template() {
 }
 
 #---------------------------------------------------------------------
-# Process a template
+# PROCESS A TEMPLATE
 #---------------------------------------------------------------------
 process_template() {
   local template="$1"
@@ -288,7 +288,7 @@ process_template() {
 # NODE SELECTION
 #=====================================================================
 #---------------------------------------------------------------------
-# Get nodes by selector
+# GET NODES BY SELECTOR
 #---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
@@ -307,7 +307,7 @@ get_nodes_by_selector() {
 }
 
 #---------------------------------------------------------------------
-# Validate node names
+# VALIDATE NODE NAMES
 #---------------------------------------------------------------------
 validate_nodes() {
   log_message "INFO" "Validating node names..."
@@ -348,7 +348,7 @@ validate_nodes() {
 # LABEL VALIDATION
 #=====================================================================
 #---------------------------------------------------------------------
-# Validate label format
+# VALIDATE LABEL FORMAT
 #---------------------------------------------------------------------
 validate_label_format() {
   local label="$1"
@@ -393,7 +393,7 @@ validate_label_format() {
 }
 
 #---------------------------------------------------------------------
-# Validate all labels
+# VALIDATE ALL LABELS
 #---------------------------------------------------------------------
 validate_labels() {
   log_message "INFO" "Validating label formats..."
@@ -421,7 +421,7 @@ validate_labels() {
 }
 
 #---------------------------------------------------------------------
-# Check label consistency across nodes
+# CHECK LABEL CONSISTENCY ACROSS NODES
 #---------------------------------------------------------------------
 check_label_consistency() {
   if [[ "$CHECK_CONSISTENCY" != true ]]; then
@@ -510,7 +510,7 @@ check_label_consistency() {
 # LABEL OPERATIONS
 #=====================================================================
 #---------------------------------------------------------------------
-# Apply labels to a node
+# APPLY LABELS TO A NODE
 #---------------------------------------------------------------------
 apply_labels() {
   local node="$1"
@@ -566,7 +566,7 @@ apply_labels() {
 }
 
 #---------------------------------------------------------------------
-# Import labels from file
+# IMPORT LABELS FROM FILE
 #---------------------------------------------------------------------
 import_labels_from_file() {
   local file="$1"
@@ -632,7 +632,7 @@ import_labels_from_file() {
 }
 
 #---------------------------------------------------------------------
-# Export current node labels to file
+# EXPORT CURRENT NODE LABELS TO FILE
 #---------------------------------------------------------------------
 export_labels_to_file() {
   local file="$1"
