@@ -12,9 +12,6 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-#---------------------------------------------------------------------
-# DEPENDENCY LOADING
-#---------------------------------------------------------------------
 # Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
@@ -34,28 +31,17 @@ fi
 #=====================================================================
 # DEFAULT VALUES
 #=====================================================================
-#---------------------------------------------------------------------
-# OPERATION SETTINGS
-#---------------------------------------------------------------------
 NODES=()
 IGNORE_DAEMONSETS=true
 DELETE_LOCAL_DATA=false
 FORCE=false
 CORDON_ONLY=false
 DRY_RUN=false
-
-#---------------------------------------------------------------------
-# TIMING SETTINGS
-#---------------------------------------------------------------------
 TIMEOUT=300  # 5 minutes timeout
 POLL_INTERVAL=5  # 5 seconds between status checks
 EVICTION_GRACE_PERIOD=30
 UNCORDON_AFTER=false
 UNCORDON_DELAY=0
-
-#---------------------------------------------------------------------
-# FILTERING SETTINGS
-#---------------------------------------------------------------------
 NAMESPACE_FILTER=""
 SELECTOR_FILTER=""
 MAX_UNAVAILABLE_PODS=0
@@ -449,9 +435,6 @@ process_node() {
 #=====================================================================
 # Parse command line arguments
 parse_args() {
-  #---------------------------------------------------------------------
-  # FLAG PROCESSING
-  #---------------------------------------------------------------------
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --help)
