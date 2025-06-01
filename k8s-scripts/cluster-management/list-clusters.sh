@@ -91,6 +91,9 @@ check_requirements() {
   
   local all_tools_available=true
   
+  #---------------------------------------------------------------------
+  # LOCAL PROVIDER REQUIREMENTS
+  #---------------------------------------------------------------------
   # Check for local providers
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "minikube" ]]; then
     if ! command_exists minikube; then
@@ -113,6 +116,9 @@ check_requirements() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # CLOUD PROVIDER REQUIREMENTS
+  #---------------------------------------------------------------------
   # Check for cloud providers
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "eks" ]]; then
     if ! command_exists aws; then
@@ -135,6 +141,9 @@ check_requirements() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # OUTPUT FORMAT REQUIREMENTS
+  #---------------------------------------------------------------------
   # Check for formatting dependencies
   if [[ "$FORMAT" == "json" || "$FORMAT" == "yaml" ]]; then
     if ! command_exists jq; then
@@ -651,6 +660,9 @@ get_k3d_clusters() {
 #=====================================================================
 # OUTPUT FORMATTING
 #=====================================================================
+#---------------------------------------------------------------------
+# TABLE OUTPUT FORMAT
+#---------------------------------------------------------------------
 # Format output as table
 format_table_output() {
   # Print table header
@@ -669,6 +681,9 @@ format_table_output() {
   done
 }
 
+#---------------------------------------------------------------------
+# JSON OUTPUT FORMAT
+#---------------------------------------------------------------------
 # Format output as JSON
 format_json_output() {
   local json="["
@@ -698,6 +713,9 @@ format_json_output() {
   echo "$json" | jq '.'
 }
 
+#---------------------------------------------------------------------
+# YAML OUTPUT FORMAT
+#---------------------------------------------------------------------
 # Format output as YAML
 format_yaml_output() {
   local yaml=""
@@ -790,6 +808,9 @@ main() {
   # Parse arguments
   parse_args "$@"
   
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -804,6 +825,9 @@ main() {
   
   log_message "INFO" "Listing Kubernetes clusters..."
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Provider:   $PROVIDER"
@@ -822,6 +846,9 @@ main() {
   # Check requirements
   check_requirements
   
+  #---------------------------------------------------------------------
+  # DATA COLLECTION
+  #---------------------------------------------------------------------
   # Initialize arrays to store cluster information
   CLUSTER_NAMES=()
   CLUSTER_PROVIDERS=()
@@ -856,6 +883,9 @@ main() {
     get_aks_clusters
   fi
   
+  #---------------------------------------------------------------------
+  # RESULTS PROCESSING
+  #---------------------------------------------------------------------
   # Check if we found any clusters
   if [[ ${#CLUSTER_NAMES[@]} -eq 0 ]]; then
     log_message "INFO" "No clusters found for the specified criteria."
