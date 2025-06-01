@@ -75,6 +75,7 @@ usage() {
   echo -e "  \033[1;33m-l, --label <KEY=VALUE>\033[0m     (Optional) Labels to apply (can be used multiple times)"
   echo -e "  \033[1;33m-r, --remove <KEY>\033[0m          (Optional) Labels to remove (can be used multiple times)"
   echo -e "  \033[1;33m-t, --template <TEMPLATE>\033[0m   (Optional) Use a predefined label template"
+  echo -e "  \033[1;33m-f, --force\033[0m                 (Optional) Skip confirmation prompts"
   echo -e "  \033[1;33m--list-templates\033[0m            (Optional) List available label templates"
   echo -e "  \033[1;33m--save-template <NAME>\033[0m      (Optional) Save current labels as a template"
   echo -e "  \033[1;33m--import <FILE>\033[0m             (Optional) Import labels from JSON/YAML file"
@@ -82,7 +83,6 @@ usage() {
   echo -e "  \033[1;33m--overwrite\033[0m                 (Optional) Overwrite existing labels"
   echo -e "  \033[1;33m--no-consistency\033[0m            (Optional) Skip consistency validation"
   echo -e "  \033[1;33m--dry-run\033[0m                   (Optional) Only print what would be done"
-  echo -e "  \033[1;33m-f, --force\033[0m                 (Optional) Skip confirmation prompts"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Display this help message"
   echo
@@ -590,6 +590,10 @@ parse_args() {
         TEMPLATE="$2"
         shift 2
         ;;
+      -f|--force)
+        FORCE=true
+        shift
+        ;;
       --list-templates)
         list_templates
         ;;
@@ -615,10 +619,6 @@ parse_args() {
         ;;
       --dry-run)
         DRY_RUN=true
-        shift
-        ;;
-      -f|--force)
-        FORCE=true
         shift
         ;;
       --log)

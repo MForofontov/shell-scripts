@@ -43,10 +43,10 @@ usage() {
   echo "  This script merges multiple kubeconfig files into a single file with deduplication."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options> [input-files...]"
+  echo "  $0 [options] \033[1;36m<input-files...>\033[0m"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m[input-files...]\033[0m            (Required) Path to kubeconfig files to merge"
+  echo -e "  \033[1;36m<input-files...>\033[0m            (Required) Path(s) to kubeconfig files to merge"
   echo -e "  \033[1;33m-o, --output <FILE>\033[0m         (Optional) Output file path (default: $OUTPUT_FILE)"
   echo -e "  \033[1;33m-f, --force\033[0m                 (Optional) Overwrite output file without confirmation"
   echo -e "  \033[1;33m--no-backup\033[0m                 (Optional) Skip backup of existing config"

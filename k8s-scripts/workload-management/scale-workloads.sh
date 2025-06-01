@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,6 +25,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 WORKLOAD_TYPE="deployment"          # Default workload type to scale
 WORKLOAD_NAME=""                    # Name of the workload to scale
 NAMESPACE=""                        # Namespace of the workload
@@ -39,7 +45,6 @@ SCHEDULE=""                         # Schedule for time-based scaling (cron form
 SCHEDULE_FILE=""                    # File containing multiple schedules
 BATCH_FILE=""                       # File containing multiple workloads to scale
 LABEL_SELECTOR=""                   # Label selector for batch scaling
-FIELD_SELECTOR=""                   # Field selector for batch scaling
 GRACE_PERIOD=30                     # Grace period in seconds before evaluating metrics after scaling
 MAX_SCALING_OPERATIONS=5            # Maximum number of scaling operations in a single run
 POST_SCALE_CHECK=true               # Whether to check workload health after scaling
@@ -52,6 +57,9 @@ DRY_RUN=false                       # Whether to perform a dry run
 FORCE=false                         # Whether to force scaling without confirmation
 LOG_FILE="/dev/null"                # Log file location
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Kubernetes Workload Scaling Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -62,49 +70,37 @@ usage() {
   echo "  $0 <options>"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m--type <TYPE>\033[0m               (Optional) Workload type to scale (default: ${WORKLOAD_TYPE})"
-  echo -e "                                 Supported types: deployment, statefulset, replicaset"
-  echo -e "  \033[1;33m--name <NAME>\033[0m               Name of the workload to scale"
-  echo -e "  \033[1;33m--namespace <NAMESPACE>\033[0m     (Optional) Namespace of the workload (default: current namespace)"
-  echo -e "  \033[1;33m--context <CONTEXT>\033[0m         (Optional) Kubernetes context to use (default: current context)"
-  echo
-  echo -e "\033[1;34mScaling Modes:\033[0m"
-  echo -e "  \033[1;33m--replicas <COUNT>\033[0m          Set fixed number of replicas"
-  echo -e "  \033[1;33m--min <COUNT>\033[0m               (Optional) Minimum number of replicas (default: ${MIN_REPLICAS})"
-  echo -e "  \033[1;33m--max <COUNT>\033[0m               (Optional) Maximum number of replicas (default: ${MAX_REPLICAS})"
-  echo
-  echo -e "\033[1;34mMetrics-based Scaling:\033[0m"
-  echo -e "  \033[1;33m--metrics\033[0m                   Enable metrics-based scaling"
-  echo -e "  \033[1;33m--cpu-threshold <PERCENT>\033[0m   (Optional) CPU threshold percentage (default: ${CPU_THRESHOLD}%)"
-  echo -e "  \033[1;33m--memory-threshold <PERCENT>\033[0m (Optional) Memory threshold percentage (default: ${MEMORY_THRESHOLD}%)"
-  echo -e "  \033[1;33m--scaling-factor <FACTOR>\033[0m   (Optional) Factor to scale by (default: ${SCALING_FACTOR})"
-  echo -e "  \033[1;33m--interval <SECONDS>\033[0m        (Optional) Interval between scaling decisions (default: ${SCALING_INTERVAL}s)"
-  echo -e "  \033[1;33m--step <COUNT>\033[0m              (Optional) Number of replicas to add/remove at once (default: ${SCALING_STEP})"
-  echo -e "  \033[1;33m--grace-period <SECONDS>\033[0m    (Optional) Grace period after scaling (default: ${GRACE_PERIOD}s)"
-  echo -e "  \033[1;33m--metric-source <SOURCE>\033[0m    (Optional) Source for metrics (default: ${METRIC_SOURCE})"
-  echo -e "                                 Supported sources: metrics-server, prometheus"
-  echo -e "  \033[1;33m--prometheus-url <URL>\033[0m      (Optional) Prometheus server URL (for prometheus source)"
-  echo -e "  \033[1;33m--prometheus-query <QUERY>\033[0m  (Optional) Custom Prometheus query (for prometheus source)"
-  echo
-  echo -e "\033[1;34mSchedule-based Scaling:\033[0m"
-  echo -e "  \033[1;33m--schedule <SCHEDULE>\033[0m       Schedule for time-based scaling (cron format or simple time)"
-  echo -e "                                 Examples: '0 8 * * 1-5' (cron), 'weekdays 8:00' (simple)"
-  echo -e "  \033[1;33m--schedule-file <FILE>\033[0m      File containing multiple schedules"
-  echo
-  echo -e "\033[1;34mBatch Operations:\033[0m"
-  echo -e "  \033[1;33m--batch-file <FILE>\033[0m         File containing multiple workloads to scale"
-  echo -e "  \033[1;33m--selector <SELECTOR>\033[0m       Label selector for batch scaling (e.g., 'app=myapp')"
-  echo -e "  \033[1;33m--field-selector <SELECTOR>\033[0m Field selector for batch scaling"
-  echo
-  echo -e "\033[1;34mOther Options:\033[0m"
-  echo -e "  \033[1;33m--no-post-check\033[0m             Skip post-scaling health check"
-  echo -e "  \033[1;33m--max-operations <COUNT>\033[0m    (Optional) Maximum scaling operations (default: ${MAX_SCALING_OPERATIONS})"
-  echo -e "  \033[1;33m--timeout <SECONDS>\033[0m         (Optional) Timeout for operations (default: ${TIMEOUT}s)"
-  echo -e "  \033[1;33m--verify-timeout <SECONDS>\033[0m  (Optional) Timeout for verification (default: ${VERIFY_TIMEOUT}s)"
-  echo -e "  \033[1;33m--dry-run\033[0m                   Perform a dry run without making changes"
-  echo -e "  \033[1;33m--force\033[0m                     Force scaling without confirmation"
-  echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
-  echo -e "  \033[1;33m--help\033[0m                      Display this help message"
+  echo -e "  \033[1;36m--name <NAME>\033[0m                (required) Name of the workload to scale (unless using --selector or --batch-file)"
+  echo -e "  \033[1;36m--replicas <COUNT>\033[0m           (required for fixed scaling) Set fixed number of replicas"
+  echo -e "  \033[1;36m--schedule <SCHEDULE>\033[0m        (required for schedule mode) Schedule for time-based scaling (cron or simple time)"
+  echo -e "  \033[1;36m--schedule-file <FILE>\033[0m       (required for schedule mode) File containing multiple schedules"
+  echo -e "  \033[1;36m--batch-file <FILE>\033[0m          (required for batch mode) File containing multiple workloads to scale"
+  echo -e "  \033[1;36m--selector <SELECTOR>\033[0m        (required for selector mode) Label selector for batch scaling (e.g., 'app=myapp')"
+  echo -e "  \033[1;33m--type <TYPE>\033[0m                (optional) Workload type to scale (default: ${WORKLOAD_TYPE})"
+  echo -e "                                     Supported types: deployment, statefulset, replicaset"
+  echo -e "  \033[1;33m--namespace <NAMESPACE>\033[0m      (optional) Namespace of the workload (default: current namespace)"
+  echo -e "  \033[1;33m--context <CONTEXT>\033[0m          (optional) Kubernetes context to use (default: current context)"
+  echo -e "  \033[1;33m--min <COUNT>\033[0m                (optional) Minimum number of replicas (default: ${MIN_REPLICAS})"
+  echo -e "  \033[1;33m--max <COUNT>\033[0m                (optional) Maximum number of replicas (default: ${MAX_REPLICAS})"
+  echo -e "  \033[1;33m--metrics\033[0m                    (optional) Enable metrics-based scaling"
+  echo -e "  \033[1;33m--cpu-threshold <PERCENT>\033[0m    (optional) CPU threshold percentage (default: ${CPU_THRESHOLD}%)"
+  echo -e "  \033[1;33m--memory-threshold <PERCENT>\033[0m (optional) Memory threshold percentage (default: ${MEMORY_THRESHOLD}%)"
+  echo -e "  \033[1;33m--scaling-factor <FACTOR>\033[0m    (optional) Factor to scale by (default: ${SCALING_FACTOR})"
+  echo -e "  \033[1;33m--interval <SECONDS>\033[0m         (optional) Interval between scaling decisions (default: ${SCALING_INTERVAL}s)"
+  echo -e "  \033[1;33m--step <COUNT>\033[0m               (optional) Number of replicas to add/remove at once (default: ${SCALING_STEP})"
+  echo -e "  \033[1;33m--grace-period <SECONDS>\033[0m     (optional) Grace period after scaling (default: ${GRACE_PERIOD}s)"
+  echo -e "  \033[1;33m--metric-source <SOURCE>\033[0m     (optional) Source for metrics (default: ${METRIC_SOURCE})"
+  echo -e "                                     Supported sources: metrics-server, prometheus"
+  echo -e "  \033[1;33m--prometheus-url <URL>\033[0m       (optional) Prometheus server URL (for prometheus source)"
+  echo -e "  \033[1;33m--prometheus-query <QUERY>\033[0m   (optional) Custom Prometheus query (for prometheus source)"
+  echo -e "  \033[1;33m--no-post-check\033[0m              (optional) Skip post-scaling health check"
+  echo -e "  \033[1;33m--max-operations <COUNT>\033[0m     (optional) Maximum scaling operations (default: ${MAX_SCALING_OPERATIONS})"
+  echo -e "  \033[1;33m--timeout <SECONDS>\033[0m          (optional) Timeout for operations (default: ${TIMEOUT}s)"
+  echo -e "  \033[1;33m--verify-timeout <SECONDS>\033[0m   (optional) Timeout for verification (default: ${VERIFY_TIMEOUT}s)"
+  echo -e "  \033[1;33m--dry-run\033[0m                    (optional) Perform a dry run without making changes"
+  echo -e "  \033[1;33m--force\033[0m                      (optional) Force scaling without confirmation"
+  echo -e "  \033[1;33m--log <FILE>\033[0m                 (optional) Log output to specified file"
+  echo -e "  \033[1;33m--help\033[0m                       (optional) Display this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  # Scale a deployment to 5 replicas"
@@ -123,6 +119,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# DEPENDENCY CHECKING
+#=====================================================================
 # Check if a command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -181,9 +180,26 @@ check_requirements() {
     fi
   fi
   
+  # For schedule-based scaling with cron format, check for Python dependencies
+  if [[ "$SCALE_MODE" == "schedule" && -n "$SCHEDULE" && "$SCHEDULE" =~ ^[0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+$ ]]; then
+    if ! command_exists python3; then
+      log_message "ERROR" "Python3 is required to parse cron schedules."
+      exit 1
+    fi
+    
+    # Check if croniter module is installed
+    if ! python3 -c "import croniter" &>/dev/null; then
+      log_message "ERROR" "Python module 'croniter' is required. Install it with: pip3 install croniter"
+      exit 1
+    fi
+  fi
+  
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# KUBERNETES OPERATIONS
+#=====================================================================
 # Validate workload exists and is accessible
 validate_workload() {
   local workload_type="$1"
@@ -303,6 +319,9 @@ verify_workload_health() {
   return 1
 }
 
+#=====================================================================
+# METRICS FUNCTIONS
+#=====================================================================
 # Get metrics for a workload
 get_workload_metrics() {
   local workload_type="$1"
@@ -487,6 +506,9 @@ calculate_target_replicas() {
   return 0
 }
 
+#=====================================================================
+# SCHEDULE FUNCTIONS
+#=====================================================================
 # Parse a schedule string and check if it matches current time
 check_schedule() {
   local schedule="$1"
@@ -713,6 +735,9 @@ process_schedule_file() {
   return 1
 }
 
+#=====================================================================
+# BATCH OPERATIONS
+#=====================================================================
 # Process batch operations from a file
 process_batch_file() {
   local batch_file="$1"
@@ -829,6 +854,9 @@ process_selector() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   CONTEXT_FLAG=""
@@ -944,11 +972,6 @@ parse_args() {
         SCALE_MODE="selector"
         shift 2
         ;;
-      --field-selector)
-        FIELD_SELECTOR="$2"
-        SCALE_MODE="selector"
-        shift 2
-        ;;
       --no-post-check)
         POST_SCALE_CHECK=false
         shift
@@ -995,7 +1018,7 @@ parse_args() {
   # Validate required parameters based on scaling mode
   case "$SCALE_MODE" in
     fixed)
-      if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" && -z "$FIELD_SELECTOR" ]]; then
+      if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" ]]; then
         log_message "ERROR" "Workload name or selector is required for fixed scaling."
         exit 1
       fi
@@ -1006,13 +1029,13 @@ parse_args() {
       fi
       ;;
     metrics)
-      if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" && -z "$FIELD_SELECTOR" ]]; then
-        log_message "ERROR" "Workload name or selector is required for metrics-based scaling."
+      if [[ -z "$WORKLOAD_NAME" ]]; then
+        log_message "ERROR" "Workload name is required for metrics-based scaling."
         exit 1
       fi
       ;;
     schedule)
-      if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" && -z "$FIELD_SELECTOR" && -z "$BATCH_FILE" ]]; then
+      if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" && -z "$BATCH_FILE" ]]; then
         log_message "ERROR" "Workload name, selector, or batch file is required for schedule-based scaling."
         exit 1
       fi
@@ -1034,8 +1057,8 @@ parse_args() {
       fi
       ;;
     selector)
-      if [[ -z "$LABEL_SELECTOR" && -z "$FIELD_SELECTOR" ]]; then
-        log_message "ERROR" "Label or field selector is required for selector-based scaling."
+      if [[ -z "$LABEL_SELECTOR" ]]; then
+        log_message "ERROR" "Label selector is required for selector-based scaling."
         exit 1
       fi
       
@@ -1047,6 +1070,9 @@ parse_args() {
   esac
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
   # Parse arguments
   parse_args "$@"
@@ -1078,24 +1104,13 @@ main() {
       if [[ -n "$LABEL_SELECTOR" ]]; then
         log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
       fi
-      if [[ -n "$FIELD_SELECTOR" ]]; then
-        log_message "INFO" "  Field Selector:    $FIELD_SELECTOR"
-      fi
       log_message "INFO" "  Target Replicas:   $REPLICA_COUNT"
       ;;
     metrics)
       log_message "INFO" "  Mode:             Metrics-based scaling"
-      if [[ -n "$WORKLOAD_NAME" ]]; then
-        log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
-        log_message "INFO" "  Workload Name:     $WORKLOAD_NAME"
-        log_message "INFO" "  Namespace:         $NAMESPACE"
-      fi
-      if [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
-      fi
-      if [[ -n "$FIELD_SELECTOR" ]]; then
-        log_message "INFO" "  Field Selector:    $FIELD_SELECTOR"
-      fi
+      log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
+      log_message "INFO" "  Workload Name:     $WORKLOAD_NAME"
+      log_message "INFO" "  Namespace:         $NAMESPACE"
       log_message "INFO" "  Min Replicas:      $MIN_REPLICAS"
       log_message "INFO" "  Max Replicas:      $MAX_REPLICAS"
       log_message "INFO" "  CPU Threshold:     ${CPU_THRESHOLD}%"
@@ -1133,12 +1148,7 @@ main() {
       ;;
     selector)
       log_message "INFO" "  Mode:             Selector-based scaling"
-      if [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
-      fi
-      if [[ -n "$FIELD_SELECTOR" ]]; then
-        log_message "INFO" "  Field Selector:    $FIELD_SELECTOR"
-      fi
+      log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
       log_message "INFO" "  Target Replicas:   $REPLICA_COUNT"
       log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
       ;;
@@ -1188,17 +1198,9 @@ main() {
           fi
         fi
       # Selector-based scaling
-      elif [[ -n "$LABEL_SELECTOR" || -n "$FIELD_SELECTOR" ]]; then
+      elif [[ -n "$LABEL_SELECTOR" ]]; then
         log_message "INFO" "Scaling workloads matching selector with fixed replicas..."
-        
-        if [[ -n "$LABEL_SELECTOR" ]]; then
-          process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
-        fi
-        
-        if [[ -n "$FIELD_SELECTOR" ]]; then
-          # Field selector implementation would go here
-          log_message "WARNING" "Field selector support is not fully implemented yet."
-        fi
+        process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
       fi
       ;;
     metrics)
@@ -1236,19 +1238,12 @@ main() {
             fi
           fi
         fi
-      # Selector-based metrics scaling
-      elif [[ -n "$LABEL_SELECTOR" || -n "$FIELD_SELECTOR" ]]; then
+      # Selector-based metrics scaling is not implemented
+      elif [[ -n "$LABEL_SELECTOR" ]]; then
         log_message "WARNING" "Metrics-based scaling with selectors is a complex operation."
-        log_message "WARNING" "This would require calculating metrics for each matching workload."
         log_message "WARNING" "Consider using Kubernetes Horizontal Pod Autoscaler (HPA) for this use case."
-        
-        # This would be a complex implementation that would require:
-        # 1. Finding all workloads matching the selector
-        # 2. Getting metrics for each workload
-        # 3. Calculating target replicas for each workload
-        # 4. Scaling each workload accordingly
-        
-        log_message "ERROR" "Selector-based metrics scaling is not fully implemented yet."
+        log_message "ERROR" "Selector-based metrics scaling is not implemented."
+        exit 1
       fi
       ;;
     schedule)
@@ -1260,9 +1255,6 @@ main() {
           process_schedule_file "$SCHEDULE_FILE" "$WORKLOAD_TYPE" "$WORKLOAD_NAME" "$NAMESPACE"
         elif [[ -n "$LABEL_SELECTOR" ]]; then
           log_message "ERROR" "Schedule file with selector is not supported yet."
-          exit 1
-        elif [[ -n "$FIELD_SELECTOR" ]]; then
-          log_message "ERROR" "Schedule file with field selector is not supported yet."
           exit 1
         fi
       elif [[ -n "$SCHEDULE" ]]; then
@@ -1284,9 +1276,6 @@ main() {
             fi
           elif [[ -n "$LABEL_SELECTOR" ]]; then
             process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
-          elif [[ -n "$FIELD_SELECTOR" ]]; then
-            # Field selector implementation would go here
-            log_message "WARNING" "Field selector support is not fully implemented yet."
           fi
         else
           log_message "INFO" "Schedule does not match current time. No scaling needed."
@@ -1305,11 +1294,6 @@ main() {
       if [[ -n "$LABEL_SELECTOR" ]]; then
         log_message "INFO" "Scaling workloads matching label selector..."
         process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
-      fi
-      
-      if [[ -n "$FIELD_SELECTOR" ]]; then
-        # Field selector implementation would go here
-        log_message "WARNING" "Field selector support is not fully implemented yet."
       fi
       ;;
   esac

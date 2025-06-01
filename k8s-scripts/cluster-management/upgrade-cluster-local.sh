@@ -41,15 +41,15 @@ usage() {
   echo "  This script upgrades Kubernetes clusters created with various providers (minikube, kind, k3d)."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m-n, --name <NAME>\033[0m         (Required) Cluster name to upgrade"
   echo -e "  \033[1;36m-v, --version <VERSION>\033[0m   (Required) Target Kubernetes version"
   echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m (Optional) Provider to use (minikube, kind, k3d) (default: ${PROVIDER})"
   echo -e "  \033[1;33m-f, --force\033[0m               (Optional) Force upgrade without confirmation"
-  echo -e "  \033[1;33m--no-backup\033[0m               (Optional) Skip backup/snapshot before upgrade"
   echo -e "  \033[1;33m-t, --timeout <SECONDS>\033[0m   (Optional) Timeout in seconds for upgrade (default: ${WAIT_TIMEOUT})"
+  echo -e "  \033[1;33m--no-backup\033[0m               (Optional) Skip backup/snapshot before upgrade"
   echo -e "  \033[1;33m--log <FILE>\033[0m              (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message"
   echo

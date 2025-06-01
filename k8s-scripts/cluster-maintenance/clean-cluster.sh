@@ -53,7 +53,7 @@ usage() {
   echo "  cleaning persistent volumes, and resetting custom configurations."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;33m--preserve-ns <NAMESPACE>\033[0m     (Optional) Additional namespace to preserve (can be used multiple times)"

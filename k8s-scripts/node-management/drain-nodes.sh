@@ -57,7 +57,7 @@ usage() {
   echo -e "  \033[1;33m--cordon-only\033[0m               (Optional) Only cordon nodes, don't drain"
   echo -e "  \033[1;33m--no-ignore-daemonsets\033[0m      (Optional) Don't ignore DaemonSets when draining"
   echo -e "  \033[1;33m--delete-local-data\033[0m         (Optional) Delete local data when draining"
-  echo -e "  \033[1;33m--force\033[0m                     (Optional) Continue even if there are pods not managed by ReplicationController, Job, or DaemonSet"
+  echo -e "  \033[1;33m--force\033[0m                     (Optional) Continue even if pods are not managed by controllers"
   echo -e "  \033[1;33m--timeout <SECONDS>\033[0m         (Optional) Timeout for drain operation (default: ${TIMEOUT}s)"
   echo -e "  \033[1;33m--poll-interval <SECONDS>\033[0m   (Optional) Interval between status checks (default: ${POLL_INTERVAL}s)"
   echo -e "  \033[1;33m--grace-period <SECONDS>\033[0m    (Optional) Grace period for pod eviction (default: ${EVICTION_GRACE_PERIOD}s)"

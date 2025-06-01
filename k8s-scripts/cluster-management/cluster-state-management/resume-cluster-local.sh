@@ -45,12 +45,12 @@ usage() {
   echo "  This script resumes paused/hibernated Kubernetes clusters with validation."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m-n, --name <NAME>\033[0m           (Required) Cluster name to resume"
+  echo -e "  \033[1;36m-n, --name <NAME>\033[0m           (Required*) Cluster name to resume"
+  echo -e "  \033[1;36m-s, --state-file <FILE>\033[0m     (Required*) Path to the specific state file to use"
   echo -e "  \033[1;33m-p, --provider <PROVIDER>\033[0m   (Optional) Provider to use (minikube, kind, k3d) (default: auto-detect)"
-  echo -e "  \033[1;33m-s, --state-file <FILE>\033[0m     (Optional) Path to the specific state file to use"
   echo -e "  \033[1;33m--state-dir <DIR>\033[0m           (Optional) Directory with state files (default: ${STATE_DIR})"
   echo -e "  \033[1;33m-t, --timeout <SECONDS>\033[0m     (Optional) Timeout in seconds for operations (default: ${WAIT_TIMEOUT})"
   echo -e "  \033[1;33m--restore-workloads\033[0m         (Optional) Restore backed up workloads"
@@ -59,6 +59,9 @@ usage() {
   echo -e "  \033[1;33m-v, --verbose\033[0m               (Optional) Show more detailed output"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Display this help message"
+  echo
+  echo -e "\033[1;34mNotes:\033[0m"
+  echo "  * Either --name or --state-file is required."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --name my-cluster"
