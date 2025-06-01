@@ -39,7 +39,7 @@ usage() {
   echo "  This script restarts Kubernetes clusters created with various providers (minikube, kind, k3d)."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <options>"
+  echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m-n, --name <NAME>\033[0m          (Required) Cluster name to restart"
