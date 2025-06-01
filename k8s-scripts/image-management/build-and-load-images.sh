@@ -65,64 +65,6 @@ usage() {
 }
 
 #=====================================================================
-# ARGUMENT PARSING
-#=====================================================================
-# Parse command line arguments
-parse_args() {
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -f|--file)
-        IMAGE_LIST="$2"
-        shift 2
-        ;;
-      --provider)
-        PROVIDER="$2"
-        shift 2
-        ;;
-      --name)
-        CLUSTER_NAME="$2"
-        shift 2
-        ;;
-      --log)
-        LOG_FILE="$2"
-        shift 2
-        ;;
-      --help)
-        usage
-        ;;
-      *)
-        log_message "ERROR" "Unknown option: $1"
-        usage
-        ;;
-    esac
-  done
-
-  #---------------------------------------------------------------------
-  # VALIDATION
-  #---------------------------------------------------------------------
-  if [[ -z "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file is required."
-    usage
-  fi
-  
-  # Validate provider
-  case "$PROVIDER" in
-    minikube|kind|k3d) ;;
-    *)
-      log_message "ERROR" "Unsupported provider: $PROVIDER"
-      log_message "ERROR" "Supported providers: minikube, kind, k3d"
-      exit 1
-      ;;
-  esac
-  
-  # Validate image list file exists
-  if [[ ! -f "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file does not exist: $IMAGE_LIST"
-    exit 1
-  fi
-}
-
-#=====================================================================
 # REQUIREMENTS CHECKING
 #=====================================================================
 # Check for required tools
@@ -312,6 +254,64 @@ verify_images() {
       fi
       ;;
   esac
+}
+
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
+# Parse command line arguments
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -f|--file)
+        IMAGE_LIST="$2"
+        shift 2
+        ;;
+      --provider)
+        PROVIDER="$2"
+        shift 2
+        ;;
+      --name)
+        CLUSTER_NAME="$2"
+        shift 2
+        ;;
+      --log)
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      --help)
+        usage
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
+        usage
+        ;;
+    esac
+  done
+
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  if [[ -z "$IMAGE_LIST" ]]; then
+    log_message "ERROR" "Image list file is required."
+    usage
+  fi
+  
+  # Validate provider
+  case "$PROVIDER" in
+    minikube|kind|k3d) ;;
+    *)
+      log_message "ERROR" "Unsupported provider: $PROVIDER"
+      log_message "ERROR" "Supported providers: minikube, kind, k3d"
+      exit 1
+      ;;
+  esac
+  
+  # Validate image list file exists
+  if [[ ! -f "$IMAGE_LIST" ]]; then
+    log_message "ERROR" "Image list file does not exist: $IMAGE_LIST"
+    exit 1
+  fi
 }
 
 #=====================================================================

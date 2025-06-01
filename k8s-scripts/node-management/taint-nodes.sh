@@ -71,7 +71,6 @@ TAINT_PRESETS=(
 #=====================================================================
 # USAGE AND HELP
 #=====================================================================
-# Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Node Taint Management Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -118,27 +117,40 @@ usage() {
 #=====================================================================
 # UTILITY FUNCTIONS
 #=====================================================================
+#---------------------------------------------------------------------
 # Check if command exists
+#---------------------------------------------------------------------
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# Check requirements
+#---------------------------------------------------------------------
+# Check for required dependencies and permissions
+#---------------------------------------------------------------------
 check_requirements() {
   log_message "INFO" "Checking requirements..."
   
+  #---------------------------------------------------------------------
+  # KUBECTL AVAILABILITY
+  #---------------------------------------------------------------------
   if ! command_exists kubectl; then
     log_message "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # CLUSTER CONNECTIVITY
+  #---------------------------------------------------------------------
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
     log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # TEMPLATES DIRECTORY
+  #---------------------------------------------------------------------
   # Create templates directory if it doesn't exist
   if [[ ! -d "$TEMPLATES_DIR" ]]; then
     mkdir -p "$TEMPLATES_DIR"
@@ -150,15 +162,23 @@ check_requirements() {
 #=====================================================================
 # PRESET MANAGEMENT
 #=====================================================================
+#---------------------------------------------------------------------
 # List available presets
+#---------------------------------------------------------------------
 list_presets() {
   print_with_separator "Available Taint Presets"
   
+  #---------------------------------------------------------------------
+  # BUILT-IN PRESETS
+  #---------------------------------------------------------------------
   echo -e "\033[1;34mBuilt-in Presets:\033[0m"
   for preset in "${!TAINT_PRESETS[@]}"; do
     echo -e "  \033[1;32m$preset\033[0m: ${TAINT_PRESETS[$preset]}"
   done
   
+  #---------------------------------------------------------------------
+  # CUSTOM PRESETS
+  #---------------------------------------------------------------------
   echo
   echo -e "\033[1;34mCustom Presets:\033[0m"
   if [[ -d "$TEMPLATES_DIR" ]]; then
@@ -179,16 +199,24 @@ list_presets() {
   exit 0
 }
 
+#---------------------------------------------------------------------
 # Save current taints as preset
+#---------------------------------------------------------------------
 save_preset() {
   local preset_name="$1"
   local preset_content=""
   
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   if [[ -z "$preset_name" ]]; then
     log_message "ERROR" "Preset name is required"
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # CONTENT PREPARATION
+  #---------------------------------------------------------------------
   # Combine all taints into a single string
   for taint in "${TAINTS[@]}"; do
     if [[ -n "$preset_content" ]]; then
@@ -203,6 +231,9 @@ save_preset() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # PRESET STORAGE
+  #---------------------------------------------------------------------
   # Save to preset file
   echo "$preset_content" > "$TEMPLATES_DIR/$preset_name"
   
@@ -213,7 +244,9 @@ save_preset() {
 #=====================================================================
 # NODE SELECTION
 #=====================================================================
+#---------------------------------------------------------------------
 # Get nodes by selector
+#---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
   log_message "INFO" "Getting nodes with selector: $selector"
@@ -230,15 +263,23 @@ get_nodes_by_selector() {
   echo "$selected_nodes"
 }
 
+#---------------------------------------------------------------------
 # Validate node names
+#---------------------------------------------------------------------
 validate_nodes() {
   log_message "INFO" "Validating node names..."
   
+  #---------------------------------------------------------------------
+  # EMPTY NODES CHECK
+  #---------------------------------------------------------------------
   if [[ ${#NODES[@]} -eq 0 ]]; then
     log_message "ERROR" "No nodes specified."
     usage
   fi
   
+  #---------------------------------------------------------------------
+  # NODE EXISTENCE VALIDATION
+  #---------------------------------------------------------------------
   local valid_count=0
   local available_nodes
   available_nodes=$(kubectl get nodes -o name | cut -d'/' -f2)
@@ -263,10 +304,15 @@ validate_nodes() {
 #=====================================================================
 # TAINT VALIDATION
 #=====================================================================
+#---------------------------------------------------------------------
 # Validate taint format
+#---------------------------------------------------------------------
 validate_taint_format() {
   local taint="$1"
   
+  #---------------------------------------------------------------------
+  # FORMAT CHECKS
+  #---------------------------------------------------------------------
   # Check basic format: key=value:effect or key=value:effect:seconds
   if ! echo "$taint" | grep -q "^[a-zA-Z0-9][-a-zA-Z0-9_.]*\/\?[a-zA-Z0-9][-a-zA-Z0-9_.]*=[^:]*:(NoSchedule|PreferNoSchedule|NoExecute)(:[0-9]+)?$"; then
     log_message "ERROR" "Invalid taint format: $taint"
@@ -275,6 +321,9 @@ validate_taint_format() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # KEY AND EFFECT VALIDATION
+  #---------------------------------------------------------------------
   # Extract key, value and effect
   local key
   local effect
@@ -289,6 +338,9 @@ validate_taint_format() {
     return 1
   fi
   
+  #---------------------------------------------------------------------
+  # EVICTION TIMEOUT VALIDATION
+  #---------------------------------------------------------------------
   # Check eviction timeout if NoExecute
   if [[ "$effect" == "NoExecute" ]]; then
     if echo "$taint" | grep -q ":[0-9]\+$"; then
@@ -305,7 +357,9 @@ validate_taint_format() {
   return 0
 }
 
+#---------------------------------------------------------------------
 # Validate all taints
+#---------------------------------------------------------------------
 validate_taints() {
   log_message "INFO" "Validating taint formats..."
   
@@ -334,7 +388,9 @@ validate_taints() {
 #=====================================================================
 # COMPATIBILITY TESTING
 #=====================================================================
+#---------------------------------------------------------------------
 # Test compatibility with existing pods
+#---------------------------------------------------------------------
 test_pod_compatibility() {
   if [[ "$TEST_COMPATIBILITY" != true ]]; then
     return 0
@@ -342,6 +398,9 @@ test_pod_compatibility() {
   
   log_message "INFO" "Testing pod compatibility with the specified taints..."
   
+  #---------------------------------------------------------------------
+  # POD EVICTION ANALYSIS
+  #---------------------------------------------------------------------
   local has_incompatible=false
   
   for node in "${NODES[@]}"; do
@@ -356,6 +415,9 @@ test_pod_compatibility() {
       continue
     fi
     
+    #---------------------------------------------------------------------
+    # POD TOLERATION CHECKS
+    #---------------------------------------------------------------------
     # Check each pod against each taint
     while IFS= read -r pod_info; do
       local namespace
@@ -395,6 +457,9 @@ test_pod_compatibility() {
     done <<< "$pod_list"
   done
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   if [[ "$has_incompatible" == true ]]; then
     log_message "WARNING" "Some pods will be evicted when these taints are applied"
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
@@ -412,11 +477,16 @@ test_pod_compatibility() {
 #=====================================================================
 # TAINT APPLICATION
 #=====================================================================
+#---------------------------------------------------------------------
 # Apply taints to a node
+#---------------------------------------------------------------------
 apply_taints() {
   local node="$1"
   log_message "INFO" "Applying taints to node: $node"
   
+  #---------------------------------------------------------------------
+  # REMOVE ALL TAINTS
+  #---------------------------------------------------------------------
   # Handle the case where we want to remove all taints
   if [[ "$REMOVE_ALL" == true ]]; then
     if [[ "$DRY_RUN" == true ]]; then
@@ -439,6 +509,9 @@ apply_taints() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # APPLY TAINTS
+  #---------------------------------------------------------------------
   # Apply taints
   for taint in "${TAINTS[@]}"; do
     if [[ "$DRY_RUN" == true ]]; then
@@ -453,6 +526,9 @@ apply_taints() {
     fi
   done
   
+  #---------------------------------------------------------------------
+  # REMOVE TAINTS
+  #---------------------------------------------------------------------
   # Remove taints
   for taint in "${REMOVE_TAINTS[@]}"; do
     if [[ "$DRY_RUN" == true ]]; then
@@ -470,11 +546,16 @@ apply_taints() {
   return 0
 }
 
+#---------------------------------------------------------------------
 # Process a preset
+#---------------------------------------------------------------------
 process_preset() {
   local preset="$1"
   log_message "INFO" "Processing preset: $preset"
   
+  #---------------------------------------------------------------------
+  # BUILT-IN PRESET HANDLING
+  #---------------------------------------------------------------------
   # Check if it's a built-in preset
   if [[ -n "${TAINT_PRESETS[$preset]}" ]]; then
     local preset_taints="${TAINT_PRESETS[$preset]}"
@@ -489,6 +570,9 @@ process_preset() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # CUSTOM PRESET HANDLING
+  #---------------------------------------------------------------------
   # Check if it's a custom preset
   if [[ -f "$TEMPLATES_DIR/$preset" ]]; then
     local preset_content
@@ -512,7 +596,6 @@ process_preset() {
 #=====================================================================
 # ARGUMENT PARSING
 #=====================================================================
-# Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -578,6 +661,9 @@ parse_args() {
     esac
   done
   
+  #---------------------------------------------------------------------
+  # SELECTOR PROCESSING
+  #---------------------------------------------------------------------
   # Get nodes by selector if specified
   if [[ -n "$SELECTOR" ]]; then
     NODES=($(get_nodes_by_selector "$SELECTOR"))
@@ -587,11 +673,16 @@ parse_args() {
 #=====================================================================
 # MAIN EXECUTION
 #=====================================================================
-# Main function
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   # Parse arguments
   parse_args "$@"
 
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -605,14 +696,23 @@ main() {
   
   log_message "INFO" "Starting node taint management..."
   
+  #---------------------------------------------------------------------
+  # REQUIREMENT VERIFICATION
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
+  #---------------------------------------------------------------------
+  # PRESET PROCESSING
+  #---------------------------------------------------------------------
   # Process preset if specified
   if [[ -n "$PRESET" ]]; then
     process_preset "$PRESET"
   fi
   
+  #---------------------------------------------------------------------
+  # NODE AND TAINT VALIDATION
+  #---------------------------------------------------------------------
   # Validate nodes
   validate_nodes
   
@@ -621,14 +721,23 @@ main() {
     validate_taints
   fi
   
+  #---------------------------------------------------------------------
+  # COMPATIBILITY TESTING
+  #---------------------------------------------------------------------
   # Test pod compatibility
   test_pod_compatibility
   
+  #---------------------------------------------------------------------
+  # PRESET MANAGEMENT
+  #---------------------------------------------------------------------
   # Save preset if requested
   if [[ -n "$SAVE_PRESET" ]]; then
     save_preset "$SAVE_PRESET"
   fi
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Nodes:              ${NODES[*]}"
@@ -643,6 +752,9 @@ main() {
   log_message "INFO" "  Test Compatibility: $TEST_COMPATIBILITY"
   log_message "INFO" "  Dry Run:            $DRY_RUN"
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
     log_message "WARNING" "You are about to modify taints on the following nodes: ${NODES[*]}"
@@ -653,6 +765,9 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # TAINT APPLICATION
+  #---------------------------------------------------------------------
   # Apply taints to each node
   local success_count=0
   local failed_count=0
@@ -669,6 +784,9 @@ main() {
     echo  # Add a blank line for readability
   done
   
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Node Taint Management"
   
   # Final summary
@@ -689,5 +807,8 @@ main() {
   echo -e "  \033[1mkubectl describe node <node-name> | grep Taints -A1\033[0m"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"

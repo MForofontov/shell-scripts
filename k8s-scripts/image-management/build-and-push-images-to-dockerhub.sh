@@ -79,73 +79,6 @@ usage() {
 }
 
 #=====================================================================
-# ARGUMENT PARSING
-#=====================================================================
-# Parse command line arguments
-parse_args() {
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -u|--username)
-        DOCKER_USERNAME="$2"
-        shift 2
-        ;;
-      -p|--pat)
-        DOCKER_PAT="$2"
-        shift 2
-        ;;
-      -e|--email)
-        EMAIL="$2"
-        shift 2
-        ;;
-      -j|--project)
-        PROJECT_NAME="$2"
-        shift 2
-        ;;
-      -f|--file)
-        IMAGE_LIST="$2"
-        shift 2
-        ;;
-      -m|--manifests)
-        MANIFEST_DIR="$2"
-        shift 2
-        ;;
-      --log)
-        LOG_FILE="$2"
-        shift 2
-        ;;
-      --help)
-        usage
-        ;;
-      *)
-        log_message "ERROR" "Unknown option: $1"
-        usage
-        ;;
-    esac
-  done
-
-  #---------------------------------------------------------------------
-  # VALIDATION
-  #---------------------------------------------------------------------
-  # Check if required parameters are provided
-  if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_PAT" || -z "$EMAIL" || -z "$PROJECT_NAME" ]]; then
-    log_message "ERROR" "Docker username, PAT, email, and project name are required."
-    usage
-  fi
-  
-  # Check if image list file exists
-  if [[ ! -f "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file not found: $IMAGE_LIST"
-    exit 1
-  fi
-  
-  # Check if manifest directory exists if provided
-  if [[ -n "$MANIFEST_DIR" && ! -d "$MANIFEST_DIR" ]]; then
-    log_message "ERROR" "Manifest directory not found: $MANIFEST_DIR"
-    exit 1
-  fi
-}
-
-#=====================================================================
 # DOCKER OPERATIONS
 #=====================================================================
 # Function to build and push Docker images
@@ -276,6 +209,73 @@ create_k8s_secret() {
     log_message "INFO" "Secret 'regcred' verified in namespace $project"
   else
     log_message "WARNING" "Could not verify existence of secret 'regcred' in namespace $project"
+  fi
+}
+
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
+# Parse command line arguments
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -u|--username)
+        DOCKER_USERNAME="$2"
+        shift 2
+        ;;
+      -p|--pat)
+        DOCKER_PAT="$2"
+        shift 2
+        ;;
+      -e|--email)
+        EMAIL="$2"
+        shift 2
+        ;;
+      -j|--project)
+        PROJECT_NAME="$2"
+        shift 2
+        ;;
+      -f|--file)
+        IMAGE_LIST="$2"
+        shift 2
+        ;;
+      -m|--manifests)
+        MANIFEST_DIR="$2"
+        shift 2
+        ;;
+      --log)
+        LOG_FILE="$2"
+        shift 2
+        ;;
+      --help)
+        usage
+        ;;
+      *)
+        log_message "ERROR" "Unknown option: $1"
+        usage
+        ;;
+    esac
+  done
+
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Check if required parameters are provided
+  if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_PAT" || -z "$EMAIL" || -z "$PROJECT_NAME" ]]; then
+    log_message "ERROR" "Docker username, PAT, email, and project name are required."
+    usage
+  fi
+  
+  # Check if image list file exists
+  if [[ ! -f "$IMAGE_LIST" ]]; then
+    log_message "ERROR" "Image list file not found: $IMAGE_LIST"
+    exit 1
+  fi
+  
+  # Check if manifest directory exists if provided
+  if [[ -n "$MANIFEST_DIR" && ! -d "$MANIFEST_DIR" ]]; then
+    log_message "ERROR" "Manifest directory not found: $MANIFEST_DIR"
+    exit 1
   fi
 }
 
