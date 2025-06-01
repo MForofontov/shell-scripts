@@ -2,6 +2,9 @@
 # switch-context.sh
 # Script to easily switch between Kubernetes contexts
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CONTEXT=""
 PROVIDER=""
 INTERACTIVE=false
@@ -33,6 +38,9 @@ LOG_FILE="/dev/null"
 FILTER=""
 SHOW_ALL=false
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Context Switching Script"
@@ -60,11 +68,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -78,6 +92,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# CONTEXT LISTING AND FILTERING
+#=====================================================================
 # List available contexts
 list_contexts() {
   log_message "INFO" "Listing available Kubernetes contexts..."
@@ -177,6 +194,9 @@ list_contexts() {
   AVAILABLE_CONTEXTS=("${filtered_contexts[@]}")
 }
 
+#=====================================================================
+# CONTEXT SWITCHING
+#=====================================================================
 # Switch to specified context
 switch_context() {
   local target_context="$1"
@@ -229,6 +249,9 @@ switch_context() {
   fi
 }
 
+#=====================================================================
+# INTERACTIVE SELECTION
+#=====================================================================
 # Interactive context selection
 interactive_selection() {
   # List available contexts first
@@ -260,6 +283,9 @@ interactive_selection() {
   switch_context "$selected_context"
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -312,6 +338,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
