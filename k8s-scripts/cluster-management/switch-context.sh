@@ -107,6 +107,9 @@ list_contexts() {
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # CONTEXT FILTERING
+  #---------------------------------------------------------------------
   # Apply filtering based on provider
   local filtered_contexts=()
   local filtered_providers=()
@@ -170,6 +173,9 @@ list_contexts() {
     fi
   done
   
+  #---------------------------------------------------------------------
+  # CONTEXT DISPLAY
+  #---------------------------------------------------------------------
   # Display filtered contexts
   if [[ ${#filtered_contexts[@]} -eq 0 ]]; then
     log_message "ERROR" "No contexts match the specified filters."
@@ -203,6 +209,9 @@ switch_context() {
   
   log_message "INFO" "Switching to context: $target_context"
   
+  #---------------------------------------------------------------------
+  # CONTEXT VALIDATION
+  #---------------------------------------------------------------------
   # Check if context exists
   if ! kubectl config get-contexts -o name | grep -q "^${target_context}$"; then
     log_message "ERROR" "Context '$target_context' does not exist."
@@ -218,10 +227,16 @@ switch_context() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # CONTEXT SWITCH EXECUTION
+  #---------------------------------------------------------------------
   # Switch context
   if kubectl config use-context "$target_context" &>/dev/null; then
     log_message "SUCCESS" "Switched to context: $target_context"
     
+    #---------------------------------------------------------------------
+    # CONTEXT INFORMATION DISPLAY
+    #---------------------------------------------------------------------
     # Display some basic info about the new context
     echo
     echo -e "\033[1;34mContext Information:\033[0m"
@@ -231,6 +246,9 @@ switch_context() {
     echo -e "\033[1mUser:\033[0m $(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$target_context"'")].context.user}')"
     echo -e "\033[1mNamespace:\033[0m $(kubectl config view -o jsonpath='{.contexts[?(@.name=="'"$target_context"'")].context.namespace}' || echo "default")"
 
+    #---------------------------------------------------------------------
+    # CONNECTION TESTING
+    #---------------------------------------------------------------------
     # Test connection to the cluster
     echo
     echo -e "\033[1;34mConnection Test:\033[0m"
@@ -254,19 +272,31 @@ switch_context() {
 #=====================================================================
 # Interactive context selection
 interactive_selection() {
+  #---------------------------------------------------------------------
+  # CONTEXT LISTING
+  #---------------------------------------------------------------------
   # List available contexts first
   list_contexts
   
+  #---------------------------------------------------------------------
+  # SINGLE CONTEXT HANDLING
+  #---------------------------------------------------------------------
   if [[ ${#AVAILABLE_CONTEXTS[@]} -eq 1 ]]; then
     log_message "INFO" "Only one context available. Switching automatically."
     switch_context "${AVAILABLE_CONTEXTS[0]}"
     return
   fi
   
+  #---------------------------------------------------------------------
+  # USER SELECTION PROMPT
+  #---------------------------------------------------------------------
   echo
   echo -e "Enter the number of the context to switch to, or 'q' to quit:"
   read -p "> " selection
   
+  #---------------------------------------------------------------------
+  # INPUT VALIDATION
+  #---------------------------------------------------------------------
   # Validate input
   if [[ "$selection" == "q" || "$selection" == "Q" ]]; then
     log_message "INFO" "Operation cancelled by user."
@@ -278,6 +308,9 @@ interactive_selection() {
     exit 1
   fi
   
+  #---------------------------------------------------------------------
+  # CONTEXT SELECTION
+  #---------------------------------------------------------------------
   # Switch to selected context
   local selected_context="${AVAILABLE_CONTEXTS[$((selection-1))]}"
   switch_context "$selected_context"
@@ -332,6 +365,9 @@ parse_args() {
     esac
   done
   
+  #---------------------------------------------------------------------
+  # DEFAULT BEHAVIOR
+  #---------------------------------------------------------------------
   # If no specific action is requested, default to interactive mode
   if [[ -z "$CONTEXT" && "$INTERACTIVE" == false ]]; then
     INTERACTIVE=true
@@ -343,9 +379,15 @@ parse_args() {
 #=====================================================================
 # Main function
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   # Parse arguments
   parse_args "$@"
   
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -360,9 +402,15 @@ main() {
 
   log_message "INFO" "Starting Kubernetes context switching..."
   
+  #---------------------------------------------------------------------
+  # PREREQUISITES CHECKING
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
+  #---------------------------------------------------------------------
+  # MODE SELECTION
+  #---------------------------------------------------------------------
   # Handle interactive mode
   if [[ "$INTERACTIVE" == true ]]; then
     interactive_selection
@@ -371,8 +419,14 @@ main() {
     switch_context "$CONTEXT"
   fi
   
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Context Switching"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"
