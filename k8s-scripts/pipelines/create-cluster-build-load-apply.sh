@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -24,6 +27,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"
 NODE_COUNT=1
@@ -34,7 +40,9 @@ LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
 
-# Function to display usage instructions
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Kubernetes Cluster Build/Load/Apply Tool"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -67,6 +75,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -113,6 +124,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# CLUSTER MANAGEMENT
+#=====================================================================
 create_cluster() {
   print_with_separator "Creating Kubernetes Cluster"
   log_message "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
@@ -143,6 +157,9 @@ create_cluster() {
   log_message "SUCCESS" "Cluster $CLUSTER_NAME created."
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 main() {
   parse_args "$@"
 
