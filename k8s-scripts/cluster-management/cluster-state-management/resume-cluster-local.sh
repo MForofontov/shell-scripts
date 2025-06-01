@@ -2,11 +2,14 @@
 # resume-cluster.sh
 # Script to resume paused Kubernetes clusters with additional validation
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../..../functions/log/log-with-levels.sh"
+LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
@@ -25,7 +28,9 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME=""
 PROVIDER="auto"
 STATE_FILE=""
@@ -38,6 +43,9 @@ SKIP_VALIDATION=false
 FORCE=false
 TIMEOUT_MULTIPLIER=5  # For waiting for resources to stabilize
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Resume Tool"
@@ -72,11 +80,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# PROVIDER DETECTION
+#=====================================================================
 # Auto-detect provider based on cluster name (simplified version)
 detect_provider() {
   local cluster="$1"
@@ -114,6 +128,9 @@ detect_provider() {
   return 1
 }
 
+#=====================================================================
+# STATE FILE HANDLING
+#=====================================================================
 # Find state file for a cluster
 find_state_file() {
   local cluster="$1"
@@ -153,6 +170,9 @@ find_state_file() {
   return 1
 }
 
+#=====================================================================
+# CLUSTER RESUME OPERATIONS
+#=====================================================================
 # Resume the cluster
 resume_cluster() {
   local cluster="$1"
@@ -238,6 +258,9 @@ resume_cluster() {
   return 0
 }
 
+#=====================================================================
+# KUBECONFIG RESTORATION
+#=====================================================================
 # Restore kubeconfig
 restore_kubeconfig() {
   local state_file="$1"
@@ -266,6 +289,9 @@ restore_kubeconfig() {
   fi
 }
 
+#=====================================================================
+# WORKLOAD RESTORATION
+#=====================================================================
 # Restore workloads from backup
 restore_workloads() {
   local state_file="$1"
@@ -351,6 +377,9 @@ restore_workloads() {
   fi
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Validate cluster is running properly
 validate_cluster() {
   local cluster="$1"
@@ -486,6 +515,9 @@ validate_cluster() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -547,6 +579,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
