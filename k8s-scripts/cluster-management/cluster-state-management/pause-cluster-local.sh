@@ -2,6 +2,9 @@
 # pause-cluster.sh
 # Script to temporarily pause/hibernate Kubernetes clusters to save resources
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 CLUSTER_NAME=""
 PROVIDER="auto"  # auto-detect provider if not specified
@@ -37,6 +43,9 @@ BACKUP_WORKLOADS=true
 SNAPSHOTS=false
 PRESERVE_KUBECONFIG=true
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Pause Tool"
@@ -68,11 +77,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# PROVIDER DETECTION
+#=====================================================================
 # Auto-detect provider based on cluster name
 detect_provider() {
   local cluster="$1"
@@ -144,6 +159,9 @@ detect_provider() {
   return 1
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster exists for given provider
 check_cluster_exists() {
   local cluster="$1"
@@ -229,6 +247,9 @@ check_cluster_running() {
   return 1
 }
 
+#=====================================================================
+# STATE SAVING
+#=====================================================================
 # Save cluster state for future resume
 save_cluster_state() {
   local cluster="$1"
@@ -362,6 +383,9 @@ EOF
   return 0
 }
 
+#=====================================================================
+# NODE DRAINING
+#=====================================================================
 # Drain nodes for graceful shutdown
 drain_cluster_nodes() {
   local cluster="$1"
@@ -449,6 +473,9 @@ drain_cluster_nodes() {
   return 0
 }
 
+#=====================================================================
+# SNAPSHOT CREATION
+#=====================================================================
 # Create snapshots of the cluster state if supported
 create_cluster_snapshot() {
   local cluster="$1"
@@ -576,6 +603,9 @@ create_cluster_snapshot() {
   return 0
 }
 
+#=====================================================================
+# CLUSTER PAUSE OPERATIONS
+#=====================================================================
 # Pause the cluster based on provider
 pause_cluster() {
   local cluster="$1"
@@ -665,6 +695,9 @@ pause_cluster() {
   return 1
 }
 
+#=====================================================================
+# RESUME INSTRUCTIONS
+#=====================================================================
 # Write resume instructions
 write_resume_instructions() {
   local cluster="$1"
@@ -780,6 +813,9 @@ EOF
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -841,6 +877,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
