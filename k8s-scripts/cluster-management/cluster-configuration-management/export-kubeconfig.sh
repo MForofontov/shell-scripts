@@ -2,6 +2,9 @@
 # export-kubeconfig.sh
 # Script to export kubeconfig from Kubernetes clusters for sharing
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 CONTEXT=""
 CLUSTER_NAME=""
@@ -39,6 +45,9 @@ MERGE=false
 LOG_FILE="/dev/null"
 INTERACTIVE=false
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Kubeconfig Export Script"
@@ -71,6 +80,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -85,6 +97,9 @@ cleanup() {
 # Register cleanup function to run on exit
 trap cleanup EXIT
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -103,6 +118,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# CONTEXT MANAGEMENT
+#=====================================================================
 # List available contexts
 list_contexts() {
   log_message "INFO" "Listing available Kubernetes contexts..."
@@ -184,6 +202,9 @@ list_contexts() {
   AVAILABLE_CONTEXTS=("${filtered_contexts[@]}")
 }
 
+#=====================================================================
+# KUBECONFIG EXPORT OPERATIONS
+#=====================================================================
 # Export kubeconfig for specified context
 export_kubeconfig() {
   local target_context="$1"
@@ -257,6 +278,9 @@ export_kubeconfig() {
   fi
 }
 
+#=====================================================================
+# KUBECONFIG MODIFICATION
+#=====================================================================
 # Sanitize kubeconfig to remove sensitive information
 sanitize_kubeconfig() {
   local kubeconfig_file="$1"
@@ -301,6 +325,9 @@ set_expiry() {
   fi
 }
 
+#=====================================================================
+# USER INTERACTION
+#=====================================================================
 # Interactive context selection for export
 interactive_selection() {
   # List available contexts first
@@ -338,6 +365,9 @@ interactive_selection() {
   export_kubeconfig "$selected_context" "$OUTPUT_FILE"
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -421,6 +451,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments

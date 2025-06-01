@@ -2,6 +2,9 @@
 # restart-cluster.sh
 # Script to restart Kubernetes clusters across various providers
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,13 +28,18 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 LOG_FILE="/dev/null"
 FORCE=false
 WAIT_TIMEOUT=300 # 5 minutes timeout for cluster to be ready
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Restart Script"
@@ -58,11 +66,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -100,6 +114,9 @@ check_requirements() {
   log_message "SUCCESS" "Required tools are available."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
   log_message "INFO" "Checking if cluster exists..."
@@ -133,6 +150,9 @@ check_cluster_exists() {
   fi
 }
 
+#=====================================================================
+# CLUSTER INFORMATION
+#=====================================================================
 # Get cluster info before restart
 get_cluster_info() {
   log_message "INFO" "Getting cluster information before restart..."
@@ -159,6 +179,13 @@ get_cluster_info() {
   esac
 }
 
+#=====================================================================
+# PROVIDER-SPECIFIC RESTART OPERATIONS
+#=====================================================================
+
+#---------------------------------------------------------------------
+# MINIKUBE RESTART
+#---------------------------------------------------------------------
 # Restart minikube cluster
 restart_minikube_cluster() {
   log_message "INFO" "Restarting minikube cluster '${CLUSTER_NAME}'..."
@@ -180,6 +207,9 @@ restart_minikube_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# KIND RESTART
+#---------------------------------------------------------------------
 # Restart kind cluster (requires delete and recreate)
 restart_kind_cluster() {
   log_message "INFO" "Restarting kind cluster '${CLUSTER_NAME}'..."
@@ -236,6 +266,9 @@ restart_kind_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# K3D RESTART
+#---------------------------------------------------------------------
 # Restart k3d cluster
 restart_k3d_cluster() {
   log_message "INFO" "Restarting k3d cluster '${CLUSTER_NAME}'..."
@@ -257,6 +290,9 @@ restart_k3d_cluster() {
   fi
 }
 
+#=====================================================================
+# MONITORING AND VERIFICATION
+#=====================================================================
 # Wait for cluster to be ready
 wait_for_cluster() {
   log_message "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
@@ -292,6 +328,22 @@ wait_for_cluster() {
   log_message "SUCCESS" "Cluster is ready."
 }
 
+# Display cluster info
+display_cluster_info() {
+  print_with_separator "Cluster Information After Restart"
+  
+  log_message "INFO" "Nodes:"
+  kubectl get nodes
+  
+  log_message "INFO" "Cluster Info:"
+  kubectl cluster-info
+  
+  print_with_separator
+}
+
+#=====================================================================
+# USER INTERACTION
+#=====================================================================
 # Confirm restart with user
 confirm_restart() {
   if [ "$FORCE" = true ]; then
@@ -313,6 +365,9 @@ confirm_restart() {
   esac
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -362,19 +417,9 @@ parse_args() {
   fi
 }
 
-# Display cluster info
-display_cluster_info() {
-  print_with_separator "Cluster Information After Restart"
-  
-  log_message "INFO" "Nodes:"
-  kubectl get nodes
-  
-  log_message "INFO" "Cluster Info:"
-  kubectl cluster-info
-  
-  print_with_separator
-}
-
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments

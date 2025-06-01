@@ -2,6 +2,9 @@
 # delete-cluster.sh
 # Script to delete Kubernetes clusters from various providers
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,12 +28,17 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 LOG_FILE="/dev/null"
 FORCE=false
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Deletion Script"
@@ -56,11 +64,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -92,6 +106,9 @@ check_requirements() {
   log_message "SUCCESS" "Required tools are available."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
   log_message "INFO" "Checking if cluster exists..."
@@ -125,6 +142,13 @@ check_cluster_exists() {
   fi
 }
 
+#=====================================================================
+# PROVIDER-SPECIFIC DELETION OPERATIONS
+#=====================================================================
+
+#---------------------------------------------------------------------
+# MINIKUBE DELETION
+#---------------------------------------------------------------------
 # Delete cluster with minikube
 delete_minikube_cluster() {
   log_message "INFO" "Deleting minikube cluster '${CLUSTER_NAME}'..."
@@ -137,6 +161,9 @@ delete_minikube_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# KIND DELETION
+#---------------------------------------------------------------------
 # Delete cluster with kind
 delete_kind_cluster() {
   log_message "INFO" "Deleting kind cluster '${CLUSTER_NAME}'..."
@@ -149,6 +176,9 @@ delete_kind_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# K3D DELETION
+#---------------------------------------------------------------------
 # Delete cluster with k3d
 delete_k3d_cluster() {
   log_message "INFO" "Deleting k3d cluster '${CLUSTER_NAME}'..."
@@ -161,6 +191,9 @@ delete_k3d_cluster() {
   fi
 }
 
+#=====================================================================
+# USER INTERACTION
+#=====================================================================
 # Confirm deletion with user
 confirm_deletion() {
   if [ "$FORCE" = true ]; then
@@ -181,6 +214,9 @@ confirm_deletion() {
   esac
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -226,6 +262,9 @@ parse_args() {
   fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments

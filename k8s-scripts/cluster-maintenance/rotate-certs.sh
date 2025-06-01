@@ -2,6 +2,9 @@
 # rotate-certs.sh
 # Script to rotate Kubernetes cluster certificates before expiration
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 CLUSTER_NAME=""
 PROVIDER="auto"
@@ -40,6 +46,9 @@ ROTATE_CA=false
 TIMEOUT=600
 VERBOSE=false
 
+#=====================================================================
+# PROVIDER CONFIGURATIONS
+#=====================================================================
 # Define provider-specific commands
 declare -A PROVIDER_COMMANDS
 PROVIDER_COMMANDS=(
@@ -53,6 +62,9 @@ PROVIDER_COMMANDS=(
   ["k3d"]="k3d cluster restart"
 )
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Certificate Rotation Script"
@@ -87,11 +99,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# PROVIDER DETECTION
+#=====================================================================
 # Auto-detect provider
 detect_provider() {
   log_message "INFO" "Auto-detecting Kubernetes cluster provider..."
@@ -173,6 +191,9 @@ detect_provider() {
   return 1
 }
 
+#=====================================================================
+# CERTIFICATE BACKUP
+#=====================================================================
 # Back up certificates
 backup_certificates() {
   local backup_dir="$1"
@@ -239,6 +260,9 @@ backup_certificates() {
   return 0
 }
 
+#=====================================================================
+# CERTIFICATE EXPIRATION CHECKING
+#=====================================================================
 # Check certificate expiration
 check_certificate_expiration() {
   local provider="$1"
@@ -251,6 +275,9 @@ check_certificate_expiration() {
   local temp_file
   temp_file=$(mktemp)
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC EXPIRY CHECKS
+  #---------------------------------------------------------------------
   case "$provider" in
     kubeadm)
       # Use kubeadm's built-in certificate check
@@ -445,6 +472,9 @@ check_certificate_expiration() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # VERBOSE OUTPUT AND CLEANUP
+  #---------------------------------------------------------------------
   # If verbose, show all expiry data
   if [[ "$VERBOSE" == true ]]; then
     log_message "INFO" "Certificate expiration details:"
@@ -461,6 +491,9 @@ check_certificate_expiration() {
   fi
 }
 
+#=====================================================================
+# CERTIFICATE ROTATION
+#=====================================================================
 # Rotate certificates
 rotate_certificates() {
   local provider="$1"
@@ -473,6 +506,9 @@ rotate_certificates() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC ROTATION
+  #---------------------------------------------------------------------
   case "$provider" in
     kubeadm)
       # Use kubeadm to rotate certificates
@@ -668,6 +704,9 @@ rotate_certificates() {
   esac
 }
 
+#=====================================================================
+# COMPONENT MANAGEMENT
+#=====================================================================
 # Restart Kubernetes components
 restart_components() {
   local provider="$1"
@@ -684,6 +723,9 @@ restart_components() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC RESTART
+  #---------------------------------------------------------------------
   case "$provider" in
     kubeadm)
       # Restart control plane components
@@ -744,6 +786,9 @@ restart_components() {
   esac
 }
 
+#=====================================================================
+# VALIDATION
+#=====================================================================
 # Validate certificates after rotation
 validate_certificates() {
   local provider="$1"
@@ -755,6 +800,9 @@ validate_certificates() {
   
   log_message "INFO" "Validating certificates after rotation for provider: $provider"
   
+  #---------------------------------------------------------------------
+  # API SERVER CONNECTIVITY CHECK
+  #---------------------------------------------------------------------
   # Check API server connectivity
   log_message "INFO" "Checking API server connectivity..."
   local start_time=$(date +%s)
@@ -777,10 +825,16 @@ validate_certificates() {
   
   log_message "SUCCESS" "API server is responding"
   
+  #---------------------------------------------------------------------
+  # COMPONENT STATUS CHECK
+  #---------------------------------------------------------------------
   # Check component status
   log_message "INFO" "Checking component status..."
   kubectl get componentstatuses
   
+  #---------------------------------------------------------------------
+  # CERTIFICATE VERIFICATION
+  #---------------------------------------------------------------------
   # Re-check certificate expiration
   log_message "INFO" "Verifying certificate expiration dates..."
   if ! check_certificate_expiration "$provider" "$DAYS_WARNING"; then
@@ -796,6 +850,9 @@ validate_certificates() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -864,6 +921,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
@@ -883,6 +943,9 @@ main() {
   
   log_message "INFO" "Starting certificate rotation process..."
   
+  #---------------------------------------------------------------------
+  # PROVIDER DETECTION AND CONFIGURATION
+  #---------------------------------------------------------------------
   # Auto-detect provider if not specified
   if [[ "$PROVIDER" == "auto" ]]; then
     PROVIDER=$(detect_provider)
@@ -913,6 +976,9 @@ main() {
   log_message "INFO" "  Dry Run:            $DRY_RUN"
   log_message "INFO" "  Force:              $FORCE"
   
+  #---------------------------------------------------------------------
+  # CERTIFICATE EXPIRATION CHECK
+  #---------------------------------------------------------------------
   # Check if certificates need rotation
   local need_rotation=false
   
@@ -939,6 +1005,9 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # CERTIFICATE ROTATION PROCESS
+  #---------------------------------------------------------------------
   # If certificates need rotation and we're not in dry-run mode
   if [[ "$need_rotation" == true || "$FORCE" == true ]]; then
     # Confirm rotation if not forced
@@ -982,6 +1051,9 @@ main() {
   
   print_with_separator "End of Kubernetes Certificate Rotation"
   
+  #---------------------------------------------------------------------
+  # SUMMARY AND NEXT STEPS
+  #---------------------------------------------------------------------
   # Final summary
   echo
   echo -e "\033[1;34mSummary:\033[0m"

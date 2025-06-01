@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -24,6 +27,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"
 NODE_COUNT=1
@@ -34,7 +40,9 @@ LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
 
-# Function to display usage instructions
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Kubernetes Cluster Build/Load/Apply Tool"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -67,6 +75,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -113,10 +124,19 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# CLUSTER MANAGEMENT
+#=====================================================================
+#---------------------------------------------------------------------
+# CREATE A CLUSTER BASED ON THE SELECTED PROVIDER
+#---------------------------------------------------------------------
 create_cluster() {
   print_with_separator "Creating Kubernetes Cluster"
   log_message "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
 
+  #---------------------------------------------------------------------
+  # PROVIDER-SPECIFIC CLUSTER CREATION
+  #---------------------------------------------------------------------
   case "$PROVIDER" in
     minikube)
       minikube start -p "$CLUSTER_NAME" --nodes="$NODE_COUNT" --kubernetes-version="$K8S_VERSION" ${CONFIG_FILE:+--config "$CONFIG_FILE"}
@@ -143,9 +163,18 @@ create_cluster() {
   log_message "SUCCESS" "Cluster $CLUSTER_NAME created."
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
+  #---------------------------------------------------------------------
+  # LOG CONFIGURATION
+  #---------------------------------------------------------------------
   # Configure log file
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
     if ! touch "$LOG_FILE" 2>/dev/null; then
@@ -158,8 +187,14 @@ main() {
   print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
   log_message "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
 
+  #---------------------------------------------------------------------
+  # CLUSTER CREATION
+  #---------------------------------------------------------------------
   create_cluster
 
+  #---------------------------------------------------------------------
+  # IMAGE BUILDING AND LOADING
+  #---------------------------------------------------------------------
   # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
   if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
     if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
@@ -175,6 +210,9 @@ main() {
     log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
   fi
 
+  #---------------------------------------------------------------------
+  # MANIFEST APPLICATION
+  #---------------------------------------------------------------------
   # If manifests directory is provided, apply manifests
   if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
@@ -188,8 +226,14 @@ main() {
     "${APPLY_CMD[@]}"
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

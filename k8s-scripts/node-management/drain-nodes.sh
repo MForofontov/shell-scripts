@@ -2,6 +2,9 @@
 # drain-nodes.sh
 # Script to safely cordon and drain Kubernetes nodes for maintenance
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,32 +28,40 @@ else
   exit 1
 fi
 
-# Default values
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 NODES=()
 IGNORE_DAEMONSETS=true
 DELETE_LOCAL_DATA=false
 FORCE=false
-TIMEOUT=300  # 5 minutes timeout
-POLL_INTERVAL=5  # 5 seconds between status checks
 CORDON_ONLY=false
 DRY_RUN=false
-LOG_FILE="/dev/null"
+TIMEOUT=300  # 5 minutes timeout
+POLL_INTERVAL=5  # 5 seconds between status checks
+EVICTION_GRACE_PERIOD=30
 UNCORDON_AFTER=false
 UNCORDON_DELAY=0
-EVICTION_GRACE_PERIOD=30
 NAMESPACE_FILTER=""
 SELECTOR_FILTER=""
 MAX_UNAVAILABLE_PODS=0
+LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Node Drain Script"
+
   echo -e "\033[1;34mDescription:\033[0m"
   echo "  This script safely cordons and drains Kubernetes nodes for maintenance."
   echo
+
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 <options> [node-names...]"
   echo
+
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m[node-names...]\033[0m             (Required) Names of nodes to drain"
   echo -e "  \033[1;33m--selector <SELECTOR>\033[0m       (Optional) Select nodes by label selector"
@@ -70,6 +81,7 @@ usage() {
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Display this help message"
   echo
+
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 worker-node-1 worker-node-2"
   echo "  $0 --selector role=worker --cordon-only"
@@ -79,6 +91,12 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
+#---------------------------------------------------------------------
+# CHECK FOR DEPENDENCIES
+#---------------------------------------------------------------------
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -103,6 +121,12 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# NODE SELECTION AND VALIDATION
+#=====================================================================
+#---------------------------------------------------------------------
+# GET NODES BY SELECTOR
+#---------------------------------------------------------------------
 # Get nodes by selector
 get_nodes_by_selector() {
   local selector="$1"
@@ -120,6 +144,9 @@ get_nodes_by_selector() {
   echo "$selected_nodes"
 }
 
+#---------------------------------------------------------------------
+# VALIDATE NODE NAMES
+#---------------------------------------------------------------------
 # Validate node names
 validate_nodes() {
   log_message "INFO" "Validating node names..."
@@ -155,6 +182,12 @@ validate_nodes() {
   log_message "SUCCESS" "Found $valid_count valid nodes."
 }
 
+#=====================================================================
+# POD MANAGEMENT
+#=====================================================================
+#---------------------------------------------------------------------
+# CHECK PODS ON NODE
+#---------------------------------------------------------------------
 # Check pods on node
 check_pods_on_node() {
   local node="$1"
@@ -180,6 +213,9 @@ check_pods_on_node() {
   
   log_message "INFO" "Found $pod_count pods on node $node"
   
+  #---------------------------------------------------------------------
+  # DETECT CRITICAL PODS
+  #---------------------------------------------------------------------
   # Show critical pods that might prevent drain
   log_message "INFO" "Checking for critical pods (no controllers)..."
   local critical_pods
@@ -197,6 +233,12 @@ check_pods_on_node() {
   return 0
 }
 
+#=====================================================================
+# NODE OPERATIONS
+#=====================================================================
+#---------------------------------------------------------------------
+# CORDON NODE
+#---------------------------------------------------------------------
 # Cordon a node
 cordon_node() {
   local node="$1"
@@ -216,6 +258,9 @@ cordon_node() {
   fi
 }
 
+#---------------------------------------------------------------------
+# UNCORDON NODE
+#---------------------------------------------------------------------
 # Uncordon a node
 uncordon_node() {
   local node="$1"
@@ -235,11 +280,17 @@ uncordon_node() {
   fi
 }
 
+#---------------------------------------------------------------------
+# DRAIN NODE
+#---------------------------------------------------------------------
 # Drain a node
 drain_node() {
   local node="$1"
   log_message "INFO" "Draining node: $node"
   
+  #---------------------------------------------------------------------
+  # PREPARE DRAIN COMMAND
+  #---------------------------------------------------------------------
   # Build drain command options
   local drain_cmd="kubectl drain $node"
   
@@ -281,6 +332,9 @@ drain_node() {
   
   log_message "INFO" "Running: $drain_cmd"
   
+  #---------------------------------------------------------------------
+  # EXECUTE AND MONITOR DRAIN
+  #---------------------------------------------------------------------
   # Start drain with timeout
   local start_time=$(date +%s)
   local end_time=$((start_time + TIMEOUT))
@@ -313,6 +367,9 @@ drain_node() {
     sleep $POLL_INTERVAL
   done
   
+  #---------------------------------------------------------------------
+  # CHECK DRAIN COMPLETION
+  #---------------------------------------------------------------------
   # Check if drain completed successfully
   wait $drain_pid
   local drain_status=$?
@@ -326,6 +383,9 @@ drain_node() {
   fi
 }
 
+#---------------------------------------------------------------------
+# PROCESS NODE
+#---------------------------------------------------------------------
 # Process a node (cordon and potentially drain)
 process_node() {
   local node="$1"
@@ -345,6 +405,9 @@ process_node() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # SCHEDULE UNCORDON
+  #---------------------------------------------------------------------
   # Schedule uncordon if requested
   if [[ "$UNCORDON_AFTER" == true ]]; then
     if [[ "$UNCORDON_DELAY" -gt 0 ]]; then
@@ -370,6 +433,9 @@ process_node() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -450,10 +516,22 @@ parse_args() {
         ;;
     esac
   done
+  
+  # If nodes are still empty after processing selectors, show usage
+  if [[ ${#NODES[@]} -eq 0 && -z "$SELECTOR" ]]; then
+    log_message "ERROR" "No nodes specified via arguments or selector."
+    usage
+  fi
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   # Parse arguments
   parse_args "$@"
 
@@ -468,19 +546,12 @@ main() {
   fi
   
   print_with_separator "Kubernetes Node Drain Script"
-
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    # Redirect stdout/stderr to log file and console
-    exec > >(tee -a "$LOG_FILE") 2>&1
-  fi
   
   log_message "INFO" "Starting node drain process..."
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   log_message "INFO" "  Nodes:               ${NODES[*]}"
@@ -509,12 +580,18 @@ main() {
     log_message "INFO" "  Uncordon Delay:      ${UNCORDON_DELAY}s"
   fi
   
+  #---------------------------------------------------------------------
+  # PREREQUISITE CHECKS
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
   # Validate nodes
   validate_nodes
   
+  #---------------------------------------------------------------------
+  # USER CONFIRMATION
+  #---------------------------------------------------------------------
   # Confirm operation if not a dry run
   if [[ "$DRY_RUN" != true ]]; then
     log_message "WARNING" "You are about to ${CORDON_ONLY:+cordon}${CORDON_ONLY:-drain} the following nodes: ${NODES[*]}"
@@ -526,6 +603,9 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # NODE PROCESSING
+  #---------------------------------------------------------------------
   # Process each node
   local success_count=0
   local failed_count=0
@@ -542,6 +622,9 @@ main() {
     echo  # Add a blank line for readability
   done
   
+  #---------------------------------------------------------------------
+  # OPERATION SUMMARY
+  #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Node Drain"
   
   # Final summary
@@ -563,5 +646,8 @@ main() {
   fi
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 # Run the main function
 main "$@"

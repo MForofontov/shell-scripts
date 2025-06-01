@@ -122,12 +122,16 @@ usage() {
 #=====================================================================
 # DEPENDENCY CHECKING
 #=====================================================================
-# Check if a command exists
+#---------------------------------------------------------------------
+# CHECK IF COMMAND EXISTS
+#---------------------------------------------------------------------
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# Check for required tools
+#---------------------------------------------------------------------
+# CHECK FOR REQUIRED TOOLS
+#---------------------------------------------------------------------
 check_requirements() {
   log_message "INFO" "Checking requirements..."
   
@@ -200,7 +204,9 @@ check_requirements() {
 #=====================================================================
 # KUBERNETES OPERATIONS
 #=====================================================================
-# Validate workload exists and is accessible
+#---------------------------------------------------------------------
+# VALIDATE WORKLOAD EXISTS AND IS ACCESSIBLE
+#---------------------------------------------------------------------
 validate_workload() {
   local workload_type="$1"
   local workload_name="$2"
@@ -222,7 +228,9 @@ validate_workload() {
   return 0
 }
 
-# Scale workload to specified replica count
+#---------------------------------------------------------------------
+# SCALE WORKLOAD TO SPECIFIED REPLICA COUNT
+#---------------------------------------------------------------------
 scale_workload() {
   local workload_type="$1"
   local workload_name="$2"
@@ -246,7 +254,9 @@ scale_workload() {
   return 0
 }
 
-# Verify workload is healthy after scaling
+#---------------------------------------------------------------------
+# VERIFY WORKLOAD HEALTH AFTER SCALING
+#---------------------------------------------------------------------
 verify_workload_health() {
   local workload_type="$1"
   local workload_name="$2"
@@ -322,7 +332,9 @@ verify_workload_health() {
 #=====================================================================
 # METRICS FUNCTIONS
 #=====================================================================
-# Get metrics for a workload
+#---------------------------------------------------------------------
+# GET METRICS FOR A WORKLOAD
+#---------------------------------------------------------------------
 get_workload_metrics() {
   local workload_type="$1"
   local workload_name="$2"
@@ -428,7 +440,9 @@ get_workload_metrics() {
   return 0
 }
 
-# Calculate target replicas based on metrics
+#---------------------------------------------------------------------
+# CALCULATE TARGET REPLICAS BASED ON METRICS
+#---------------------------------------------------------------------
 calculate_target_replicas() {
   local current_replicas="$1"
   local cpu_usage="$2"
@@ -509,7 +523,9 @@ calculate_target_replicas() {
 #=====================================================================
 # SCHEDULE FUNCTIONS
 #=====================================================================
-# Parse a schedule string and check if it matches current time
+#---------------------------------------------------------------------
+# PARSE A SCHEDULE STRING AND CHECK IF IT MATCHES CURRENT TIME
+#---------------------------------------------------------------------
 check_schedule() {
   local schedule="$1"
   
@@ -679,7 +695,9 @@ except Exception as e:
   fi
 }
 
-# Process multiple schedules from a file
+#---------------------------------------------------------------------
+# PROCESS MULTIPLE SCHEDULES FROM A FILE
+#---------------------------------------------------------------------
 process_schedule_file() {
   local schedule_file="$1"
   local workload_type="$2"
@@ -738,7 +756,9 @@ process_schedule_file() {
 #=====================================================================
 # BATCH OPERATIONS
 #=====================================================================
-# Process batch operations from a file
+#---------------------------------------------------------------------
+# PROCESS BATCH OPERATIONS FROM A FILE
+#---------------------------------------------------------------------
 process_batch_file() {
   local batch_file="$1"
   
@@ -800,7 +820,9 @@ process_batch_file() {
   return 0
 }
 
-# Process workloads matching a selector
+#---------------------------------------------------------------------
+# PROCESS WORKLOADS MATCHING A SELECTOR
+#---------------------------------------------------------------------
 process_selector() {
   local selector="$1"
   local replicas="$2"
@@ -857,7 +879,6 @@ process_selector() {
 #=====================================================================
 # ARGUMENT PARSING
 #=====================================================================
-# Parse command line arguments
 parse_args() {
   CONTEXT_FLAG=""
   

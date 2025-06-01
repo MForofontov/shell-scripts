@@ -2,6 +2,9 @@
 # clean-cluster.sh
 # Script to reset a Kubernetes cluster to a clean state by removing non-system workloads
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 PRESERVED_NAMESPACES=("kube-system" "kube-public" "kube-node-lease" "default")
 CLEAN_WORKLOADS=true
@@ -45,6 +51,9 @@ PROVIDER="auto"
 ALL_NAMESPACES=false
 VERBOSE=false
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Cleaning Script"
@@ -84,11 +93,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check requirements
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -108,6 +123,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are available."
 }
 
+#=====================================================================
+# PROVIDER DETECTION
+#=====================================================================
 # Auto-detect provider
 detect_provider() {
   log_message "INFO" "Auto-detecting Kubernetes cluster provider..."
@@ -158,6 +176,9 @@ detect_provider() {
   return 0
 }
 
+#---------------------------------------------------------------------
+# PROVIDER-SPECIFIC NAMESPACES
+#---------------------------------------------------------------------
 # Get provider-specific system namespaces
 get_provider_namespaces() {
   local provider="$1"
@@ -187,6 +208,9 @@ get_provider_namespaces() {
   echo "${provider_ns[@]}"
 }
 
+#=====================================================================
+# NAMESPACE MANAGEMENT
+#=====================================================================
 # Get all namespaces to preserve
 get_preserved_namespaces() {
   local ns_to_preserve=("${PRESERVED_NAMESPACES[@]}")
@@ -230,6 +254,9 @@ get_preserved_namespaces() {
   echo "${ns_to_preserve[@]}"
 }
 
+#---------------------------------------------------------------------
+# NAMESPACE FILTERING
+#---------------------------------------------------------------------
 # Determine if namespace should be preserved
 should_preserve_namespace() {
   local ns="$1"
@@ -277,6 +304,9 @@ get_namespaces_to_clean() {
   echo "${ns_to_clean[@]}"
 }
 
+#=====================================================================
+# WORKLOAD CLEANING OPERATIONS
+#=====================================================================
 # Clean workloads in specified namespace
 clean_namespace_workloads() {
   local namespace="$1"
@@ -288,6 +318,9 @@ clean_namespace_workloads() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # CONTROLLERS AND WORKLOADS
+  #---------------------------------------------------------------------
   # Delete deployments
   log_message "INFO" "Deleting deployments in $namespace"
   kubectl delete deployments --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all deployments in $namespace"
@@ -312,6 +345,9 @@ clean_namespace_workloads() {
   log_message "INFO" "Deleting remaining pods in $namespace"
   kubectl delete pods --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all pods in $namespace"
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION RESOURCES
+  #---------------------------------------------------------------------
   # Delete configmaps if requested
   if [[ "$CLEAN_CONFIGMAPS" == true ]]; then
     log_message "INFO" "Deleting configmaps in $namespace"
@@ -324,6 +360,9 @@ clean_namespace_workloads() {
     kubectl delete secrets --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all secrets in $namespace"
   fi
   
+  #---------------------------------------------------------------------
+  # NETWORK RESOURCES
+  #---------------------------------------------------------------------
   # Delete services
   log_message "INFO" "Deleting services in $namespace"
   # Preserve kubernetes service in default namespace
@@ -341,6 +380,9 @@ clean_namespace_workloads() {
   log_message "INFO" "Deleting network policies in $namespace"
   kubectl delete networkpolicies --all -n "$namespace" --timeout="${TIMEOUT}s" 2>/dev/null || true
   
+  #---------------------------------------------------------------------
+  # AUTOSCALING AND STORAGE
+  #---------------------------------------------------------------------
   # Delete HPA
   log_message "INFO" "Deleting horizontal pod autoscalers in $namespace"
   kubectl delete hpa --all -n "$namespace" --timeout="${TIMEOUT}s" 2>/dev/null || true
@@ -355,6 +397,9 @@ clean_namespace_workloads() {
   return 0
 }
 
+#---------------------------------------------------------------------
+# NAMESPACE DELETION
+#---------------------------------------------------------------------
 # Delete namespace
 delete_namespace() {
   local namespace="$1"
@@ -390,6 +435,9 @@ delete_namespace() {
   fi
 }
 
+#---------------------------------------------------------------------
+# FULL WORKLOAD CLEANING
+#---------------------------------------------------------------------
 # Clean all workloads
 clean_workloads() {
   log_message "INFO" "Cleaning all non-system workloads..."
@@ -419,6 +467,9 @@ clean_workloads() {
   return 0
 }
 
+#=====================================================================
+# VOLUME MANAGEMENT
+#=====================================================================
 # Clean persistent volumes
 clean_volumes() {
   if [[ "$CLEAN_VOLUMES" != true ]]; then
@@ -482,6 +533,9 @@ clean_volumes() {
   return 0
 }
 
+#=====================================================================
+# CONFIGURATION CLEANING
+#=====================================================================
 # Clean custom configurations
 clean_configurations() {
   if [[ "$CLEAN_CONFIG" != true ]]; then
@@ -496,6 +550,9 @@ clean_configurations() {
     return 0
   fi
   
+  #---------------------------------------------------------------------
+  # STORAGE RESOURCES
+  #---------------------------------------------------------------------
   # Clean StorageClasses (except default)
   log_message "INFO" "Cleaning non-default StorageClasses"
   local default_sc
@@ -508,6 +565,9 @@ clean_configurations() {
     log_message "INFO" "No default StorageClass found"
   fi
   
+  #---------------------------------------------------------------------
+  # RBAC RESOURCES
+  #---------------------------------------------------------------------
   # Clean ClusterRoles (except system ones)
   log_message "INFO" "Cleaning custom ClusterRoles"
   kubectl get clusterrole -o name | grep -v "clusterrole.rbac.authorization.k8s.io/system:" | \
@@ -523,6 +583,9 @@ clean_configurations() {
   grep -v "clusterrolebinding.rbac.authorization.k8s.io/cluster-admin" | \
   xargs -r kubectl delete --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete some ClusterRoleBindings"
   
+  #---------------------------------------------------------------------
+  # ADMISSION CONTROL RESOURCES
+  #---------------------------------------------------------------------
   # Clean custom Webhooks
   log_message "INFO" "Cleaning MutatingWebhookConfigurations"
   kubectl get mutatingwebhookconfiguration -o name | grep -v "mutatingwebhookconfiguration.admissionregistration.k8s.io/pod-policy.kubernetes.io" | \
@@ -539,6 +602,9 @@ clean_configurations() {
     xargs -r kubectl delete --timeout="${TIMEOUT}s" 2>/dev/null || true
   fi
   
+  #---------------------------------------------------------------------
+  # API EXTENSION RESOURCES
+  #---------------------------------------------------------------------
   # Clean CRDs if requested
   if [[ "$CLEAN_CRDS" == true ]]; then
     log_message "INFO" "Cleaning Custom Resource Definitions"
@@ -557,6 +623,9 @@ clean_configurations() {
   return 0
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -641,6 +710,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments
@@ -691,6 +763,9 @@ main() {
     log_message "INFO" "  Preserve Patterns: ${PRESERVE_PATTERNS[*]}"
   fi
   
+  #---------------------------------------------------------------------
+  # CONFIRMATION AND EXECUTION
+  #---------------------------------------------------------------------
   # Confirm operation if not forced or dry-run
   if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
     log_message "WARNING" "This operation will remove all non-system workloads from your cluster"

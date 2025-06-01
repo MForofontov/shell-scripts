@@ -2,6 +2,9 @@
 # create-cluster.sh
 # Script to create Kubernetes clusters with various providers
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 # Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
@@ -25,6 +28,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 # Default values
 CLUSTER_NAME="k8s-cluster"
 PROVIDER="minikube"  # Default provider is minikube
@@ -34,6 +40,9 @@ CONFIG_FILE=""
 WAIT_TIMEOUT=300 # 5 minutes timeout
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 # Function to display usage instructions
 usage() {
   print_with_separator "Kubernetes Cluster Creation Script"
@@ -62,11 +71,17 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# UTILITY FUNCTIONS
+#=====================================================================
 # Check if command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+#=====================================================================
+# REQUIREMENTS CHECKING
+#=====================================================================
 # Check for required tools
 check_requirements() {
   log_message "INFO" "Checking requirements..."
@@ -124,6 +139,9 @@ check_requirements() {
   log_message "SUCCESS" "All required tools are installed."
 }
 
+#=====================================================================
+# CLUSTER VALIDATION
+#=====================================================================
 # Check if cluster already exists
 check_cluster_exists() {
   log_message "INFO" "Checking if cluster already exists..."
@@ -152,6 +170,13 @@ check_cluster_exists() {
   log_message "SUCCESS" "No existing cluster with name '${CLUSTER_NAME}' found."
 }
 
+#=====================================================================
+# PROVIDER-SPECIFIC CREATION OPERATIONS
+#=====================================================================
+
+#---------------------------------------------------------------------
+# MINIKUBE CREATION
+#---------------------------------------------------------------------
 # Create cluster with minikube
 create_minikube_cluster() {
   log_message "INFO" "Creating minikube cluster '${CLUSTER_NAME}'..."
@@ -182,6 +207,9 @@ create_minikube_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# KIND CREATION
+#---------------------------------------------------------------------
 # Create cluster with kind
 create_kind_cluster() {
   log_message "INFO" "Creating kind cluster '${CLUSTER_NAME}'..."
@@ -223,6 +251,9 @@ create_kind_cluster() {
   fi
 }
 
+#---------------------------------------------------------------------
+# K3D CREATION
+#---------------------------------------------------------------------
 # Create cluster with k3d
 create_k3d_cluster() {
   log_message "INFO" "Creating k3d cluster '${CLUSTER_NAME}'..."
@@ -250,6 +281,9 @@ create_k3d_cluster() {
   fi
 }
 
+#=====================================================================
+# MONITORING AND VERIFICATION
+#=====================================================================
 # Wait for cluster to be ready
 wait_for_cluster() {
   log_message "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
@@ -300,6 +334,9 @@ wait_for_cluster() {
   log_message "SUCCESS" "Cluster is ready."
 }
 
+#=====================================================================
+# DISPLAY AND REPORTING
+#=====================================================================
 # Display cluster info
 display_cluster_info() {
   print_with_separator "Cluster Information"
@@ -326,6 +363,9 @@ display_cluster_info() {
   esac
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 # Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
@@ -389,6 +429,9 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
 # Main function
 main() {
   # Parse arguments

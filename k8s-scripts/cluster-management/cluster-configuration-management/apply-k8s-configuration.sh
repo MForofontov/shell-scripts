@@ -2,12 +2,22 @@
 # apply-k8s-configuration.sh
 # Script to apply Kubernetes manifests in order (no cluster creation)
 
+#=====================================================================
+# SCRIPT SETUP AND ERROR HANDLING
+#=====================================================================
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
+# Dynamically determine the directory of the current script
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Construct the path to the logger and utility files relative to the script's directory
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
+# Source the logger file
 if [ -f "$LOG_FUNCTION_FILE" ]; then
   source "$LOG_FUNCTION_FILE"
 else
@@ -15,6 +25,7 @@ else
   exit 1
 fi
 
+# Source the utility file for print_with_separator
 if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
@@ -22,9 +33,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 MANIFEST_ROOT="k8s"
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
+# Function to display usage instructions
 usage() {
   print_with_separator "Apply Kubernetes Configuration Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,6 +63,10 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
+# Parse command line arguments
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -67,22 +89,42 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# RESOURCE MANAGEMENT
+#=====================================================================
+# Wait for resources to become ready
 wait_for_resources_ready() {
+  log_message "INFO" "Waiting for resources to be ready..."
+  
   local ns
   for ns in $(kubectl get ns --no-headers -o custom-columns=":metadata.name"); do
+    # Wait for deployments to be ready
     for deploy in $(kubectl get deploy -n "$ns" --no-headers -o custom-columns=":metadata.name" 2>/dev/null || true); do
       log_message "INFO" "Waiting for deployment/$deploy in namespace $ns to be ready..."
       kubectl wait --for=condition=available --timeout=180s deployment/"$deploy" -n "$ns" || true
     done
+    
+    # Wait for statefulsets to be ready
     for sts in $(kubectl get statefulset -n "$ns" --no-headers -o custom-columns=":metadata.name" 2>/dev/null || true); do
       log_message "INFO" "Waiting for statefulset/$sts in namespace $ns to be ready..."
       kubectl wait --for=condition=ready --timeout=180s statefulset/"$sts" -n "$ns" || true
     done
   done
+  
+  log_message "SUCCESS" "Resource readiness check completed."
 }
 
+#=====================================================================
+# MANIFEST APPLICATION
+#=====================================================================
+# Apply Kubernetes manifests in the proper order
 apply_manifests() {
   print_with_separator "Applying Kubernetes Manifests"
+  
+  #---------------------------------------------------------------------
+  # DIRECTORY SETUP
+  #---------------------------------------------------------------------
+  # Define directories for each resource type
   local ns_dir="$MANIFEST_ROOT/namespace"
   local cm_dir="$MANIFEST_ROOT/configmaps"
   local secret_dir="$MANIFEST_ROOT/secrets"
@@ -106,102 +148,165 @@ apply_manifests() {
   local pdb_dir="$MANIFEST_ROOT/poddisruptionbudgets"
   local crd_dir="$MANIFEST_ROOT/customresourcedefinitions"
 
+  #---------------------------------------------------------------------
+  # NAMESPACE RESOURCES
+  #---------------------------------------------------------------------
+  # Apply namespace resources first
   if [ -d "$ns_dir" ]; then
     log_message "INFO" "Applying Namespaces..."
     kubectl apply -f "$ns_dir"
   fi
-  if [ -d "$cm_dir" ]; then
-    log_message "INFO" "Applying ConfigMaps..."
-    kubectl apply -f "$cm_dir"
-  fi
-  if [ -d "$secret_dir" ]; then
-    log_message "INFO" "Applying Secrets..."
-    kubectl apply -f "$secret_dir"
-  fi
-  if [ -d "$pvc_dir" ]; then
-    log_message "INFO" "Applying PersistentVolumeClaims..."
-    kubectl apply -f "$pvc_dir"
-  fi
-  if [ -d "$svc_dir" ]; then
-    log_message "INFO" "Applying Services..."
-    kubectl apply -f "$svc_dir"
-  fi
-  if [ -d "$deploy_dir" ]; then
-    log_message "INFO" "Applying Deployments..."
-    kubectl apply -f "$deploy_dir"
-  fi
-  if [ -d "$sts_dir" ]; then
-    log_message "INFO" "Applying StatefulSets..."
-    kubectl apply -f "$sts_dir"
-  fi
-  if [ -d "$ingress_dir" ]; then
-    log_message "INFO" "Applying Ingress..."
-    kubectl apply -f "$ingress_dir"
-  fi
-  if [ -d "$daemonset_dir" ]; then
-    log_message "INFO" "Applying DaemonSets..."
-    kubectl apply -f "$daemonset_dir"
-  fi
-  if [ -d "$job_dir" ]; then
-    log_message "INFO" "Applying Jobs..."
-    kubectl apply -f "$job_dir"
-  fi
-  if [ -d "$cronjob_dir" ]; then
-    log_message "INFO" "Applying CronJobs..."
-    kubectl apply -f "$cronjob_dir"
-  fi
-  if [ -d "$netpol_dir" ]; then
-    log_message "INFO" "Applying NetworkPolicies..."
-    kubectl apply -f "$netpol_dir"
-  fi
-  if [ -d "$sa_dir" ]; then
-    log_message "INFO" "Applying ServiceAccounts..."
-    kubectl apply -f "$sa_dir"
-  fi
-  if [ -d "$role_dir" ]; then
-    log_message "INFO" "Applying Roles..."
-    kubectl apply -f "$role_dir"
-  fi
-  if [ -d "$rolebinding_dir" ]; then
-    log_message "INFO" "Applying RoleBindings..."
-    kubectl apply -f "$rolebinding_dir"
-  fi
-  if [ -d "$clusterrole_dir" ]; then
-    log_message "INFO" "Applying ClusterRoles..."
-    kubectl apply -f "$clusterrole_dir"
-  fi
-  if [ -d "$clusterrolebinding_dir" ]; then
-    log_message "INFO" "Applying ClusterRoleBindings..."
-    kubectl apply -f "$clusterrolebinding_dir"
-  fi
-  if [ -d "$quota_dir" ]; then
-    log_message "INFO" "Applying ResourceQuotas..."
-    kubectl apply -f "$quota_dir"
-  fi
-  if [ -d "$limitrange_dir" ]; then
-    log_message "INFO" "Applying LimitRanges..."
-    kubectl apply -f "$limitrange_dir"
-  fi
-  if [ -d "$hpa_dir" ]; then
-    log_message "INFO" "Applying HorizontalPodAutoscalers..."
-    kubectl apply -f "$hpa_dir"
-  fi
-  if [ -d "$pdb_dir" ]; then
-    log_message "INFO" "Applying PodDisruptionBudgets..."
-    kubectl apply -f "$pdb_dir"
-  fi
+
+  #---------------------------------------------------------------------
+  # CLUSTER-WIDE RESOURCES
+  #---------------------------------------------------------------------
+  # Apply CRDs and cluster-level RBAC
   if [ -d "$crd_dir" ]; then
     log_message "INFO" "Applying CustomResourceDefinitions..."
     kubectl apply -f "$crd_dir"
   fi
+  
+  if [ -d "$clusterrole_dir" ]; then
+    log_message "INFO" "Applying ClusterRoles..."
+    kubectl apply -f "$clusterrole_dir"
+  fi
+  
+  if [ -d "$clusterrolebinding_dir" ]; then
+    log_message "INFO" "Applying ClusterRoleBindings..."
+    kubectl apply -f "$clusterrolebinding_dir"
+  fi
 
+  #---------------------------------------------------------------------
+  # NAMESPACE CONFIGURATION
+  #---------------------------------------------------------------------
+  # Apply namespace-level configuration resources
+  if [ -d "$quota_dir" ]; then
+    log_message "INFO" "Applying ResourceQuotas..."
+    kubectl apply -f "$quota_dir"
+  fi
+  
+  if [ -d "$limitrange_dir" ]; then
+    log_message "INFO" "Applying LimitRanges..."
+    kubectl apply -f "$limitrange_dir"
+  fi
+  
+  if [ -d "$netpol_dir" ]; then
+    log_message "INFO" "Applying NetworkPolicies..."
+    kubectl apply -f "$netpol_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # RBAC RESOURCES
+  #---------------------------------------------------------------------
+  # Apply RBAC resources
+  if [ -d "$sa_dir" ]; then
+    log_message "INFO" "Applying ServiceAccounts..."
+    kubectl apply -f "$sa_dir"
+  fi
+  
+  if [ -d "$role_dir" ]; then
+    log_message "INFO" "Applying Roles..."
+    kubectl apply -f "$role_dir"
+  fi
+  
+  if [ -d "$rolebinding_dir" ]; then
+    log_message "INFO" "Applying RoleBindings..."
+    kubectl apply -f "$rolebinding_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # CONFIGURATION RESOURCES
+  #---------------------------------------------------------------------
+  # Apply configuration resources
+  if [ -d "$cm_dir" ]; then
+    log_message "INFO" "Applying ConfigMaps..."
+    kubectl apply -f "$cm_dir"
+  fi
+  
+  if [ -d "$secret_dir" ]; then
+    log_message "INFO" "Applying Secrets..."
+    kubectl apply -f "$secret_dir"
+  fi
+  
+  if [ -d "$pvc_dir" ]; then
+    log_message "INFO" "Applying PersistentVolumeClaims..."
+    kubectl apply -f "$pvc_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # SERVICE RESOURCES
+  #---------------------------------------------------------------------
+  # Apply service resources
+  if [ -d "$svc_dir" ]; then
+    log_message "INFO" "Applying Services..."
+    kubectl apply -f "$svc_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # WORKLOAD RESOURCES
+  #---------------------------------------------------------------------
+  # Apply workload resources
+  if [ -d "$deploy_dir" ]; then
+    log_message "INFO" "Applying Deployments..."
+    kubectl apply -f "$deploy_dir"
+  fi
+  
+  if [ -d "$sts_dir" ]; then
+    log_message "INFO" "Applying StatefulSets..."
+    kubectl apply -f "$sts_dir"
+  fi
+  
+  if [ -d "$daemonset_dir" ]; then
+    log_message "INFO" "Applying DaemonSets..."
+    kubectl apply -f "$daemonset_dir"
+  fi
+  
+  if [ -d "$job_dir" ]; then
+    log_message "INFO" "Applying Jobs..."
+    kubectl apply -f "$job_dir"
+  fi
+  
+  if [ -d "$cronjob_dir" ]; then
+    log_message "INFO" "Applying CronJobs..."
+    kubectl apply -f "$cronjob_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # SCALING AND AVAILABILITY
+  #---------------------------------------------------------------------
+  # Apply scaling and availability resources
+  if [ -d "$hpa_dir" ]; then
+    log_message "INFO" "Applying HorizontalPodAutoscalers..."
+    kubectl apply -f "$hpa_dir"
+  fi
+  
+  if [ -d "$pdb_dir" ]; then
+    log_message "INFO" "Applying PodDisruptionBudgets..."
+    kubectl apply -f "$pdb_dir"
+  fi
+
+  #---------------------------------------------------------------------
+  # NETWORKING RESOURCES
+  #---------------------------------------------------------------------
+  # Apply networking resources last
+  if [ -d "$ingress_dir" ]; then
+    log_message "INFO" "Applying Ingress..."
+    kubectl apply -f "$ingress_dir"
+  fi
+
+  # Wait for all resources to be ready
   wait_for_resources_ready
 
   print_with_separator "All manifests applied"
   kubectl get all --all-namespaces
 }
 
+#=====================================================================
+# MAIN EXECUTION
+#=====================================================================
+# Main function
 main() {
+  # Parse arguments
   parse_args "$@"
 
   # Configure log file
@@ -210,16 +315,26 @@ main() {
       echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
       exit 1
     fi
+    # Redirect stdout/stderr to log file and console
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
   print_with_separator "Apply Kubernetes Configuration Script"
-
+  
   log_message "INFO" "Starting to apply Kubernetes manifests from $MANIFEST_ROOT"
-
+  
+  # Apply manifests in order
   apply_manifests
+  
   print_with_separator "Application Deployment Complete"
-  log_message "SUCCESS" "Manifests applied."
+  log_message "SUCCESS" "All manifests applied successfully."
+  
+  # Show deployment status summary
+  echo
+  echo -e "\033[1;34mDeployment Summary:\033[0m"
+  echo -e "Manifests applied from: \033[1;32m$MANIFEST_ROOT\033[0m"
+  echo -e "To check status: \033[1mkubectl get all --all-namespaces\033[0m"
 }
 
+# Run the main function
 main "$@"
