@@ -1095,6 +1095,9 @@ parse_args() {
 # MAIN FUNCTION
 #=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   # Parse arguments
   parse_args "$@"
 
@@ -1111,6 +1114,9 @@ main() {
   
   log_message "INFO" "Starting workload scaling in ${SCALE_MODE} mode..."
   
+  #---------------------------------------------------------------------
+  # CONFIGURATION DISPLAY
+  #---------------------------------------------------------------------
   # Display configuration
   log_message "INFO" "Configuration:"
   
@@ -1183,6 +1189,9 @@ main() {
     log_message "INFO" "  Context:           $CONTEXT"
   fi
   
+  #---------------------------------------------------------------------
+  # PREREQUISITE CHECKS
+  #---------------------------------------------------------------------
   # Check requirements
   check_requirements
   
@@ -1196,9 +1205,15 @@ main() {
     fi
   fi
   
+  #---------------------------------------------------------------------
+  # EXECUTION
+  #---------------------------------------------------------------------
   # Execute scaling based on mode
   case "$SCALE_MODE" in
     fixed)
+      #---------------------------------------------------------------------
+      # FIXED REPLICA SCALING
+      #---------------------------------------------------------------------
       # Single workload with fixed replicas
       if [[ -n "$WORKLOAD_NAME" ]]; then
         log_message "INFO" "Scaling single workload with fixed replicas..."
@@ -1225,6 +1240,9 @@ main() {
       fi
       ;;
     metrics)
+      #---------------------------------------------------------------------
+      # METRICS-BASED SCALING
+      #---------------------------------------------------------------------
       # Metrics-based scaling
       if [[ -n "$WORKLOAD_NAME" ]]; then
         log_message "INFO" "Scaling single workload based on metrics..."
@@ -1268,6 +1286,9 @@ main() {
       fi
       ;;
     schedule)
+      #---------------------------------------------------------------------
+      # SCHEDULE-BASED SCALING
+      #---------------------------------------------------------------------
       # Schedule-based scaling
       if [[ -n "$SCHEDULE_FILE" ]]; then
         log_message "INFO" "Processing schedule file..."
@@ -1304,6 +1325,9 @@ main() {
       fi
       ;;
     batch)
+      #---------------------------------------------------------------------
+      # BATCH SCALING
+      #---------------------------------------------------------------------
       # Batch scaling
       if [[ -n "$BATCH_FILE" ]]; then
         log_message "INFO" "Processing batch file for scaling..."
@@ -1311,6 +1335,9 @@ main() {
       fi
       ;;
     selector)
+      #---------------------------------------------------------------------
+      # SELECTOR-BASED SCALING
+      #---------------------------------------------------------------------
       # Selector-based scaling
       if [[ -n "$LABEL_SELECTOR" ]]; then
         log_message "INFO" "Scaling workloads matching label selector..."
@@ -1319,8 +1346,9 @@ main() {
       ;;
   esac
   
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "SUCCESS" "Workload scaling completed."
   print_with_separator
 }
-
-main "$@"
