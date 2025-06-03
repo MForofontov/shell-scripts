@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,8 +25,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Git Conflict Finder Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,6 +52,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -66,7 +78,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -81,6 +99,9 @@ main() {
   print_with_separator "Git Conflict Finder Script"
   log_message "INFO" "Starting Git Conflict Finder Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate git is available
   if ! command -v git &> /dev/null; then
     log_message "ERROR" "git is not installed or not available in the PATH."
@@ -88,16 +109,48 @@ main() {
     exit 1
   fi
 
+  # Validate that we're in a git repository
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    log_message "ERROR" "Not in a git repository. Please run this script inside a git repository."
+    print_with_separator "End of Git Conflict Finder Script"
+    exit 1
+  fi
+
+  #---------------------------------------------------------------------
+  # CONFLICT DETECTION
+  #---------------------------------------------------------------------
   # Search for merge conflict markers
   log_message "INFO" "Searching for merge conflicts in the repository..."
-  if git grep -n '<<<<<<< HEAD' 2>/dev/null; then
-    log_message "INFO" "Conflict(s) found in the repository."
+  
+  # Look for common conflict markers
+  CONFLICT_MARKERS=("<<<<<<< HEAD" "=======" ">>>>>>> ")
+  CONFLICTS_FOUND=false
+  
+  for marker in "${CONFLICT_MARKERS[@]}"; do
+    if git grep -l "$marker" &>/dev/null; then
+      CONFLICTS_FOUND=true
+      log_message "WARNING" "Files with conflict marker '$marker':"
+      git grep -n "$marker" | while read -r line; do
+        log_message "INFO" "$line"
+      done
+      echo
+    fi
+  done
+  
+  if [[ "$CONFLICTS_FOUND" == true ]]; then
+    log_message "WARNING" "Conflict(s) found in the repository."
   else
     log_message "SUCCESS" "No merge conflicts found."
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "INFO" "Conflict search process completed."
   print_with_separator "End of Git Conflict Finder Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
