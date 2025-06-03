@@ -1,9 +1,12 @@
 #!/bin/bash
-# compress-tar-directory.sh
-# Script to compress a directory into a tar.gz file
+# compare-files.sh
+# Script to compare two files and print differences
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,32 +25,41 @@ else
   exit 1
 fi
 
-SOURCE_DIR=""
-OUTPUT_FILE=""
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
+SOURCE_FILE=""
+TARGET_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
-  print_with_separator "Compress Directory Script"
+  print_with_separator "Compare Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script compresses a directory into a tar.gz file."
+  echo "  This script compares two files and prints their differences."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <source_directory> <output_file> [--log <log_file>] [--help]"
+  echo "  $0 <source_file> <target_file> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<source_directory>\033[0m  (Required) Directory to compress."
-  echo -e "  \033[1;36m<output_file>\033[0m       (Required) Path to the output tar.gz file."
-  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo -e "  \033[1;36m<source_file>\033[0m     (Required) Path to the first file (source file)."
+  echo -e "  \033[1;36m<target_file>\033[0m     (Required) Path to the second file (target file)."
+  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
-  echo "  $0 /path/to/source /path/to/output.tar.gz"
+  echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
+  echo "  $0 /path/to/source_file /path/to/target_file"
   print_with_separator
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -64,11 +76,11 @@ parse_args() {
         usage
         ;;
       *)
-        if [ -z "$SOURCE_DIR" ]; then
-          SOURCE_DIR="$1"
+        if [ -z "$SOURCE_FILE" ]; then
+          SOURCE_FILE="$1"
           shift
-        elif [ -z "$OUTPUT_FILE" ]; then
-          OUTPUT_FILE="$1"
+        elif [ -z "$TARGET_FILE" ]; then
+          TARGET_FILE="$1"
           shift
         else
           log_message "ERROR" "Unknown option or too many arguments: $1"
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -91,33 +109,52 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Compress Directory Script"
-  log_message "INFO" "Starting Compress Directory Script..."
+  print_with_separator "Compare Files Script"
+  log_message "INFO" "Starting Compare Files Script..."
 
-  # Validate arguments
-  if [ -z "$SOURCE_DIR" ] || [ -z "$OUTPUT_FILE" ]; then
-    log_message "ERROR" "<source_directory> and <output_file> are required."
-    print_with_separator "End of Compress Directory Script"
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Check required arguments
+  if [ -z "$SOURCE_FILE" ] || [ -z "$TARGET_FILE" ]; then
+    log_message "ERROR" "<source_file> and <target_file> are required."
+    print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
-  if [ ! -d "$SOURCE_DIR" ]; then
-    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
-    print_with_separator "End of Compress Directory Script"
+  # Validate source file exists
+  if [ ! -f "$SOURCE_FILE" ]; then
+    log_message "ERROR" "Source file $SOURCE_FILE does not exist."
+    print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
-  log_message "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
+  # Validate target file exists
+  if [ ! -f "$TARGET_FILE" ]; then
+    log_message "ERROR" "Target file $TARGET_FILE does not exist."
+    print_with_separator "End of Compare Files Script"
+    exit 1
+  fi
 
-  if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
-    log_message "SUCCESS" "Directory compressed into $OUTPUT_FILE."
+  #---------------------------------------------------------------------
+  # FILE COMPARISON
+  #---------------------------------------------------------------------
+  log_message "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
+
+  # Perform file comparison
+  if diff "$SOURCE_FILE" "$TARGET_FILE"; then
+    log_message "SUCCESS" "Files are identical."
   else
-    log_message "ERROR" "Failed to compress directory."
-    print_with_separator "End of Compress Directory Script"
-    exit 1
+    log_message "INFO" "Files differ. See the output above for details."
   fi
 
-  print_with_separator "End of Compress Directory Script"
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  print_with_separator "End of Compare Files Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
