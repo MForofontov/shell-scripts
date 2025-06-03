@@ -1,9 +1,12 @@
 #!/bin/bash
-# count-files.sh
-# Script to count the number of files and directories in a given path
+# compress-tar-directory.sh
+# Script to compress a directory into a tar.gz file
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,30 +25,41 @@ else
   exit 1
 fi
 
-DIRECTORY=""
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
+SOURCE_DIR=""
+OUTPUT_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
-  print_with_separator "Count Files Script"
+  print_with_separator "Compress Directory Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script counts the number of files and directories in a given path."
+  echo "  This script compresses a directory into a tar.gz file."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <directory> [--log <log_file>] [--help]"
+  echo "  $0 <source_directory> <output_file> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<directory>\033[0m       (Required) Directory to count files and directories."
-  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo -e "  \033[1;36m<source_directory>\033[0m  (Required) Directory to compress."
+  echo -e "  \033[1;36m<output_file>\033[0m       (Required) Path to the output tar.gz file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/directory --log custom_log.log"
-  echo "  $0 /path/to/directory"
+  echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
+  echo "  $0 /path/to/source /path/to/output.tar.gz"
   print_with_separator
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -62,8 +76,11 @@ parse_args() {
         usage
         ;;
       *)
-        if [ -z "$DIRECTORY" ]; then
-          DIRECTORY="$1"
+        if [ -z "$SOURCE_DIR" ]; then
+          SOURCE_DIR="$1"
+          shift
+        elif [ -z "$OUTPUT_FILE" ]; then
+          OUTPUT_FILE="$1"
           shift
         else
           log_message "ERROR" "Unknown option or too many arguments: $1"
@@ -74,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -86,31 +109,53 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Count Files Script"
-  log_message "INFO" "Starting Count Files Script..."
+  print_with_separator "Compress Directory Script"
+  log_message "INFO" "Starting Compress Directory Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
-  if [ -z "$DIRECTORY" ]; then
-    log_message "ERROR" "<directory> is required."
-    print_with_separator "End of Count Files Script"
+  if [ -z "$SOURCE_DIR" ] || [ -z "$OUTPUT_FILE" ]; then
+    log_message "ERROR" "<source_directory> and <output_file> are required."
+    print_with_separator "End of Compress Directory Script"
     exit 1
   fi
 
-  if [ ! -d "$DIRECTORY" ]; then
-    log_message "ERROR" "Directory $DIRECTORY does not exist."
-    print_with_separator "End of Count Files Script"
+  if [ ! -d "$SOURCE_DIR" ]; then
+    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+    print_with_separator "End of Compress Directory Script"
     exit 1
   fi
 
-  log_message "INFO" "Counting files and directories in $DIRECTORY..."
+  #---------------------------------------------------------------------
+  # COMPRESSION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
 
-  FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l)
-  DIR_COUNT=$(find "$DIRECTORY" -type d | wc -l)
+  # Get directory size before compression
+  DIR_SIZE=$(du -sh "$SOURCE_DIR" | cut -f1)
+  log_message "INFO" "Directory size before compression: $DIR_SIZE"
 
-  log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
-  log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
+  # Perform the compression
+  if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
+    ARCHIVE_SIZE=$(du -sh "$OUTPUT_FILE" | cut -f1)
+    log_message "SUCCESS" "Directory compressed successfully."
+    log_message "INFO" "Archive size: $ARCHIVE_SIZE"
+  else
+    log_message "ERROR" "Failed to compress directory."
+    print_with_separator "End of Compress Directory Script"
+    exit 1
+  fi
 
-  print_with_separator "End of Count Files Script"
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Compression operation completed."
+  print_with_separator "End of Compress Directory Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

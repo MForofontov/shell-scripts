@@ -1,6 +1,6 @@
 #!/bin/bash
-# compare-files.sh
-# Script to compare two files and print differences
+# compress-tar-directory.sh
+# Script to compress a directory into a tar.gz file
 
 set -euo pipefail
 
@@ -28,31 +28,31 @@ fi
 #=====================================================================
 # DEFAULT VALUES
 #=====================================================================
-SOURCE_FILE=""
-TARGET_FILE=""
+SOURCE_DIR=""
+OUTPUT_FILE=""
 LOG_FILE="/dev/null"
 
 #=====================================================================
 # USAGE AND HELP
 #=====================================================================
 usage() {
-  print_with_separator "Compare Files Script"
+  print_with_separator "Compress Directory Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script compares two files and prints their differences."
+  echo "  This script compresses a directory into a tar.gz file."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <source_file> <target_file> [--log <log_file>] [--help]"
+  echo "  $0 <source_directory> <output_file> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<source_file>\033[0m     (Required) Path to the first file (source file)."
-  echo -e "  \033[1;36m<target_file>\033[0m     (Required) Path to the second file (target file)."
-  echo -e "  \033[1;33m--log <log_file>\033[0m  (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m            (Optional) Display this help message."
+  echo -e "  \033[1;36m<source_directory>\033[0m  (Required) Directory to compress."
+  echo -e "  \033[1;36m<output_file>\033[0m       (Required) Path to the output tar.gz file."
+  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
-  echo "  $0 /path/to/source_file /path/to/target_file --log custom_log.log"
-  echo "  $0 /path/to/source_file /path/to/target_file"
+  echo "  $0 /path/to/source /path/to/output.tar.gz --log custom_log.log"
+  echo "  $0 /path/to/source /path/to/output.tar.gz"
   print_with_separator
   exit 1
 }
@@ -76,11 +76,11 @@ parse_args() {
         usage
         ;;
       *)
-        if [ -z "$SOURCE_FILE" ]; then
-          SOURCE_FILE="$1"
+        if [ -z "$SOURCE_DIR" ]; then
+          SOURCE_DIR="$1"
           shift
-        elif [ -z "$TARGET_FILE" ]; then
-          TARGET_FILE="$1"
+        elif [ -z "$OUTPUT_FILE" ]; then
+          OUTPUT_FILE="$1"
           shift
         else
           log_message "ERROR" "Unknown option or too many arguments: $1"
@@ -109,49 +109,50 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Compare Files Script"
-  log_message "INFO" "Starting Compare Files Script..."
+  print_with_separator "Compress Directory Script"
+  log_message "INFO" "Starting Compress Directory Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
-  # Check required arguments
-  if [ -z "$SOURCE_FILE" ] || [ -z "$TARGET_FILE" ]; then
-    log_message "ERROR" "<source_file> and <target_file> are required."
-    print_with_separator "End of Compare Files Script"
+  # Validate arguments
+  if [ -z "$SOURCE_DIR" ] || [ -z "$OUTPUT_FILE" ]; then
+    log_message "ERROR" "<source_directory> and <output_file> are required."
+    print_with_separator "End of Compress Directory Script"
     exit 1
   fi
 
-  # Validate source file exists
-  if [ ! -f "$SOURCE_FILE" ]; then
-    log_message "ERROR" "Source file $SOURCE_FILE does not exist."
-    print_with_separator "End of Compare Files Script"
-    exit 1
-  fi
-
-  # Validate target file exists
-  if [ ! -f "$TARGET_FILE" ]; then
-    log_message "ERROR" "Target file $TARGET_FILE does not exist."
-    print_with_separator "End of Compare Files Script"
+  if [ ! -d "$SOURCE_DIR" ]; then
+    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+    print_with_separator "End of Compress Directory Script"
     exit 1
   fi
 
   #---------------------------------------------------------------------
-  # FILE COMPARISON
+  # COMPRESSION
   #---------------------------------------------------------------------
-  log_message "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
+  log_message "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
 
-  # Perform file comparison
-  if diff "$SOURCE_FILE" "$TARGET_FILE"; then
-    log_message "SUCCESS" "Files are identical."
+  # Get directory size before compression
+  DIR_SIZE=$(du -sh "$SOURCE_DIR" | cut -f1)
+  log_message "INFO" "Directory size before compression: $DIR_SIZE"
+
+  # Perform the compression
+  if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
+    ARCHIVE_SIZE=$(du -sh "$OUTPUT_FILE" | cut -f1)
+    log_message "SUCCESS" "Directory compressed successfully."
+    log_message "INFO" "Archive size: $ARCHIVE_SIZE"
   else
-    log_message "INFO" "Files differ. See the output above for details."
+    log_message "ERROR" "Failed to compress directory."
+    print_with_separator "End of Compress Directory Script"
+    exit 1
   fi
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  print_with_separator "End of Compare Files Script"
+  log_message "INFO" "Compression operation completed."
+  print_with_separator "End of Compress Directory Script"
 }
 
 #=====================================================================
