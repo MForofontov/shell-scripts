@@ -22,8 +22,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "NPM Dependency Updater Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,6 +51,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -68,7 +77,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -83,6 +98,9 @@ main() {
   print_with_separator "NPM Dependency Updater Script"
   log_message "INFO" "Starting NPM Dependency Updater Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate if npm is installed
   if ! command -v npm &> /dev/null; then
     log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
@@ -97,6 +115,9 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # DEPENDENCY UPDATES
+  #---------------------------------------------------------------------
   log_message "INFO" "Updating npm dependencies..."
 
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
@@ -111,6 +132,9 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # SUMMARY GENERATION
+  #---------------------------------------------------------------------
   # Generate a summary of updated packages
   log_message "INFO" "Generating summary of updated packages..."
   UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
@@ -122,8 +146,14 @@ main() {
     log_message "INFO" "No packages were updated."
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
   print_with_separator "End of NPM Dependency Updater Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
