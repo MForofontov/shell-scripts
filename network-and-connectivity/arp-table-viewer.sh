@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,8 +25,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "ARP Table Viewer Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,6 +52,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -66,7 +78,52 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# ARP TABLE FUNCTIONS
+#=====================================================================
+format_arp_table() {
+  # Create a header for the table
+  printf "\n%-20s %-20s %-20s\n" "IP ADDRESS" "MAC ADDRESS" "INTERFACE"
+  echo "------------------------------------------------------"
+  
+  # Process the ARP table based on OS type
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # macOS format
+    arp -a | while read -r line; do
+      IP=$(echo "$line" | awk '{print $2}' | tr -d '()')
+      MAC=$(echo "$line" | awk '{print $4}')
+      IFACE=$(echo "$line" | awk '{print $6}')
+      
+      # Skip incomplete entries
+      if [[ "$MAC" == "(incomplete)" ]]; then
+        MAC="N/A"
+      fi
+      
+      printf "%-20s %-20s %-20s\n" "$IP" "$MAC" "$IFACE"
+    done
+  else
+    # Linux format
+    arp -n | grep -v "Address" | while read -r line; do
+      IP=$(echo "$line" | awk '{print $1}')
+      MAC=$(echo "$line" | awk '{print $3}')
+      IFACE=$(echo "$line" | awk '{print $5}')
+      
+      if [[ "$MAC" == "(incomplete)" ]]; then
+        MAC="N/A"
+      fi
+      
+      printf "%-20s %-20s %-20s\n" "$IP" "$MAC" "$IFACE"
+    done
+  fi
+}
+
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -81,17 +138,41 @@ main() {
   print_with_separator "ARP Table Viewer Script"
   log_message "INFO" "Starting ARP Table Viewer Script..."
 
-  log_message "INFO" "Fetching ARP table..."
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Check if arp command is available
+  if ! command -v arp &> /dev/null; then
+    log_message "ERROR" "The 'arp' command is not available on this system."
+    print_with_separator "End of ARP Table Viewer Script"
+    exit 1
+  fi
 
-  if arp -a; then
-    log_message "SUCCESS" "ARP table fetched successfully."
+  #---------------------------------------------------------------------
+  # ARP TABLE RETRIEVAL
+  #---------------------------------------------------------------------
+  log_message "INFO" "Fetching ARP table..."
+  print_with_separator "ARP Table Output"
+
+  # Fetch and format the ARP table
+  if format_arp_table; then
+    print_with_separator "End of ARP Table Output"
+    log_message "SUCCESS" "ARP table fetched and displayed successfully."
   else
+    print_with_separator "End of ARP Table Output"
     log_message "ERROR" "Failed to fetch ARP table."
     print_with_separator "End of ARP Table Viewer Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "ARP table operation completed."
   print_with_separator "End of ARP Table Viewer Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
