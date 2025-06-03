@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 DIRECTORY=""
 DAYS=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Clean Old Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,10 @@ main() {
   print_with_separator "Clean Old Files Script"
   log_message "INFO" "Starting Clean Old Files Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Check required arguments
   if [ -z "$DIRECTORY" ] || [ -z "$DAYS" ]; then
     log_message "ERROR" "<directory> and <days> are required."
     print_with_separator "End of Clean Old Files Script"
@@ -114,17 +136,37 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # FILE CLEANING
+  #---------------------------------------------------------------------
   log_message "INFO" "Removing files older than $DAYS days from $DIRECTORY..."
-
-  if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; ; then
-    log_message "SUCCESS" "Successfully removed files older than $DAYS days from $DIRECTORY."
+  
+  # Count files to be removed
+  FILE_COUNT=$(find "$DIRECTORY" -type f -mtime +"$DAYS" | wc -l | tr -d ' ')
+  
+  if [ "$FILE_COUNT" -eq 0 ]; then
+    log_message "INFO" "No files older than $DAYS days found in $DIRECTORY."
   else
-    log_message "ERROR" "Failed to remove some files from $DIRECTORY."
-    print_with_separator "End of Clean Old Files Script"
-    exit 1
+    log_message "INFO" "Found $FILE_COUNT files to remove."
+    
+    # Remove the files
+    if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; ; then
+      log_message "SUCCESS" "Successfully removed $FILE_COUNT files older than $DAYS days from $DIRECTORY."
+    else
+      log_message "ERROR" "Failed to remove some files from $DIRECTORY."
+      print_with_separator "End of Clean Old Files Script"
+      exit 1
+    fi
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Clean Old Files operation completed."
   print_with_separator "End of Clean Old Files Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
