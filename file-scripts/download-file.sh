@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 URL=""
 DEST_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Download File Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Download File Script"
   log_message "INFO" "Starting Download File Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$URL" ] || [ -z "$DEST_FILE" ]; then
     log_message "ERROR" "<url> and <destination_file> are required."
@@ -107,17 +128,48 @@ main() {
     exit 1
   fi
 
+  # Create destination directory if it doesn't exist
+  DEST_DIR=$(dirname "$DEST_FILE")
+  if [ ! -d "$DEST_DIR" ]; then
+    log_message "INFO" "Creating destination directory: $DEST_DIR"
+    if ! mkdir -p "$DEST_DIR"; then
+      log_message "ERROR" "Failed to create destination directory: $DEST_DIR"
+      print_with_separator "End of Download File Script"
+      exit 1
+    fi
+  fi
+
+  #---------------------------------------------------------------------
+  # DOWNLOAD OPERATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Downloading file from $URL to $DEST_FILE..."
 
-  if curl -fLo "$DEST_FILE" "$URL"; then
-    log_message "SUCCESS" "File downloaded to $DEST_FILE."
+  # Check if curl is available
+  if ! command -v curl &> /dev/null; then
+    log_message "ERROR" "curl is not installed or not available in the PATH."
+    print_with_separator "End of Download File Script"
+    exit 1
+  fi
+
+  # Download the file with progress
+  if curl -#fLo "$DEST_FILE" "$URL"; then
+    # Get file size
+    FILE_SIZE=$(du -h "$DEST_FILE" | cut -f1)
+    log_message "SUCCESS" "File downloaded to $DEST_FILE (Size: $FILE_SIZE)."
   else
     log_message "ERROR" "Failed to download file from $URL."
     print_with_separator "End of Download File Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Download operation completed."
   print_with_separator "End of Download File Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
