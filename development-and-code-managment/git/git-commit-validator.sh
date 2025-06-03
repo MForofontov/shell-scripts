@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,9 +25,15 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 COMMIT_MESSAGE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Git Commit Validator Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,6 +54,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -73,7 +85,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -88,6 +106,9 @@ main() {
   print_with_separator "Git Commit Validator Script"
   log_message "INFO" "Starting Git Commit Validator Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate required arguments
   if [ -z "$COMMIT_MESSAGE" ]; then
     log_message "ERROR" "<commit_message> is required."
@@ -117,7 +138,11 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMMIT OPERATION
+  #---------------------------------------------------------------------
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+  log_message "INFO" "Committing changes with message: $COMMIT_MESSAGE"
 
   # Commit the changes
   if git commit -m "$COMMIT_MESSAGE"; then
@@ -128,8 +153,14 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "INFO" "$TIMESTAMP: Commit process completed."
   print_with_separator "End of Git Commit Validator Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
