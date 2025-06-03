@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 SOURCE_DIR=""
 DEST_DIR=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Synchronize Directories Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Synchronize Directories Script"
   log_message "INFO" "Starting Synchronize Directories Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$SOURCE_DIR" ] || [ -z "$DEST_DIR" ]; then
     log_message "ERROR" "<source_directory> and <destination_directory> are required."
@@ -108,16 +129,40 @@ main() {
   fi
 
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "ERROR" "Destination directory $DEST_DIR does not exist."
+    log_message "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    if ! mkdir -p "$DEST_DIR"; then
+      log_message "ERROR" "Failed to create destination directory $DEST_DIR."
+      print_with_separator "End of Synchronize Directories Script"
+      exit 1
+    fi
+    log_message "SUCCESS" "Created destination directory $DEST_DIR."
+  fi
+
+  #---------------------------------------------------------------------
+  # SYNCHRONIZATION OPERATION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
+  
+  # Get source directory size
+  SOURCE_SIZE=$(du -sh "$SOURCE_DIR" | cut -f1)
+  log_message "INFO" "Source directory size: $SOURCE_SIZE"
+  
+  # Check if rsync is available
+  if ! command -v rsync &> /dev/null; then
+    log_message "ERROR" "rsync is not installed or not available in the PATH."
     print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
-
-  log_message "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
+  
   print_with_separator "Synchronization Output"
 
   if rsync -av --delete "$SOURCE_DIR/" "$DEST_DIR/"; then
     print_with_separator "End of Synchronization Output"
+    
+    # Get destination directory size after sync
+    DEST_SIZE=$(du -sh "$DEST_DIR" | cut -f1)
+    log_message "INFO" "Destination directory size after sync: $DEST_SIZE"
+    
     log_message "SUCCESS" "Synchronization complete from $SOURCE_DIR to $DEST_DIR."
   else
     print_with_separator "End of Synchronization Output"
@@ -126,7 +171,14 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Synchronization operation completed."
   print_with_separator "End of Synchronize Directories Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
