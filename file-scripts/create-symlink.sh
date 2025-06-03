@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 TARGET_FILE=""
 LINK_NAME=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Create Symbolic Link Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Create Symbolic Link Script"
   log_message "INFO" "Starting Create Symbolic Link Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$TARGET_FILE" ] || [ -z "$LINK_NAME" ]; then
     log_message "ERROR" "<target_file> and <link_name> are required."
@@ -107,6 +128,16 @@ main() {
     exit 1
   fi
 
+  # Check if link already exists
+  if [ -e "$LINK_NAME" ]; then
+    log_message "WARNING" "Link destination $LINK_NAME already exists."
+    print_with_separator "End of Create Symbolic Link Script"
+    exit 1
+  fi
+
+  #---------------------------------------------------------------------
+  # LINK CREATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Creating symbolic link: $LINK_NAME -> $TARGET_FILE"
 
   if ln -s "$TARGET_FILE" "$LINK_NAME"; then
@@ -117,7 +148,14 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Symbolic link creation completed."
   print_with_separator "End of Create Symbolic Link Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
