@@ -1,9 +1,12 @@
 #!/bin/bash
-# git-add-commit-push.sh
-# Script to automate Git operations: add, commit, and push
+# generate-changelog.sh
+# Script to generate a changelog from the Git log
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,29 +25,39 @@ else
   exit 1
 fi
 
-COMMIT_MESSAGE=""
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
+OUTPUT_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
-  print_with_separator "Git Add, Commit, and Push Script"
+  print_with_separator "Generate Changelog Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script automates the process of adding, committing, and pushing changes to a Git repository."
+  echo "  This script generates a changelog file from the Git log of the current repository."
+  echo "  It includes commit hashes, messages, authors, and relative commit times."
   echo "  It also supports optional logging to a file."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <commit_message> [--log <log_file>] [--help]"
+  echo "  $0 <output_file> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;36m<commit_message>\033[0m    (Required) The commit message for the changes."
+  echo -e "  \033[1;36m<output_file>\033[0m       (Required) The file where the changelog will be saved."
   echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
   echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExample:\033[0m"
-  echo "  $0 'Initial commit' --log git_operations.log"
+  echo "  $0 CHANGELOG.md --log changelog.log"
   print_with_separator
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -61,8 +74,8 @@ parse_args() {
         usage
         ;;
       *)
-        if [ -z "$COMMIT_MESSAGE" ]; then
-          COMMIT_MESSAGE="$1"
+        if [ -z "$OUTPUT_FILE" ]; then
+          OUTPUT_FILE="$1"
           shift
         else
           log_message "ERROR" "Unknown option: $1"
@@ -73,7 +86,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -85,55 +104,65 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Git Add, Commit, and Push Script"
-  log_message "INFO" "Starting Git Add, Commit, and Push Script..."
+  print_with_separator "Generate Changelog Script"
+  log_message "INFO" "Starting Generate Changelog Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate required arguments
-  if [ -z "$COMMIT_MESSAGE" ]; then
-    log_message "ERROR" "<commit_message> is required."
-    print_with_separator "End of Git Add, Commit, and Push Script"
+  if [ -z "$OUTPUT_FILE" ]; then
+    log_message "ERROR" "<output_file> is required."
+    print_with_separator "End of Generate Changelog Script"
     usage
+  fi
+
+  # Validate output file
+  if ! touch "$OUTPUT_FILE" 2>/dev/null; then
+    log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
+    print_with_separator "End of Generate Changelog Script"
+    exit 1
   fi
 
   # Validate git is available
   if ! command -v git &> /dev/null; then
     log_message "ERROR" "git is not installed or not available in the PATH."
-    print_with_separator "End of Git Add, Commit, and Push Script"
+    print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
 
-  TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "$TIMESTAMP: Starting Git operations..."
+  #---------------------------------------------------------------------
+  # CHANGELOG GENERATION
+  #---------------------------------------------------------------------
+  # Get the project name from the current directory
+  PROJECT_NAME=$(basename "$(pwd)")
+  CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-  # Add all changes
-  if git add .; then
-    log_message "INFO" "Changes added successfully."
+  log_message "INFO" "Generating changelog for $PROJECT_NAME..."
+
+  # Add a header to the changelog
+  {
+    echo "# Changelog for $PROJECT_NAME"
+    echo "Generated on $CURRENT_DATE"
+    echo
+  } > "$OUTPUT_FILE"
+
+  # Append the git log to the changelog
+  if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE"; then
+    log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
   else
-    log_message "ERROR" "Failed to add changes."
-    print_with_separator "End of Git Add, Commit, and Push Script"
+    log_message "ERROR" "Failed to generate changelog."
+    print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
 
-  # Commit changes
-  if git commit -m "$COMMIT_MESSAGE"; then
-    log_message "INFO" "Changes committed successfully."
-  else
-    log_message "ERROR" "Failed to commit changes."
-    print_with_separator "End of Git Add, Commit, and Push Script"
-    exit 1
-  fi
-
-  # Push changes
-  if git push; then
-    log_message "INFO" "Changes pushed successfully."
-  else
-    log_message "ERROR" "Failed to push changes."
-    print_with_separator "End of Git Add, Commit, and Push Script"
-    exit 1
-  fi
-
-  log_message "SUCCESS" "$TIMESTAMP: Git operations completed successfully."
-  print_with_separator "End of Git Add, Commit, and Push Script"
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  print_with_separator "End of Generate Changelog Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
