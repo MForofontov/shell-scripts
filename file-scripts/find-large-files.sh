@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 DIRECTORY=""
 SIZE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Find Large Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Find Large Files Script"
   log_message "INFO" "Starting Find Large Files Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$DIRECTORY" ] || [ -z "$SIZE" ]; then
     log_message "ERROR" "<directory> and <size> are required."
@@ -107,31 +128,54 @@ main() {
     exit 1
   fi
 
+  # Validate size format
   if ! [[ "$SIZE" =~ ^\+?[0-9]+[KMG]$ ]]; then
     log_message "ERROR" "Invalid size format. Use +<size>[KMG] (e.g., +100M)."
     print_with_separator "End of Find Large Files Script"
     exit 1
   fi
 
-  if ! [[ "${SIZE:1}" =~ ^[0-9]+$ ]]; then
-    log_message "ERROR" "Size value must be a valid positive number."
-    print_with_separator "End of Find Large Files Script"
-    exit 1
+  # Ensure size has a leading plus sign
+  if [[ "$SIZE" != +* ]]; then
+    SIZE="+$SIZE"
+    log_message "INFO" "Added '+' prefix to size: $SIZE"
   fi
 
+  #---------------------------------------------------------------------
+  # FILE SEARCH OPERATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Finding files larger than $SIZE in $DIRECTORY..."
   print_with_separator "Large Files Output"
 
-  if find "$DIRECTORY" -type f -size "$SIZE" -exec ls -lh {} \; | awk '{ print $9 ": " $5 }'; then
-    print_with_separator "End of Large Files Output"
-    log_message "SUCCESS" "Large files in $DIRECTORY have been listed."
+  # Count number of files matching the criteria
+  FILE_COUNT=$(find "$DIRECTORY" -type f -size "$SIZE" | wc -l | tr -d ' ')
+  
+  if [ "$FILE_COUNT" -eq 0 ]; then
+    log_message "INFO" "No files larger than $SIZE found in $DIRECTORY."
   else
-    print_with_separator "End of Large Files Output"
-    log_message "ERROR" "Failed to find large files in $DIRECTORY."
-    exit 1
+    log_message "INFO" "Found $FILE_COUNT files larger than $SIZE."
+    
+    # List files with their sizes, sorted by size (largest first)
+    find "$DIRECTORY" -type f -size "$SIZE" -exec du -h {} \; | sort -hr | \
+    while read -r size file; do
+      echo "Size: $size - File: $file"
+    done
+    
+    # Show total disk space used by these files
+    TOTAL_SIZE=$(find "$DIRECTORY" -type f -size "$SIZE" -exec du -ch {} \; | grep total$ | cut -f1)
+    log_message "INFO" "Total disk space used by these files: $TOTAL_SIZE"
   fi
+  
+  print_with_separator "End of Large Files Output"
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "SUCCESS" "File search operation completed."
   print_with_separator "End of Find Large Files Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
