@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 SOURCE_FILE=""
 TARGET_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Compare Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,33 +112,49 @@ main() {
   print_with_separator "Compare Files Script"
   log_message "INFO" "Starting Compare Files Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Check required arguments
   if [ -z "$SOURCE_FILE" ] || [ -z "$TARGET_FILE" ]; then
     log_message "ERROR" "<source_file> and <target_file> are required."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
+  # Validate source file exists
   if [ ! -f "$SOURCE_FILE" ]; then
     log_message "ERROR" "Source file $SOURCE_FILE does not exist."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
+  # Validate target file exists
   if [ ! -f "$TARGET_FILE" ]; then
     log_message "ERROR" "Target file $TARGET_FILE does not exist."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # FILE COMPARISON
+  #---------------------------------------------------------------------
   log_message "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
 
+  # Perform file comparison
   if diff "$SOURCE_FILE" "$TARGET_FILE"; then
     log_message "SUCCESS" "Files are identical."
   else
     log_message "INFO" "Files differ. See the output above for details."
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Compare Files Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
