@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 ZIP_FILE=""
 DEST_DIR=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Extract Zip Archive Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Extract Zip Archive Script"
   log_message "INFO" "Starting Extract Zip Archive Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$ZIP_FILE" ] || [ -z "$DEST_DIR" ]; then
     log_message "ERROR" "<zip_file> and <destination_directory> are required."
@@ -107,23 +128,56 @@ main() {
     exit 1
   fi
 
+  # Check if destination directory exists, create if it doesn't
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "ERROR" "Destination directory $DEST_DIR does not exist."
+    log_message "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    if ! mkdir -p "$DEST_DIR"; then
+      log_message "ERROR" "Failed to create destination directory $DEST_DIR."
+      print_with_separator "End of Extract Zip Archive Script"
+      exit 1
+    fi
+    log_message "SUCCESS" "Created destination directory $DEST_DIR."
+  fi
+
+  #---------------------------------------------------------------------
+  # EXTRACTION OPERATION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Extracting zip archive $ZIP_FILE to $DEST_DIR..."
+  
+  # Check if unzip is available
+  if ! command -v unzip &> /dev/null; then
+    log_message "ERROR" "unzip is not installed or not available in the PATH."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
-
-  log_message "INFO" "Extracting zip archive $ZIP_FILE to $DEST_DIR..."
-
-  if unzip "$ZIP_FILE" -d "$DEST_DIR"; then
-    log_message "SUCCESS" "Zip archive extracted to $DEST_DIR."
+  
+  # Get archive size
+  ARCHIVE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+  log_message "INFO" "Archive size: $ARCHIVE_SIZE"
+  
+  # List content of the archive
+  log_message "INFO" "Archive contents (first 10 entries):"
+  unzip -l "$ZIP_FILE" | head -n 12
+  
+  # Extract the archive with verbose output
+  if unzip -o "$ZIP_FILE" -d "$DEST_DIR"; then
+    # Count extracted files
+    FILE_COUNT=$(find "$DEST_DIR" -type f | wc -l | tr -d ' ')
+    log_message "SUCCESS" "Zip archive extracted to $DEST_DIR (Files: $FILE_COUNT)."
   else
     log_message "ERROR" "Failed to extract zip archive."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Extraction operation completed."
   print_with_separator "End of Extract Zip Archive Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
