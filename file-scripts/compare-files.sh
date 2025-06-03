@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           TARGET_FILE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,28 +110,28 @@ main() {
   fi
 
   print_with_separator "Compare Files Script"
-  log_message "INFO" "Starting Compare Files Script..."
+  format-echo "INFO" "Starting Compare Files Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Check required arguments
   if [ -z "$SOURCE_FILE" ] || [ -z "$TARGET_FILE" ]; then
-    log_message "ERROR" "<source_file> and <target_file> are required."
+    format-echo "ERROR" "<source_file> and <target_file> are required."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
   # Validate source file exists
   if [ ! -f "$SOURCE_FILE" ]; then
-    log_message "ERROR" "Source file $SOURCE_FILE does not exist."
+    format-echo "ERROR" "Source file $SOURCE_FILE does not exist."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
 
   # Validate target file exists
   if [ ! -f "$TARGET_FILE" ]; then
-    log_message "ERROR" "Target file $TARGET_FILE does not exist."
+    format-echo "ERROR" "Target file $TARGET_FILE does not exist."
     print_with_separator "End of Compare Files Script"
     exit 1
   fi
@@ -139,13 +139,13 @@ main() {
   #---------------------------------------------------------------------
   # FILE COMPARISON
   #---------------------------------------------------------------------
-  log_message "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
+  format-echo "INFO" "Comparing $SOURCE_FILE and $TARGET_FILE..."
 
   # Perform file comparison
   if diff "$SOURCE_FILE" "$TARGET_FILE"; then
-    log_message "SUCCESS" "Files are identical."
+    format-echo "SUCCESS" "Files are identical."
   else
-    log_message "INFO" "Files differ. See the output above for details."
+    format-echo "INFO" "Files differ. See the output above for details."
   fi
 
   #---------------------------------------------------------------------

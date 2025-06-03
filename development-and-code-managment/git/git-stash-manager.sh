@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -67,7 +67,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -75,7 +75,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -101,21 +101,21 @@ main() {
   fi
 
   print_with_separator "Git Stash Manager Script"
-  log_message "INFO" "Starting Git Stash Manager Script..."
+  format-echo "INFO" "Starting Git Stash Manager Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate git is available
   if ! command -v git &> /dev/null; then
-    log_message "ERROR" "git is not installed or not available in the PATH."
+    format-echo "ERROR" "git is not installed or not available in the PATH."
     print_with_separator "End of Git Stash Manager Script"
     exit 1
   fi
 
   # Validate that we're in a git repository
   if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-    log_message "ERROR" "Not in a git repository. Please run this script inside a git repository."
+    format-echo "ERROR" "Not in a git repository. Please run this script inside a git repository."
     print_with_separator "End of Git Stash Manager Script"
     exit 1
   fi
@@ -124,34 +124,34 @@ main() {
   # STASH MANAGEMENT
   #---------------------------------------------------------------------
   # Display available stashes
-  log_message "INFO" "Listing available stashes..."
+  format-echo "INFO" "Listing available stashes..."
   git stash list
 
   # Check if there are any stashes
   if [[ -z "$(git stash list)" ]]; then
-    log_message "INFO" "No stashes found in this repository."
+    format-echo "INFO" "No stashes found in this repository."
     print_with_separator "End of Git Stash Manager Script"
     exit 0
   fi
 
   # Prompt user for stash index
-  log_message "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
+  format-echo "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
   read -r STASH_INDEX
 
   # Validate stash index
   if ! git stash list | grep -q "$STASH_INDEX"; then
-    log_message "ERROR" "Invalid stash index $STASH_INDEX"
+    format-echo "ERROR" "Invalid stash index $STASH_INDEX"
     print_with_separator "End of Git Stash Manager Script"
     exit 1
   fi
 
   # Prompt user for action
-  log_message "INFO" "Choose an action: [apply/drop]"
+  format-echo "INFO" "Choose an action: [apply/drop]"
   read -r ACTION
 
   # Validate the action
   if [[ "$ACTION" != "apply" && "$ACTION" != "drop" ]]; then
-    log_message "ERROR" "Invalid action: $ACTION. Allowed actions are 'apply' or 'drop'."
+    format-echo "ERROR" "Invalid action: $ACTION. Allowed actions are 'apply' or 'drop'."
     print_with_separator "End of Git Stash Manager Script"
     exit 1
   fi
@@ -160,20 +160,20 @@ main() {
 
   # Perform the chosen action
   if [ "$ACTION" == "apply" ]; then
-    log_message "INFO" "$TIMESTAMP: Applying stash $STASH_INDEX..."
+    format-echo "INFO" "$TIMESTAMP: Applying stash $STASH_INDEX..."
     if git stash apply "$STASH_INDEX"; then
-      log_message "SUCCESS" "Stash $STASH_INDEX applied successfully."
+      format-echo "SUCCESS" "Stash $STASH_INDEX applied successfully."
     else
-      log_message "ERROR" "Failed to apply stash $STASH_INDEX."
+      format-echo "ERROR" "Failed to apply stash $STASH_INDEX."
       print_with_separator "End of Git Stash Manager Script"
       exit 1
     fi
   elif [ "$ACTION" == "drop" ]; then
-    log_message "INFO" "$TIMESTAMP: Dropping stash $STASH_INDEX..."
+    format-echo "INFO" "$TIMESTAMP: Dropping stash $STASH_INDEX..."
     if git stash drop "$STASH_INDEX"; then
-      log_message "SUCCESS" "Stash $STASH_INDEX dropped successfully."
+      format-echo "SUCCESS" "Stash $STASH_INDEX dropped successfully."
     else
-      log_message "ERROR" "Failed to drop stash $STASH_INDEX."
+      format-echo "ERROR" "Failed to drop stash $STASH_INDEX."
       print_with_separator "End of Git Stash Manager Script"
       exit 1
     fi
@@ -182,7 +182,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Git Stash Manager Script completed."
+  format-echo "INFO" "Git Stash Manager Script completed."
   print_with_separator "End of Git Stash Manager Script"
 }
 

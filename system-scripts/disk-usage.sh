@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         elif [ -z "$EMAIL" ]; then
           EMAIL="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -81,9 +81,9 @@ check_disk_usage() {
   if [ "$USAGE" -ge "$THRESHOLD" ]; then
     ALERT_MESSAGE="Disk usage is at ${USAGE}% - exceeds the threshold of ${THRESHOLD}%"
     echo "$ALERT_MESSAGE" | mail -s "Disk Usage Alert" "$EMAIL"
-    log_message "WARNING" "$ALERT_MESSAGE"
+    format-echo "WARNING" "$ALERT_MESSAGE"
   else
-    log_message "SUCCESS" "Disk usage is at ${USAGE}%, below the threshold of ${THRESHOLD}%."
+    format-echo "SUCCESS" "Disk usage is at ${USAGE}%, below the threshold of ${THRESHOLD}%."
   fi
 }
 
@@ -100,11 +100,11 @@ main() {
   fi
 
   print_with_separator "Disk Usage Monitor Script"
-  log_message "INFO" "Starting Disk Usage Monitor Script..."
+  format-echo "INFO" "Starting Disk Usage Monitor Script..."
 
   # Validate required arguments
   if [ -z "$THRESHOLD" ] || [ -z "$EMAIL" ]; then
-    log_message "ERROR" "Both <threshold> and <email> are required."
+    format-echo "ERROR" "Both <threshold> and <email> are required."
     print_with_separator "End of Disk Usage Monitor Script"
     usage
   fi
@@ -112,7 +112,7 @@ main() {
   check_disk_usage
 
   print_with_separator "End of Disk Usage Monitor Script"
-  log_message "INFO" "Disk usage monitoring completed."
+  format-echo "INFO" "Disk usage monitoring completed."
 }
 
 main "$@"

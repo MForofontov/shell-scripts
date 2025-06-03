@@ -11,14 +11,14 @@ set -euo pipefail
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -69,13 +69,13 @@ usage() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   #---------------------------------------------------------------------
   # DOCKER AVAILABILITY
   #---------------------------------------------------------------------
   if ! command -v docker &>/dev/null; then
-    log_message "ERROR" "docker not found. Please install Docker."
+    format-echo "ERROR" "docker not found. Please install Docker."
     exit 1
   fi
   
@@ -85,40 +85,40 @@ check_requirements() {
   case "$PROVIDER" in
     minikube)
       if ! command -v minikube &>/dev/null; then
-        log_message "ERROR" "minikube not found. Please install minikube."
+        format-echo "ERROR" "minikube not found. Please install minikube."
         exit 1
       fi
       # Check if the specified cluster exists
       if ! minikube profile list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
-        log_message "ERROR" "minikube cluster '$CLUSTER_NAME' not found."
+        format-echo "ERROR" "minikube cluster '$CLUSTER_NAME' not found."
         exit 1
       fi
       ;;
     kind)
       if ! command -v kind &>/dev/null; then
-        log_message "ERROR" "kind not found. Please install kind."
+        format-echo "ERROR" "kind not found. Please install kind."
         exit 1
       fi
       # Check if the specified cluster exists
       if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-        log_message "ERROR" "kind cluster '$CLUSTER_NAME' not found."
+        format-echo "ERROR" "kind cluster '$CLUSTER_NAME' not found."
         exit 1
       fi
       ;;
     k3d)
       if ! command -v k3d &>/dev/null; then
-        log_message "ERROR" "k3d not found. Please install k3d."
+        format-echo "ERROR" "k3d not found. Please install k3d."
         exit 1
       fi
       # Check if the specified cluster exists
       if ! k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
-        log_message "ERROR" "k3d cluster '$CLUSTER_NAME' not found."
+        format-echo "ERROR" "k3d cluster '$CLUSTER_NAME' not found."
         exit 1
       fi
       ;;
   esac
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -126,7 +126,7 @@ check_requirements() {
 #=====================================================================
 # Build and load images from the image list file
 build_and_load_images() {
-  log_message "INFO" "Processing image list from $IMAGE_LIST"
+  format-echo "INFO" "Processing image list from $IMAGE_LIST"
   
   # Count total images to process
   local total_images=$(grep -v '^\s*$\|^\s*#' "$IMAGE_LIST" | wc -l | tr -d ' ')
@@ -145,38 +145,38 @@ build_and_load_images() {
     
     # Validate line format
     if [[ -z "$image" || -z "$dir" ]]; then
-      log_message "WARNING" "Skipping invalid line: $line"
+      format-echo "WARNING" "Skipping invalid line: $line"
       continue
     fi
     
     # Increment counter
     ((current_image++))
-    log_message "INFO" "Processing image $current_image of $total_images: $image"
+    format-echo "INFO" "Processing image $current_image of $total_images: $image"
     
     #---------------------------------------------------------------------
     # IMAGE BUILDING
     #---------------------------------------------------------------------
-    log_message "INFO" "Building image $image from directory $dir"
+    format-echo "INFO" "Building image $image from directory $dir"
     
     # Check if directory exists
     if [[ ! -d "$dir" ]]; then
-      log_message "ERROR" "Directory does not exist: $dir"
+      format-echo "ERROR" "Directory does not exist: $dir"
       continue
     fi
     
     # Check if Dockerfile exists
     if [[ ! -f "$dir/Dockerfile" ]]; then
-      log_message "ERROR" "Dockerfile not found in directory: $dir"
+      format-echo "ERROR" "Dockerfile not found in directory: $dir"
       continue
     fi
     
     # Build the image
     if ! docker build -t "$image" "$dir"; then
-      log_message "ERROR" "Failed to build image $image"
+      format-echo "ERROR" "Failed to build image $image"
       continue
     fi
     
-    log_message "SUCCESS" "Built image $image"
+    format-echo "SUCCESS" "Built image $image"
     
     #---------------------------------------------------------------------
     # IMAGE LOADING
@@ -184,35 +184,35 @@ build_and_load_images() {
     # Load the image into the cluster based on provider
     case "$PROVIDER" in
       minikube)
-        log_message "INFO" "Loading image $image into minikube ($CLUSTER_NAME)"
+        format-echo "INFO" "Loading image $image into minikube ($CLUSTER_NAME)"
         if ! minikube image load "$image" -p "$CLUSTER_NAME"; then
-          log_message "ERROR" "Failed to load image $image into minikube"
+          format-echo "ERROR" "Failed to load image $image into minikube"
           continue
         fi
         ;;
       kind)
-        log_message "INFO" "Loading image $image into kind ($CLUSTER_NAME)"
+        format-echo "INFO" "Loading image $image into kind ($CLUSTER_NAME)"
         if ! kind load docker-image "$image" --name "$CLUSTER_NAME"; then
-          log_message "ERROR" "Failed to load image $image into kind"
+          format-echo "ERROR" "Failed to load image $image into kind"
           continue
         fi
         ;;
       k3d)
-        log_message "INFO" "Importing image $image into k3d ($CLUSTER_NAME)"
+        format-echo "INFO" "Importing image $image into k3d ($CLUSTER_NAME)"
         if ! k3d image import "$image" -c "$CLUSTER_NAME"; then
-          log_message "ERROR" "Failed to import image $image into k3d"
+          format-echo "ERROR" "Failed to import image $image into k3d"
           continue
         fi
         ;;
     esac
     
-    log_message "SUCCESS" "Loaded image $image into $PROVIDER cluster $CLUSTER_NAME"
+    format-echo "SUCCESS" "Loaded image $image into $PROVIDER cluster $CLUSTER_NAME"
   done < "$IMAGE_LIST"
   
   #---------------------------------------------------------------------
   # COMPLETION SUMMARY
   #---------------------------------------------------------------------
-  log_message "INFO" "Processed $current_image images"
+  format-echo "INFO" "Processed $current_image images"
 }
 
 #=====================================================================
@@ -220,7 +220,7 @@ build_and_load_images() {
 #=====================================================================
 # Verify images are loaded in the cluster
 verify_images() {
-  log_message "INFO" "Verifying images in cluster $CLUSTER_NAME"
+  format-echo "INFO" "Verifying images in cluster $CLUSTER_NAME"
   
   #---------------------------------------------------------------------
   # PROVIDER-SPECIFIC VERIFICATION
@@ -228,29 +228,29 @@ verify_images() {
   case "$PROVIDER" in
     minikube)
       # For minikube, list images in the cluster
-      log_message "INFO" "Images available in minikube cluster:"
+      format-echo "INFO" "Images available in minikube cluster:"
       if ! minikube image ls -p "$CLUSTER_NAME"; then
-        log_message "WARNING" "Failed to list images in minikube"
+        format-echo "WARNING" "Failed to list images in minikube"
       fi
       ;;
     kind)
       # For kind, we need to check inside the nodes
-      log_message "INFO" "Images available in kind cluster (control-plane node):"
+      format-echo "INFO" "Images available in kind cluster (control-plane node):"
       local control_plane_node="$CLUSTER_NAME-control-plane"
       if ! docker exec "$control_plane_node" crictl images; then
-        log_message "WARNING" "Failed to list images in kind control plane"
+        format-echo "WARNING" "Failed to list images in kind control plane"
       fi
       ;;
     k3d)
       # For k3d, we need to check inside the server node
-      log_message "INFO" "Images available in k3d cluster (server node):"
+      format-echo "INFO" "Images available in k3d cluster (server node):"
       local server_node=$(k3d node list | grep "$CLUSTER_NAME.*server" | head -1 | awk '{print $1}')
       if [[ -n "$server_node" ]]; then
         if ! docker exec "$server_node" crictl images; then
-          log_message "WARNING" "Failed to list images in k3d server node"
+          format-echo "WARNING" "Failed to list images in k3d server node"
         fi
       else
-        log_message "WARNING" "Could not find k3d server node"
+        format-echo "WARNING" "Could not find k3d server node"
       fi
       ;;
   esac
@@ -283,7 +283,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -293,7 +293,7 @@ parse_args() {
   # VALIDATION
   #---------------------------------------------------------------------
   if [[ -z "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file is required."
+    format-echo "ERROR" "Image list file is required."
     usage
   fi
   
@@ -301,15 +301,15 @@ parse_args() {
   case "$PROVIDER" in
     minikube|kind|k3d) ;;
     *)
-      log_message "ERROR" "Unsupported provider: $PROVIDER"
-      log_message "ERROR" "Supported providers: minikube, kind, k3d"
+      format-echo "ERROR" "Unsupported provider: $PROVIDER"
+      format-echo "ERROR" "Supported providers: minikube, kind, k3d"
       exit 1
       ;;
   esac
   
   # Validate image list file exists
   if [[ ! -f "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file does not exist: $IMAGE_LIST"
+    format-echo "ERROR" "Image list file does not exist: $IMAGE_LIST"
     exit 1
   fi
 }
@@ -342,10 +342,10 @@ main() {
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
-  log_message "INFO" "Starting build and load process..."
-  log_message "INFO" "  Provider:     $PROVIDER"
-  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
-  log_message "INFO" "  Image List:   $IMAGE_LIST"
+  format-echo "INFO" "Starting build and load process..."
+  format-echo "INFO" "  Provider:     $PROVIDER"
+  format-echo "INFO" "  Cluster Name: $CLUSTER_NAME"
+  format-echo "INFO" "  Image List:   $IMAGE_LIST"
 
   #---------------------------------------------------------------------
   # EXECUTION STAGES
@@ -363,7 +363,7 @@ main() {
   # COMPLETION
   #---------------------------------------------------------------------
   print_with_separator "End of Build and Load Images Script"
-  log_message "SUCCESS" "All images built and loaded successfully."
+  format-echo "SUCCESS" "All images built and loaded successfully."
 }
 
 #=====================================================================

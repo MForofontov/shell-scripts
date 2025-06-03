@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -63,7 +63,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -71,7 +71,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -136,14 +136,14 @@ main() {
   fi
 
   print_with_separator "ARP Table Viewer Script"
-  log_message "INFO" "Starting ARP Table Viewer Script..."
+  format-echo "INFO" "Starting ARP Table Viewer Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Check if arp command is available
   if ! command -v arp &> /dev/null; then
-    log_message "ERROR" "The 'arp' command is not available on this system."
+    format-echo "ERROR" "The 'arp' command is not available on this system."
     print_with_separator "End of ARP Table Viewer Script"
     exit 1
   fi
@@ -151,16 +151,16 @@ main() {
   #---------------------------------------------------------------------
   # ARP TABLE RETRIEVAL
   #---------------------------------------------------------------------
-  log_message "INFO" "Fetching ARP table..."
+  format-echo "INFO" "Fetching ARP table..."
   print_with_separator "ARP Table Output"
 
   # Fetch and format the ARP table
   if format_arp_table; then
     print_with_separator "End of ARP Table Output"
-    log_message "SUCCESS" "ARP table fetched and displayed successfully."
+    format-echo "SUCCESS" "ARP table fetched and displayed successfully."
   else
     print_with_separator "End of ARP Table Output"
-    log_message "ERROR" "Failed to fetch ARP table."
+    format-echo "ERROR" "Failed to fetch ARP table."
     print_with_separator "End of ARP Table Viewer Script"
     exit 1
   fi
@@ -168,7 +168,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "ARP table operation completed."
+  format-echo "INFO" "ARP table operation completed."
   print_with_separator "End of ARP Table Viewer Script"
 }
 

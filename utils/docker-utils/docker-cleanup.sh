@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -51,14 +51,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -68,14 +68,14 @@ parse_args() {
 docker_cleanup() {
   # Check if Docker is installed
   if ! command -v docker &> /dev/null; then
-    log_message "ERROR" "Docker is not installed. Please install Docker first."
+    format-echo "ERROR" "Docker is not installed. Please install Docker first."
     print_with_separator "End of Docker Cleanup Script"
     exit 1
   fi
 
   # Check if Docker is running
   if ! docker info &> /dev/null; then
-    log_message "ERROR" "Docker is not running. Please start Docker first."
+    format-echo "ERROR" "Docker is not running. Please start Docker first."
     print_with_separator "End of Docker Cleanup Script"
     exit 1
   fi
@@ -83,7 +83,7 @@ docker_cleanup() {
   # Confirm before proceeding
   read -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (y/N): " confirm
   if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-    log_message "INFO" "Cleanup canceled."
+    format-echo "INFO" "Cleanup canceled."
     print_with_separator "End of Docker Cleanup Script"
     exit 0
   fi
@@ -91,53 +91,53 @@ docker_cleanup() {
   # Stop all running containers
   RUNNING_CONTAINERS=$(docker ps -q)
   if [ -n "$RUNNING_CONTAINERS" ]; then
-    log_message "INFO" "Stopping all running containers..."
+    format-echo "INFO" "Stopping all running containers..."
     docker stop $RUNNING_CONTAINERS
   else
-    log_message "INFO" "No running containers to stop."
+    format-echo "INFO" "No running containers to stop."
   fi
 
   # Remove all containers
   ALL_CONTAINERS=$(docker ps -aq)
   if [ -n "$ALL_CONTAINERS" ]; then
-    log_message "INFO" "Removing all containers..."
+    format-echo "INFO" "Removing all containers..."
     docker rm $ALL_CONTAINERS
   else
-    log_message "INFO" "No containers to remove."
+    format-echo "INFO" "No containers to remove."
   fi
 
   # Remove all images
   ALL_IMAGES=$(docker images -q)
   if [ -n "$ALL_IMAGES" ]; then
-    log_message "INFO" "Removing all images..."
+    format-echo "INFO" "Removing all images..."
     docker rmi $ALL_IMAGES -f
   else
-    log_message "INFO" "No images to remove."
+    format-echo "INFO" "No images to remove."
   fi
 
   # Remove all volumes
   ALL_VOLUMES=$(docker volume ls -q)
   if [ -n "$ALL_VOLUMES" ]; then
-    log_message "INFO" "Removing all volumes..."
+    format-echo "INFO" "Removing all volumes..."
     docker volume rm $ALL_VOLUMES
   else
-    log_message "INFO" "No volumes to remove."
+    format-echo "INFO" "No volumes to remove."
   fi
 
   # Remove all networks
   ALL_NETWORKS=$(docker network ls -q)
   if [ -n "$ALL_NETWORKS" ]; then
-    log_message "INFO" "Removing all networks..."
+    format-echo "INFO" "Removing all networks..."
     docker network rm $ALL_NETWORKS
   else
-    log_message "INFO" "No networks to remove."
+    format-echo "INFO" "No networks to remove."
   fi
 
   # Prune all unused resources
-  log_message "INFO" "Pruning all unused resources..."
+  format-echo "INFO" "Pruning all unused resources..."
   docker system prune -a --volumes -f
 
-  log_message "SUCCESS" "Docker cleanup complete."
+  format-echo "SUCCESS" "Docker cleanup complete."
 }
 
 main() {
@@ -153,12 +153,12 @@ main() {
   fi
 
   print_with_separator "Docker Cleanup Script"
-  log_message "INFO" "Starting Docker Cleanup Script..."
+  format-echo "INFO" "Starting Docker Cleanup Script..."
 
   docker_cleanup
 
   print_with_separator "End of Docker Cleanup Script"
-  log_message "SUCCESS" "Docker cleanup complete."
+  format-echo "SUCCESS" "Docker cleanup complete."
 }
 
 main "$@"

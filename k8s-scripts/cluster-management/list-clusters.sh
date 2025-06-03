@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -87,7 +87,7 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   local all_tools_available=true
   
@@ -97,21 +97,21 @@ check_requirements() {
   # Check for local providers
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "minikube" ]]; then
     if ! command_exists minikube; then
-      log_message "WARNING" "minikube not found. Minikube clusters will not be listed."
+      format-echo "WARNING" "minikube not found. Minikube clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "kind" ]]; then
     if ! command_exists kind; then
-      log_message "WARNING" "kind not found. Kind clusters will not be listed."
+      format-echo "WARNING" "kind not found. Kind clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "local" || "$PROVIDER" == "k3d" ]]; then
     if ! command_exists k3d; then
-      log_message "WARNING" "k3d not found. K3d clusters will not be listed."
+      format-echo "WARNING" "k3d not found. K3d clusters will not be listed."
       all_tools_available=false
     fi
   fi
@@ -122,21 +122,21 @@ check_requirements() {
   # Check for cloud providers
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "eks" ]]; then
     if ! command_exists aws; then
-      log_message "WARNING" "AWS CLI not found. EKS clusters will not be listed."
+      format-echo "WARNING" "AWS CLI not found. EKS clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "gke" ]]; then
     if ! command_exists gcloud; then
-      log_message "WARNING" "Google Cloud SDK not found. GKE clusters will not be listed."
+      format-echo "WARNING" "Google Cloud SDK not found. GKE clusters will not be listed."
       all_tools_available=false
     fi
   fi
   
   if [[ "$PROVIDER" == "all" || "$PROVIDER" == "cloud" || "$PROVIDER" == "aks" ]]; then
     if ! command_exists az; then
-      log_message "WARNING" "Azure CLI not found. AKS clusters will not be listed."
+      format-echo "WARNING" "Azure CLI not found. AKS clusters will not be listed."
       all_tools_available=false
     fi
   fi
@@ -147,20 +147,20 @@ check_requirements() {
   # Check for formatting dependencies
   if [[ "$FORMAT" == "json" || "$FORMAT" == "yaml" ]]; then
     if ! command_exists jq; then
-      log_message "ERROR" "jq is required for JSON/YAML output but not found. Please install it first."
+      format-echo "ERROR" "jq is required for JSON/YAML output but not found. Please install it first."
       exit 1
     fi
     
     if [[ "$FORMAT" == "yaml" ]] && ! command_exists yq; then
-      log_message "ERROR" "yq is required for YAML output but not found. Please install it first."
+      format-echo "ERROR" "yq is required for YAML output but not found. Please install it first."
       exit 1
     fi
   fi
   
   if $all_tools_available; then
-    log_message "SUCCESS" "All required tools are available."
+    format-echo "SUCCESS" "All required tools are available."
   else
-    log_message "WARNING" "Some provider tools are missing. Only available providers will be listed."
+    format-echo "WARNING" "Some provider tools are missing. Only available providers will be listed."
   fi
 }
 
@@ -177,7 +177,7 @@ get_eks_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting EKS clusters..."
+  format-echo "INFO" "Getting EKS clusters..."
   
   # Build AWS command with optional region and profile
   local aws_cmd="aws eks list-clusters"
@@ -193,13 +193,13 @@ get_eks_clusters() {
   # Get clusters
   local eks_clusters=""
   if ! eks_clusters=$(eval "$aws_cmd" 2>/dev/null); then
-    log_message "WARNING" "Failed to get EKS clusters."
+    format-echo "WARNING" "Failed to get EKS clusters."
     return
   fi
   
   # Check if empty or invalid JSON
   if [[ -z "$eks_clusters" || "$(echo "$eks_clusters" | jq -r '.clusters | length')" -eq 0 ]]; then
-    log_message "INFO" "No EKS clusters found."
+    format-echo "INFO" "No EKS clusters found."
     return
   fi
   
@@ -224,7 +224,7 @@ get_eks_clusters() {
     # Get cluster details
     local cluster_details=""
     if ! cluster_details=$(eval "$describe_cmd" 2>/dev/null); then
-      log_message "WARNING" "Failed to get details for EKS cluster $name."
+      format-echo "WARNING" "Failed to get details for EKS cluster $name."
       continue
     fi
     
@@ -300,7 +300,7 @@ get_gke_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting GKE clusters..."
+  format-echo "INFO" "Getting GKE clusters..."
   
   # Build GCloud command with optional region and profile/project
   local project_flag=""
@@ -319,13 +319,13 @@ get_gke_clusters() {
   # Get clusters
   local gke_clusters=""
   if ! gke_clusters=$(gcloud container clusters list --format=json $project_flag $region_flag 2>/dev/null); then
-    log_message "WARNING" "Failed to get GKE clusters."
+    format-echo "WARNING" "Failed to get GKE clusters."
     return
   fi
   
   # Check if empty or invalid JSON
   if [[ -z "$gke_clusters" || "$gke_clusters" == "[]" ]]; then
-    log_message "INFO" "No GKE clusters found."
+    format-echo "INFO" "No GKE clusters found."
     return
   fi
   
@@ -373,7 +373,7 @@ get_aks_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting AKS clusters..."
+  format-echo "INFO" "Getting AKS clusters..."
   
   # Build Azure command with optional resource group
   local az_cmd="az aks list"
@@ -385,13 +385,13 @@ get_aks_clusters() {
   # Get clusters
   local aks_clusters=""
   if ! aks_clusters=$(eval "$az_cmd" 2>/dev/null); then
-    log_message "WARNING" "Failed to get AKS clusters."
+    format-echo "WARNING" "Failed to get AKS clusters."
     return
   fi
   
   # Check if empty or invalid JSON
   if [[ -z "$aks_clusters" || "$aks_clusters" == "[]" ]]; then
-    log_message "INFO" "No AKS clusters found."
+    format-echo "INFO" "No AKS clusters found."
     return
   fi
   
@@ -448,18 +448,18 @@ get_minikube_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting minikube clusters..."
+  format-echo "INFO" "Getting minikube clusters..."
   
   # Get clusters as JSON
   local minikube_clusters=""
   if ! minikube_clusters=$(minikube profile list -o json 2>/dev/null); then
-    log_message "WARNING" "Failed to get minikube profiles."
+    format-echo "WARNING" "Failed to get minikube profiles."
     return
   fi
   
   # Check if empty or invalid JSON
   if [[ -z "$minikube_clusters" || "$minikube_clusters" == "[]" ]]; then
-    log_message "INFO" "No minikube clusters found."
+    format-echo "INFO" "No minikube clusters found."
     return
   fi
   
@@ -527,18 +527,18 @@ get_kind_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting kind clusters..."
+  format-echo "INFO" "Getting kind clusters..."
   
   # Get clusters
   local kind_clusters=""
   if ! kind_clusters=$(kind get clusters 2>/dev/null); then
-    log_message "WARNING" "Failed to get kind clusters."
+    format-echo "WARNING" "Failed to get kind clusters."
     return
   fi
   
   # Check if empty
   if [[ -z "$kind_clusters" ]]; then
-    log_message "INFO" "No kind clusters found."
+    format-echo "INFO" "No kind clusters found."
     return
   fi
   
@@ -593,18 +593,18 @@ get_k3d_clusters() {
     return
   fi
   
-  log_message "INFO" "Getting k3d clusters..."
+  format-echo "INFO" "Getting k3d clusters..."
   
   # Get clusters as JSON
   local k3d_clusters=""
   if ! k3d_clusters=$(k3d cluster list -o json 2>/dev/null); then
-    log_message "WARNING" "Failed to get k3d clusters."
+    format-echo "WARNING" "Failed to get k3d clusters."
     return
   fi
   
   # Check if empty or invalid JSON
   if [[ -z "$k3d_clusters" || "$k3d_clusters" == "[]" ]]; then
-    log_message "INFO" "No k3d clusters found."
+    format-echo "INFO" "No k3d clusters found."
     return
   fi
   
@@ -753,8 +753,8 @@ parse_args() {
         case "$PROVIDER" in
           all|local|cloud|minikube|kind|k3d|eks|gke|aks) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: all, local, cloud, minikube, kind, k3d, eks, gke, aks"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: all, local, cloud, minikube, kind, k3d, eks, gke, aks"
             exit 1
             ;;
         esac
@@ -765,8 +765,8 @@ parse_args() {
         case "$FORMAT" in
           table|json|yaml) ;;
           *)
-            log_message "ERROR" "Unsupported format '${FORMAT}'."
-            log_message "ERROR" "Supported formats: table, json, yaml"
+            format-echo "ERROR" "Unsupported format '${FORMAT}'."
+            format-echo "ERROR" "Supported formats: table, json, yaml"
             exit 1
             ;;
         esac
@@ -793,7 +793,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -823,24 +823,24 @@ main() {
 
   print_with_separator "Kubernetes Clusters List Script"
   
-  log_message "INFO" "Listing Kubernetes clusters..."
+  format-echo "INFO" "Listing Kubernetes clusters..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Provider:   $PROVIDER"
-  log_message "INFO" "  Format:     $FORMAT"
-  log_message "INFO" "  Details:    $SHOW_DETAILS"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Provider:   $PROVIDER"
+  format-echo "INFO" "  Format:     $FORMAT"
+  format-echo "INFO" "  Details:    $SHOW_DETAILS"
   if [[ -n "$FILTER" ]]; then
-    log_message "INFO" "  Filter:     $FILTER"
+    format-echo "INFO" "  Filter:     $FILTER"
   fi
   if [[ -n "$REGION" ]]; then
-    log_message "INFO" "  Region:     $REGION"
+    format-echo "INFO" "  Region:     $REGION"
   fi
   if [[ -n "$PROFILE" ]]; then
-    log_message "INFO" "  Profile:    $PROFILE"
+    format-echo "INFO" "  Profile:    $PROFILE"
   fi
   
   # Check requirements
@@ -888,13 +888,13 @@ main() {
   #---------------------------------------------------------------------
   # Check if we found any clusters
   if [[ ${#CLUSTER_NAMES[@]} -eq 0 ]]; then
-    log_message "INFO" "No clusters found for the specified criteria."
+    format-echo "INFO" "No clusters found for the specified criteria."
     print_with_separator
     exit 0
   fi
   
   # Format and display output
-  log_message "INFO" "Found ${#CLUSTER_NAMES[@]} clusters."
+  format-echo "INFO" "Found ${#CLUSTER_NAMES[@]} clusters."
   print_with_separator "Cluster List"
   
   case "$FORMAT" in

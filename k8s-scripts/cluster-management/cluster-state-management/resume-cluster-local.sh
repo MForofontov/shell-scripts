@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -95,7 +95,7 @@ command_exists() {
 detect_provider() {
   local cluster="$1"
   
-  log_message "INFO" "Auto-detecting provider for cluster: $cluster"
+  format-echo "INFO" "Auto-detecting provider for cluster: $cluster"
   
   #---------------------------------------------------------------------
   # MINIKUBE DETECTION
@@ -103,7 +103,7 @@ detect_provider() {
   # Check for minikube clusters
   if command_exists minikube; then
     if minikube profile list 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: minikube"
+      format-echo "INFO" "Detected provider: minikube"
       echo "minikube"
       return 0
     fi
@@ -115,7 +115,7 @@ detect_provider() {
   # Check for kind clusters
   if command_exists kind; then
     if kind get clusters 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: kind"
+      format-echo "INFO" "Detected provider: kind"
       echo "kind"
       return 0
     fi
@@ -127,13 +127,13 @@ detect_provider() {
   # Check for k3d clusters
   if command_exists k3d; then
     if k3d cluster list 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: k3d"
+      format-echo "INFO" "Detected provider: k3d"
       echo "k3d"
       return 0
     fi
   fi
   
-  log_message "ERROR" "Could not detect provider for cluster: $cluster"
+  format-echo "ERROR" "Could not detect provider for cluster: $cluster"
   return 1
 }
 
@@ -145,7 +145,7 @@ find_state_file() {
   local cluster="$1"
   local provider="$2"
   
-  log_message "INFO" "Looking for state file for cluster '$cluster'"
+  format-echo "INFO" "Looking for state file for cluster '$cluster'"
   
   #---------------------------------------------------------------------
   # PROVIDER-SPECIFIC STATE FILES
@@ -154,7 +154,7 @@ find_state_file() {
   if [[ "$provider" != "auto" ]]; then
     local specific_file="$STATE_DIR/${cluster}-${provider}.state"
     if [[ -f "$specific_file" ]]; then
-      log_message "INFO" "Found state file: $specific_file"
+      format-echo "INFO" "Found state file: $specific_file"
       echo "$specific_file"
       return 0
     fi
@@ -167,7 +167,7 @@ find_state_file() {
   for p in minikube kind k3d; do
     local possible_file="$STATE_DIR/${cluster}-${p}.state"
     if [[ -f "$possible_file" ]]; then
-      log_message "INFO" "Found state file: $possible_file"
+      format-echo "INFO" "Found state file: $possible_file"
       echo "$possible_file"
       return 0
     fi
@@ -179,12 +179,12 @@ find_state_file() {
   # Try any file that matches the cluster name
   local found_file=$(find "$STATE_DIR" -name "${cluster}*.state" -type f | head -n 1)
   if [[ -n "$found_file" ]]; then
-    log_message "INFO" "Found state file: $found_file"
+    format-echo "INFO" "Found state file: $found_file"
     echo "$found_file"
     return 0
   fi
   
-  log_message "ERROR" "Could not find state file for cluster: $cluster"
+  format-echo "ERROR" "Could not find state file for cluster: $cluster"
   return 1
 }
 
@@ -197,14 +197,14 @@ resume_cluster() {
   local provider="$2"
   local state_file="$3"
   
-  log_message "INFO" "Resuming cluster '$cluster' using provider '$provider'"
+  format-echo "INFO" "Resuming cluster '$cluster' using provider '$provider'"
   
   #---------------------------------------------------------------------
   # STATE FILE VALIDATION
   #---------------------------------------------------------------------
   # Load the state file
   if [[ ! -f "$state_file" ]]; then
-    log_message "ERROR" "State file not found: $state_file"
+    format-echo "ERROR" "State file not found: $state_file"
     return 1
   fi
   
@@ -213,11 +213,11 @@ resume_cluster() {
   
   # Make sure the cluster info matches
   if [[ "$CLUSTER_NAME" != "$cluster" || "$PROVIDER" != "$provider" ]]; then
-    log_message "WARNING" "State file contains different cluster info: $CLUSTER_NAME/$PROVIDER"
+    format-echo "WARNING" "State file contains different cluster info: $CLUSTER_NAME/$PROVIDER"
     if [[ "$FORCE" != true ]]; then
       read -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         return 1
       fi
     fi
@@ -229,23 +229,23 @@ resume_cluster() {
   # Resume based on provider
   case "$provider" in
     minikube)
-      log_message "INFO" "Starting minikube cluster: $cluster"
+      format-echo "INFO" "Starting minikube cluster: $cluster"
       minikube start -p "$cluster"
       if [[ $? -ne 0 ]]; then
-        log_message "ERROR" "Failed to start minikube cluster: $cluster"
+        format-echo "ERROR" "Failed to start minikube cluster: $cluster"
         return 1
       fi
       ;;
       
     kind)
-      log_message "INFO" "Starting kind cluster: $cluster"
+      format-echo "INFO" "Starting kind cluster: $cluster"
       
       # Start the Docker containers
       local containers
       containers=$(docker ps -a --filter "name=kind-${cluster}" --format "{{.ID}}")
       
       if [[ -z "$containers" ]]; then
-        log_message "ERROR" "No Docker containers found for kind cluster: $cluster"
+        format-echo "ERROR" "No Docker containers found for kind cluster: $cluster"
         return 1
       fi
       
@@ -253,32 +253,32 @@ resume_cluster() {
         local container_name
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
-        log_message "INFO" "Starting container: $container_name"
+        format-echo "INFO" "Starting container: $container_name"
         docker start "$container_id" > /dev/null
         
         if [[ $? -ne 0 ]]; then
-          log_message "ERROR" "Failed to start container: $container_name"
+          format-echo "ERROR" "Failed to start container: $container_name"
           return 1
         fi
       done
       ;;
       
     k3d)
-      log_message "INFO" "Starting k3d cluster: $cluster"
+      format-echo "INFO" "Starting k3d cluster: $cluster"
       k3d cluster start "$cluster"
       if [[ $? -ne 0 ]]; then
-        log_message "ERROR" "Failed to start k3d cluster: $cluster"
+        format-echo "ERROR" "Failed to start k3d cluster: $cluster"
         return 1
       fi
       ;;
       
     *)
-      log_message "ERROR" "Unsupported provider: $provider"
+      format-echo "ERROR" "Unsupported provider: $provider"
       return 1
       ;;
   esac
   
-  log_message "SUCCESS" "Cluster '$cluster' resumed successfully"
+  format-echo "SUCCESS" "Cluster '$cluster' resumed successfully"
   return 0
 }
 
@@ -301,20 +301,20 @@ restore_kubeconfig() {
   # KUBECONFIG SETUP
   #---------------------------------------------------------------------
   if [[ "$KUBECONFIG_SAVED" == "true" && -n "$KUBECONFIG_PATH" ]]; then
-    log_message "INFO" "Restoring kubeconfig from: $KUBECONFIG_PATH"
+    format-echo "INFO" "Restoring kubeconfig from: $KUBECONFIG_PATH"
     
     if [[ -f "$KUBECONFIG_PATH" ]]; then
       export KUBECONFIG="$KUBECONFIG_PATH"
-      log_message "SUCCESS" "Kubeconfig restored"
-      log_message "INFO" "Run the following command to use this kubeconfig:"
-      log_message "INFO" "  export KUBECONFIG=$KUBECONFIG_PATH"
+      format-echo "SUCCESS" "Kubeconfig restored"
+      format-echo "INFO" "Run the following command to use this kubeconfig:"
+      format-echo "INFO" "  export KUBECONFIG=$KUBECONFIG_PATH"
       return 0
     else
-      log_message "WARNING" "Kubeconfig file not found: $KUBECONFIG_PATH"
+      format-echo "WARNING" "Kubeconfig file not found: $KUBECONFIG_PATH"
       return 1
     fi
   else
-    log_message "INFO" "No kubeconfig to restore"
+    format-echo "INFO" "No kubeconfig to restore"
     return 0
   fi
 }
@@ -335,11 +335,11 @@ restore_workloads() {
   fi
   
   if [[ -n "$WORKLOADS_BACKUP_DIR" && -d "$WORKLOADS_BACKUP_DIR" ]]; then
-    log_message "INFO" "Restoring workloads from backup: $WORKLOADS_BACKUP_DIR"
+    format-echo "INFO" "Restoring workloads from backup: $WORKLOADS_BACKUP_DIR"
     
     # Check if kubectl is available
     if ! command_exists kubectl; then
-      log_message "ERROR" "kubectl not found, cannot restore workloads"
+      format-echo "ERROR" "kubectl not found, cannot restore workloads"
       return 1
     fi
     
@@ -350,17 +350,17 @@ restore_workloads() {
     local backup_files=($(find "$WORKLOADS_BACKUP_DIR" -name "*.yaml" -type f))
     
     if [[ ${#backup_files[@]} -eq 0 ]]; then
-      log_message "WARNING" "No backup files found in $WORKLOADS_BACKUP_DIR"
+      format-echo "WARNING" "No backup files found in $WORKLOADS_BACKUP_DIR"
       return 1
     fi
     
     # Apply each file with confirmation
-    log_message "INFO" "Found ${#backup_files[@]} backup files"
+    format-echo "INFO" "Found ${#backup_files[@]} backup files"
     
     if [[ "$FORCE" != true ]]; then
       read -p "Do you want to restore all workloads? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Workload restoration skipped by user"
+        format-echo "INFO" "Workload restoration skipped by user"
         return 0
       fi
     fi
@@ -370,48 +370,48 @@ restore_workloads() {
     #---------------------------------------------------------------------
     # Apply namespace definitions first
     if [[ -f "$WORKLOADS_BACKUP_DIR/namespaces.yaml" ]]; then
-      log_message "INFO" "Restoring namespaces..."
+      format-echo "INFO" "Restoring namespaces..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/namespaces.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     # Apply ConfigMaps and Secrets next
     if [[ -f "$WORKLOADS_BACKUP_DIR/configmaps.yaml" ]]; then
-      log_message "INFO" "Restoring ConfigMaps..."
+      format-echo "INFO" "Restoring ConfigMaps..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/configmaps.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     if [[ -f "$WORKLOADS_BACKUP_DIR/secrets.yaml" ]]; then
-      log_message "INFO" "Restoring Secrets..."
+      format-echo "INFO" "Restoring Secrets..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/secrets.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     # Apply PVs and PVCs
     if [[ -f "$WORKLOADS_BACKUP_DIR/persistent-volumes.yaml" ]]; then
-      log_message "INFO" "Restoring Persistent Volumes..."
+      format-echo "INFO" "Restoring Persistent Volumes..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/persistent-volumes.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     if [[ -f "$WORKLOADS_BACKUP_DIR/persistent-volume-claims.yaml" ]]; then
-      log_message "INFO" "Restoring Persistent Volume Claims..."
+      format-echo "INFO" "Restoring Persistent Volume Claims..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/persistent-volume-claims.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     # Apply Services
     if [[ -f "$WORKLOADS_BACKUP_DIR/services.yaml" ]]; then
-      log_message "INFO" "Restoring Services..."
+      format-echo "INFO" "Restoring Services..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/services.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
     # Finally, apply Deployments and other workloads
     if [[ -f "$WORKLOADS_BACKUP_DIR/deployments.yaml" ]]; then
-      log_message "INFO" "Restoring Deployments..."
+      format-echo "INFO" "Restoring Deployments..."
       kubectl apply -f "$WORKLOADS_BACKUP_DIR/deployments.yaml" --timeout="${WAIT_TIMEOUT}s"
     fi
     
-    log_message "SUCCESS" "Workloads restored successfully"
+    format-echo "SUCCESS" "Workloads restored successfully"
     return 0
   else
-    log_message "INFO" "No workload backups to restore"
+    format-echo "INFO" "No workload backups to restore"
     return 0
   fi
 }
@@ -425,18 +425,18 @@ validate_cluster() {
   local provider="$2"
   
   if [[ "$SKIP_VALIDATION" == true ]]; then
-    log_message "INFO" "Validation skipped as requested"
+    format-echo "INFO" "Validation skipped as requested"
     return 0
   fi
   
-  log_message "INFO" "Validating cluster '$cluster' health..."
+  format-echo "INFO" "Validating cluster '$cluster' health..."
   
   #---------------------------------------------------------------------
   # VALIDATION PREREQUISITES
   #---------------------------------------------------------------------
   # Check if kubectl is available
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found, cannot validate cluster"
+    format-echo "ERROR" "kubectl not found, cannot validate cluster"
     return 1
   fi
   
@@ -468,20 +468,20 @@ validate_cluster() {
   fi
   
   if [[ "$context_set" != true ]]; then
-    log_message "WARNING" "Could not set kubectl context, validation may be incomplete"
+    format-echo "WARNING" "Could not set kubectl context, validation may be incomplete"
   fi
   
   # Wait for the cluster to stabilize
-  log_message "INFO" "Waiting for cluster to stabilize..."
+  format-echo "INFO" "Waiting for cluster to stabilize..."
   sleep 5
   
   #---------------------------------------------------------------------
   # API SERVER VALIDATION
   #---------------------------------------------------------------------
   # Check if kubectl can connect
-  log_message "INFO" "Testing API server connectivity..."
+  format-echo "INFO" "Testing API server connectivity..."
   if ! kubectl get nodes &>/dev/null; then
-    log_message "ERROR" "Cannot connect to Kubernetes API server"
+    format-echo "ERROR" "Cannot connect to Kubernetes API server"
     return 1
   fi
   
@@ -489,7 +489,7 @@ validate_cluster() {
   # NODE STATUS VALIDATION
   #---------------------------------------------------------------------
   # Check node status
-  log_message "INFO" "Checking node status..."
+  format-echo "INFO" "Checking node status..."
   local all_nodes_ready=true
   local nodes_output
   nodes_output=$(kubectl get nodes -o wide)
@@ -502,17 +502,17 @@ validate_cluster() {
   done <<< "$nodes_output"
   
   if [[ "$all_nodes_ready" != true ]]; then
-    log_message "WARNING" "Not all nodes are ready. Current status:"
+    format-echo "WARNING" "Not all nodes are ready. Current status:"
     echo "$nodes_output"
   else
-    log_message "SUCCESS" "All nodes are in Ready state"
+    format-echo "SUCCESS" "All nodes are in Ready state"
   fi
   
   #---------------------------------------------------------------------
   # SYSTEM PODS VALIDATION
   #---------------------------------------------------------------------
   # Check system pods
-  log_message "INFO" "Checking system pods..."
+  format-echo "INFO" "Checking system pods..."
   local all_system_pods_running=true
   local pods_output
   pods_output=$(kubectl get pods -n kube-system)
@@ -525,10 +525,10 @@ validate_cluster() {
   done <<< "$pods_output"
   
   if [[ "$all_system_pods_running" != true ]]; then
-    log_message "WARNING" "Not all system pods are running. Current status:"
+    format-echo "WARNING" "Not all system pods are running. Current status:"
     echo "$pods_output"
   else
-    log_message "SUCCESS" "All system pods are running"
+    format-echo "SUCCESS" "All system pods are running"
   fi
   
   #---------------------------------------------------------------------
@@ -536,7 +536,7 @@ validate_cluster() {
   #---------------------------------------------------------------------
   # Check for restored workloads if applicable
   if [[ "$RESTORE_WORKLOADS" == true ]]; then
-    log_message "INFO" "Checking restored workload status..."
+    format-echo "INFO" "Checking restored workload status..."
     local all_workloads_running=true
     local workload_output
     workload_output=$(kubectl get deployments --all-namespaces)
@@ -549,11 +549,11 @@ validate_cluster() {
     done <<< "$workload_output"
     
     if [[ "$all_workloads_running" != true ]]; then
-      log_message "WARNING" "Not all workloads are fully ready. Current status:"
+      format-echo "WARNING" "Not all workloads are fully ready. Current status:"
       kubectl get deployments --all-namespaces | grep -v "NAMESPACE" | 
         awk '{split($5,a,"/"); if (a[1] != a[2]) print $0}'
     else
-      log_message "SUCCESS" "All workloads are running"
+      format-echo "SUCCESS" "All workloads are running"
     fi
   fi
   
@@ -563,13 +563,13 @@ validate_cluster() {
   # Final health check
   if [[ "$all_nodes_ready" == true && "$all_system_pods_running" == true ]]; then
     if [[ "$RESTORE_WORKLOADS" == true && "$all_workloads_running" != true ]]; then
-      log_message "WARNING" "Cluster is running but some workloads aren't fully ready"
-      log_message "INFO" "You may need to check specific workloads manually"
+      format-echo "WARNING" "Cluster is running but some workloads aren't fully ready"
+      format-echo "INFO" "You may need to check specific workloads manually"
     else
-      log_message "SUCCESS" "Cluster is healthy and ready for use"
+      format-echo "SUCCESS" "Cluster is healthy and ready for use"
     fi
   else
-    log_message "WARNING" "Cluster is running but may have issues - check the warnings above"
+    format-echo "WARNING" "Cluster is running but may have issues - check the warnings above"
   fi
   
   return 0
@@ -626,7 +626,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -637,7 +637,7 @@ parse_args() {
   #---------------------------------------------------------------------
   # Validate required arguments
   if [[ -z "$CLUSTER_NAME" && -z "$STATE_FILE" ]]; then
-    log_message "ERROR" "Either cluster name (-n, --name) or state file (-s, --state-file) is required"
+    format-echo "ERROR" "Either cluster name (-n, --name) or state file (-s, --state-file) is required"
     usage
   fi
 }
@@ -665,7 +665,7 @@ main() {
   
   print_with_separator "Kubernetes Cluster Resume Script"
 
-  log_message "INFO" "Starting cluster resume process..."
+  format-echo "INFO" "Starting cluster resume process..."
   
   #---------------------------------------------------------------------
   # STATE FILE IDENTIFICATION
@@ -673,7 +673,7 @@ main() {
   # If state file is provided, extract cluster name and provider from it
   if [[ -n "$STATE_FILE" ]]; then
     if [[ ! -f "$STATE_FILE" ]]; then
-      log_message "ERROR" "Specified state file not found: $STATE_FILE"
+      format-echo "ERROR" "Specified state file not found: $STATE_FILE"
       exit 1
     fi
     
@@ -684,14 +684,14 @@ main() {
     CLUSTER_NAME="$CLUSTER_NAME"
     PROVIDER="$PROVIDER"
     
-    log_message "INFO" "Loaded state file: $STATE_FILE"
-    log_message "INFO" "Cluster: $CLUSTER_NAME, Provider: $PROVIDER"
+    format-echo "INFO" "Loaded state file: $STATE_FILE"
+    format-echo "INFO" "Cluster: $CLUSTER_NAME, Provider: $PROVIDER"
   else
     # Auto-detect provider if not specified
     if [[ "$PROVIDER" == "auto" ]]; then
       PROVIDER=$(detect_provider "$CLUSTER_NAME")
       if [[ $? -ne 0 ]]; then
-        log_message "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
+        format-echo "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
         exit 1
       fi
     fi
@@ -699,7 +699,7 @@ main() {
     # Find the state file
     STATE_FILE=$(find_state_file "$CLUSTER_NAME" "$PROVIDER")
     if [[ $? -ne 0 ]]; then
-      log_message "ERROR" "Failed to find state file for cluster '$CLUSTER_NAME'"
+      format-echo "ERROR" "Failed to find state file for cluster '$CLUSTER_NAME'"
       exit 1
     fi
   fi
@@ -708,22 +708,22 @@ main() {
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name:      $CLUSTER_NAME"
-  log_message "INFO" "  Provider:          $PROVIDER"
-  log_message "INFO" "  State File:        $STATE_FILE"
-  log_message "INFO" "  Wait Timeout:      $WAIT_TIMEOUT seconds"
-  log_message "INFO" "  Restore Workloads: $RESTORE_WORKLOADS"
-  log_message "INFO" "  Skip Validation:   $SKIP_VALIDATION"
-  log_message "INFO" "  Force:             $FORCE"
-  log_message "INFO" "  Verbose:           $VERBOSE"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name:      $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:          $PROVIDER"
+  format-echo "INFO" "  State File:        $STATE_FILE"
+  format-echo "INFO" "  Wait Timeout:      $WAIT_TIMEOUT seconds"
+  format-echo "INFO" "  Restore Workloads: $RESTORE_WORKLOADS"
+  format-echo "INFO" "  Skip Validation:   $SKIP_VALIDATION"
+  format-echo "INFO" "  Force:             $FORCE"
+  format-echo "INFO" "  Verbose:           $VERBOSE"
   
   #---------------------------------------------------------------------
   # RESUMING OPERATIONS
   #---------------------------------------------------------------------
   # Resume the cluster
   if ! resume_cluster "$CLUSTER_NAME" "$PROVIDER" "$STATE_FILE"; then
-    log_message "ERROR" "Failed to resume cluster"
+    format-echo "ERROR" "Failed to resume cluster"
     exit 1
   fi
   
@@ -733,7 +733,7 @@ main() {
   # Restore workloads if requested
   if [[ "$RESTORE_WORKLOADS" == true ]]; then
     if ! restore_workloads "$STATE_FILE"; then
-      log_message "WARNING" "Issues while restoring workloads"
+      format-echo "WARNING" "Issues while restoring workloads"
     fi
   fi
   

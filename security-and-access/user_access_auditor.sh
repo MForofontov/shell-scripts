@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -51,14 +51,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -66,8 +66,8 @@ parse_args() {
 }
 
 audit_user_access() {
-  log_message "INFO" "Listing system users and their details..."
-  log_message "INFO" "Username:Home Directory:Shell"
+  format-echo "INFO" "Listing system users and their details..."
+  format-echo "INFO" "Username:Home Directory:Shell"
   cat /etc/passwd | awk -F: '{ print $1 ":" $6 ":" $7 }'
 }
 
@@ -84,12 +84,12 @@ main() {
   fi
 
   print_with_separator "User Access Auditor Script"
-  log_message "INFO" "Starting User Access Auditor Script..."
+  format-echo "INFO" "Starting User Access Auditor Script..."
 
   if audit_user_access; then
-    log_message "SUCCESS" "User access audit completed successfully."
+    format-echo "SUCCESS" "User access audit completed successfully."
   else
-    log_message "ERROR" "Failed to audit user access."
+    format-echo "ERROR" "Failed to audit user access."
     print_with_separator "End of User Access Auditor Script"
     exit 1
   fi

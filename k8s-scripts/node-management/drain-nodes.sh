@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -104,21 +104,21 @@ command_exists() {
 
 # Check requirements
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
-    log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
+    format-echo "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -130,17 +130,17 @@ check_requirements() {
 # Get nodes by selector
 get_nodes_by_selector() {
   local selector="$1"
-  log_message "INFO" "Getting nodes with selector: $selector"
+  format-echo "INFO" "Getting nodes with selector: $selector"
   
   local selected_nodes
   selected_nodes=$(kubectl get nodes -l "$selector" -o name | cut -d'/' -f2)
   
   if [[ -z "$selected_nodes" ]]; then
-    log_message "ERROR" "No nodes found matching selector: $selector"
+    format-echo "ERROR" "No nodes found matching selector: $selector"
     exit 1
   fi
   
-  log_message "INFO" "Selected nodes: $selected_nodes"
+  format-echo "INFO" "Selected nodes: $selected_nodes"
   echo "$selected_nodes"
 }
 
@@ -149,10 +149,10 @@ get_nodes_by_selector() {
 #---------------------------------------------------------------------
 # Validate node names
 validate_nodes() {
-  log_message "INFO" "Validating node names..."
+  format-echo "INFO" "Validating node names..."
   
   if [[ ${#NODES[@]} -eq 0 ]]; then
-    log_message "ERROR" "No nodes specified."
+    format-echo "ERROR" "No nodes specified."
     usage
   fi
   
@@ -162,24 +162,24 @@ validate_nodes() {
   
   for node in "${NODES[@]}"; do
     if ! echo "$available_nodes" | grep -q "^$node$"; then
-      log_message "ERROR" "Node not found: $node"
+      format-echo "ERROR" "Node not found: $node"
       continue
     fi
     
     # Check if node is already cordoned
     if kubectl get node "$node" -o jsonpath='{.spec.unschedulable}' 2>/dev/null | grep -q "true"; then
-      log_message "WARNING" "Node is already cordoned: $node"
+      format-echo "WARNING" "Node is already cordoned: $node"
     fi
     
     valid_count=$((valid_count + 1))
   done
   
   if [[ $valid_count -eq 0 ]]; then
-    log_message "ERROR" "No valid nodes found."
+    format-echo "ERROR" "No valid nodes found."
     exit 1
   fi
   
-  log_message "SUCCESS" "Found $valid_count valid nodes."
+  format-echo "SUCCESS" "Found $valid_count valid nodes."
 }
 
 #=====================================================================
@@ -191,7 +191,7 @@ validate_nodes() {
 # Check pods on node
 check_pods_on_node() {
   local node="$1"
-  log_message "INFO" "Checking pods on node: $node"
+  format-echo "INFO" "Checking pods on node: $node"
   
   local pod_count
   local pod_filter=""
@@ -211,22 +211,22 @@ check_pods_on_node() {
   # Count pods on node
   pod_count=$(kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | wc -l)
   
-  log_message "INFO" "Found $pod_count pods on node $node"
+  format-echo "INFO" "Found $pod_count pods on node $node"
   
   #---------------------------------------------------------------------
   # DETECT CRITICAL PODS
   #---------------------------------------------------------------------
   # Show critical pods that might prevent drain
-  log_message "INFO" "Checking for critical pods (no controllers)..."
+  format-echo "INFO" "Checking for critical pods (no controllers)..."
   local critical_pods
   critical_pods=$(kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | awk '{print $1 " " $2}' | grep "1/1" | wc -l)
   
   if [[ $critical_pods -gt 0 && "$FORCE" != true ]]; then
-    log_message "WARNING" "Found $critical_pods critical pods on node $node"
+    format-echo "WARNING" "Found $critical_pods critical pods on node $node"
     kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME"
     
     if [[ "$DRY_RUN" != true ]]; then
-      log_message "WARNING" "Some pods may not be evicted (use --force to override)"
+      format-echo "WARNING" "Some pods may not be evicted (use --force to override)"
     fi
   fi
   
@@ -242,18 +242,18 @@ check_pods_on_node() {
 # Cordon a node
 cordon_node() {
   local node="$1"
-  log_message "INFO" "Cordoning node: $node"
+  format-echo "INFO" "Cordoning node: $node"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would cordon node: $node"
+    format-echo "DRY-RUN" "Would cordon node: $node"
     return 0
   fi
   
   if kubectl cordon "$node"; then
-    log_message "SUCCESS" "Node $node cordoned successfully."
+    format-echo "SUCCESS" "Node $node cordoned successfully."
     return 0
   else
-    log_message "ERROR" "Failed to cordon node $node."
+    format-echo "ERROR" "Failed to cordon node $node."
     return 1
   fi
 }
@@ -264,18 +264,18 @@ cordon_node() {
 # Uncordon a node
 uncordon_node() {
   local node="$1"
-  log_message "INFO" "Uncordoning node: $node"
+  format-echo "INFO" "Uncordoning node: $node"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would uncordon node: $node"
+    format-echo "DRY-RUN" "Would uncordon node: $node"
     return 0
   fi
   
   if kubectl uncordon "$node"; then
-    log_message "SUCCESS" "Node $node uncordoned successfully."
+    format-echo "SUCCESS" "Node $node uncordoned successfully."
     return 0
   else
-    log_message "ERROR" "Failed to uncordon node $node."
+    format-echo "ERROR" "Failed to uncordon node $node."
     return 1
   fi
 }
@@ -286,7 +286,7 @@ uncordon_node() {
 # Drain a node
 drain_node() {
   local node="$1"
-  log_message "INFO" "Draining node: $node"
+  format-echo "INFO" "Draining node: $node"
   
   #---------------------------------------------------------------------
   # PREPARE DRAIN COMMAND
@@ -326,11 +326,11 @@ drain_node() {
   
   if [[ "$DRY_RUN" == true ]]; then
     drain_cmd+=" --dry-run"
-    log_message "DRY-RUN" "Would run: $drain_cmd"
+    format-echo "DRY-RUN" "Would run: $drain_cmd"
     return 0
   fi
   
-  log_message "INFO" "Running: $drain_cmd"
+  format-echo "INFO" "Running: $drain_cmd"
   
   #---------------------------------------------------------------------
   # EXECUTE AND MONITOR DRAIN
@@ -355,14 +355,14 @@ drain_node() {
     remaining_time=$((end_time - current_time))
     
     if [[ $current_time -ge $end_time ]]; then
-      log_message "ERROR" "Drain operation timed out after ${TIMEOUT} seconds."
+      format-echo "ERROR" "Drain operation timed out after ${TIMEOUT} seconds."
       kill -9 $drain_pid 2>/dev/null
       return 1
     fi
     
     # Count remaining pods
     remaining_pods=$(kubectl get pods --all-namespaces -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | wc -l)
-    log_message "INFO" "Draining in progress: $remaining_pods pods remaining (${elapsed_time}s elapsed, ${remaining_time}s remaining)"
+    format-echo "INFO" "Draining in progress: $remaining_pods pods remaining (${elapsed_time}s elapsed, ${remaining_time}s remaining)"
     
     sleep $POLL_INTERVAL
   done
@@ -375,10 +375,10 @@ drain_node() {
   local drain_status=$?
   
   if [[ $drain_status -eq 0 ]]; then
-    log_message "SUCCESS" "Node $node drained successfully."
+    format-echo "SUCCESS" "Node $node drained successfully."
     return 0
   else
-    log_message "ERROR" "Failed to drain node $node (exit code: $drain_status)."
+    format-echo "ERROR" "Failed to drain node $node (exit code: $drain_status)."
     return 1
   fi
 }
@@ -411,18 +411,18 @@ process_node() {
   # Schedule uncordon if requested
   if [[ "$UNCORDON_AFTER" == true ]]; then
     if [[ "$UNCORDON_DELAY" -gt 0 ]]; then
-      log_message "INFO" "Will uncordon node $node after ${UNCORDON_DELAY} seconds."
+      format-echo "INFO" "Will uncordon node $node after ${UNCORDON_DELAY} seconds."
       
       if [[ "$DRY_RUN" != true ]]; then
         # Schedule uncordon in background
         (
           sleep $UNCORDON_DELAY
-          log_message "INFO" "Delay complete, uncordoning node $node"
+          format-echo "INFO" "Delay complete, uncordoning node $node"
           uncordon_node "$node"
         ) &
-        log_message "INFO" "Uncordon scheduled in background (PID: $!)."
+        format-echo "INFO" "Uncordon scheduled in background (PID: $!)."
       else
-        log_message "DRY-RUN" "Would uncordon node $node after ${UNCORDON_DELAY} seconds."
+        format-echo "DRY-RUN" "Would uncordon node $node after ${UNCORDON_DELAY} seconds."
       fi
     else
       # Uncordon immediately
@@ -506,7 +506,7 @@ parse_args() {
         shift 2
         ;;
       -*)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
       *)
@@ -519,7 +519,7 @@ parse_args() {
   
   # If nodes are still empty after processing selectors, show usage
   if [[ ${#NODES[@]} -eq 0 && -z "$SELECTOR" ]]; then
-    log_message "ERROR" "No nodes specified via arguments or selector."
+    format-echo "ERROR" "No nodes specified via arguments or selector."
     usage
   fi
 }
@@ -547,37 +547,37 @@ main() {
   
   print_with_separator "Kubernetes Node Drain Script"
   
-  log_message "INFO" "Starting node drain process..."
+  format-echo "INFO" "Starting node drain process..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Nodes:               ${NODES[*]}"
-  log_message "INFO" "  Cordon Only:         $CORDON_ONLY"
-  log_message "INFO" "  Ignore DaemonSets:   $IGNORE_DAEMONSETS"
-  log_message "INFO" "  Delete Local Data:   $DELETE_LOCAL_DATA"
-  log_message "INFO" "  Force:               $FORCE"
-  log_message "INFO" "  Timeout:             ${TIMEOUT}s"
-  log_message "INFO" "  Poll Interval:       ${POLL_INTERVAL}s"
-  log_message "INFO" "  Dry Run:             $DRY_RUN"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Nodes:               ${NODES[*]}"
+  format-echo "INFO" "  Cordon Only:         $CORDON_ONLY"
+  format-echo "INFO" "  Ignore DaemonSets:   $IGNORE_DAEMONSETS"
+  format-echo "INFO" "  Delete Local Data:   $DELETE_LOCAL_DATA"
+  format-echo "INFO" "  Force:               $FORCE"
+  format-echo "INFO" "  Timeout:             ${TIMEOUT}s"
+  format-echo "INFO" "  Poll Interval:       ${POLL_INTERVAL}s"
+  format-echo "INFO" "  Dry Run:             $DRY_RUN"
   
   if [[ -n "$NAMESPACE_FILTER" ]]; then
-    log_message "INFO" "  Namespace Filter:    $NAMESPACE_FILTER"
+    format-echo "INFO" "  Namespace Filter:    $NAMESPACE_FILTER"
   fi
   
   if [[ -n "$SELECTOR_FILTER" ]]; then
-    log_message "INFO" "  Pod Selector:        $SELECTOR_FILTER"
+    format-echo "INFO" "  Pod Selector:        $SELECTOR_FILTER"
   fi
   
   if [[ "$MAX_UNAVAILABLE_PODS" -gt 0 ]]; then
-    log_message "INFO" "  Max Unavailable:     $MAX_UNAVAILABLE_PODS"
+    format-echo "INFO" "  Max Unavailable:     $MAX_UNAVAILABLE_PODS"
   fi
   
   if [[ "$UNCORDON_AFTER" == true ]]; then
-    log_message "INFO" "  Uncordon After:      Yes"
-    log_message "INFO" "  Uncordon Delay:      ${UNCORDON_DELAY}s"
+    format-echo "INFO" "  Uncordon After:      Yes"
+    format-echo "INFO" "  Uncordon Delay:      ${UNCORDON_DELAY}s"
   fi
   
   #---------------------------------------------------------------------
@@ -594,11 +594,11 @@ main() {
   #---------------------------------------------------------------------
   # Confirm operation if not a dry run
   if [[ "$DRY_RUN" != true ]]; then
-    log_message "WARNING" "You are about to ${CORDON_ONLY:+cordon}${CORDON_ONLY:-drain} the following nodes: ${NODES[*]}"
-    log_message "WARNING" "This might cause pod disruption and service unavailability."
+    format-echo "WARNING" "You are about to ${CORDON_ONLY:+cordon}${CORDON_ONLY:-drain} the following nodes: ${NODES[*]}"
+    format-echo "WARNING" "This might cause pod disruption and service unavailability."
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -611,7 +611,7 @@ main() {
   local failed_count=0
   
   for node in "${NODES[@]}"; do
-    log_message "INFO" "Processing node: $node"
+    format-echo "INFO" "Processing node: $node"
     
     if process_node "$node"; then
       success_count=$((success_count + 1))

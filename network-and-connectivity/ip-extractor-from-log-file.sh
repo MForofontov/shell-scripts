@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -54,7 +54,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -66,7 +66,7 @@ parse_args() {
           INPUT_LOG="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -76,7 +76,7 @@ parse_args() {
 
 extract_ips() {
   if ! grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "$INPUT_LOG" | sort -u; then
-    log_message "ERROR" "Failed to extract IP addresses."
+    format-echo "ERROR" "Failed to extract IP addresses."
     return 1
   fi
   return 0
@@ -95,27 +95,27 @@ main() {
   fi
 
   print_with_separator "IP Extractor Script"
-  log_message "INFO" "Starting IP Extractor Script..."
+  format-echo "INFO" "Starting IP Extractor Script..."
 
   # Validate input log file
   if [ -z "$INPUT_LOG" ]; then
-    log_message "ERROR" "Input log file is required."
+    format-echo "ERROR" "Input log file is required."
     print_with_separator "End of IP Extractor Script"
     usage
   fi
 
   if [ ! -f "$INPUT_LOG" ]; then
-    log_message "ERROR" "Input log file $INPUT_LOG does not exist."
+    format-echo "ERROR" "Input log file $INPUT_LOG does not exist."
     print_with_separator "End of IP Extractor Script"
     exit 1
   fi
 
-  log_message "INFO" "Extracting unique IP addresses from $INPUT_LOG..."
+  format-echo "INFO" "Extracting unique IP addresses from $INPUT_LOG..."
 
   if extract_ips; then
-    log_message "SUCCESS" "IP extraction completed successfully."
+    format-echo "SUCCESS" "IP extraction completed successfully."
   else
-    log_message "ERROR" "IP extraction failed."
+    format-echo "ERROR" "IP extraction failed."
     print_with_separator "End of IP Extractor Script"
     exit 1
   fi

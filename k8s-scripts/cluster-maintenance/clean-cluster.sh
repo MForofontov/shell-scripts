@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -106,21 +106,21 @@ command_exists() {
 #=====================================================================
 # Check requirements
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
-    log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
+    format-echo "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -128,25 +128,25 @@ check_requirements() {
 #=====================================================================
 # Auto-detect provider
 detect_provider() {
-  log_message "INFO" "Auto-detecting Kubernetes cluster provider..."
+  format-echo "INFO" "Auto-detecting Kubernetes cluster provider..."
   
   # Check if kubeadm is installed and configured
   if command_exists kubeadm && kubeadm config view &>/dev/null; then
-    log_message "INFO" "Detected provider: kubeadm"
+    format-echo "INFO" "Detected provider: kubeadm"
     echo "kubeadm"
     return 0
   fi
   
   # Check for k3s
   if command_exists k3s || [ -f "/etc/systemd/system/k3s.service" ]; then
-    log_message "INFO" "Detected provider: k3s"
+    format-echo "INFO" "Detected provider: k3s"
     echo "k3s"
     return 0
   fi
   
   # Check for RKE
   if command_exists rke && [ -f "./cluster.yml" ]; then
-    log_message "INFO" "Detected provider: rke"
+    format-echo "INFO" "Detected provider: rke"
     echo "rke"
     return 0
   fi
@@ -154,24 +154,24 @@ detect_provider() {
   # Check for managed providers (this is approximate)
   context=$(kubectl config current-context 2>/dev/null)
   if [[ "$context" == *"eks"* ]]; then
-    log_message "INFO" "Detected provider: eks"
+    format-echo "INFO" "Detected provider: eks"
     echo "eks"
     return 0
   elif [[ "$context" == *"gke"* ]]; then
-    log_message "INFO" "Detected provider: gke"
+    format-echo "INFO" "Detected provider: gke"
     echo "gke"
     return 0
   elif [[ "$context" == *"aks"* ]]; then
-    log_message "INFO" "Detected provider: aks"
+    format-echo "INFO" "Detected provider: aks"
     echo "aks"
     return 0
   elif [[ "$context" == *"openshift"* ]]; then
-    log_message "INFO" "Detected provider: openshift"
+    format-echo "INFO" "Detected provider: openshift"
     echo "openshift"
     return 0
   fi
   
-  log_message "WARNING" "Could not detect provider automatically, using generic approach"
+  format-echo "WARNING" "Could not detect provider automatically, using generic approach"
   echo "generic"
   return 0
 }
@@ -247,8 +247,8 @@ get_preserved_namespaces() {
   fi
   
   if [[ "$VERBOSE" == true ]]; then
-    log_message "INFO" "Namespaces to preserve: ${ns_to_preserve[*]}"
-    log_message "INFO" "Namespace patterns to preserve: ${PRESERVE_PATTERNS[*]}"
+    format-echo "INFO" "Namespaces to preserve: ${ns_to_preserve[*]}"
+    format-echo "INFO" "Namespace patterns to preserve: ${PRESERVE_PATTERNS[*]}"
   fi
   
   echo "${ns_to_preserve[@]}"
@@ -294,10 +294,10 @@ get_namespaces_to_clean() {
   # Determine which namespaces to clean
   for ns in "${all_ns[@]}"; do
     if should_preserve_namespace "$ns" "${preserved_ns[*]}"; then
-      log_message "INFO" "Namespace $ns will be preserved"
+      format-echo "INFO" "Namespace $ns will be preserved"
     else
       ns_to_clean+=("$ns")
-      log_message "INFO" "Namespace $ns will be cleaned"
+      format-echo "INFO" "Namespace $ns will be cleaned"
     fi
   done
   
@@ -311,10 +311,10 @@ get_namespaces_to_clean() {
 clean_namespace_workloads() {
   local namespace="$1"
   
-  log_message "INFO" "Cleaning workloads in namespace: $namespace"
+  format-echo "INFO" "Cleaning workloads in namespace: $namespace"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would delete all deployments, statefulsets, daemonsets, jobs, cronjobs, pods in namespace $namespace"
+    format-echo "DRY-RUN" "Would delete all deployments, statefulsets, daemonsets, jobs, cronjobs, pods in namespace $namespace"
     return 0
   fi
   
@@ -322,78 +322,78 @@ clean_namespace_workloads() {
   # CONTROLLERS AND WORKLOADS
   #---------------------------------------------------------------------
   # Delete deployments
-  log_message "INFO" "Deleting deployments in $namespace"
-  kubectl delete deployments --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all deployments in $namespace"
+  format-echo "INFO" "Deleting deployments in $namespace"
+  kubectl delete deployments --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all deployments in $namespace"
   
   # Delete statefulsets
-  log_message "INFO" "Deleting statefulsets in $namespace"
-  kubectl delete statefulsets --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all statefulsets in $namespace"
+  format-echo "INFO" "Deleting statefulsets in $namespace"
+  kubectl delete statefulsets --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all statefulsets in $namespace"
   
   # Delete daemonsets
-  log_message "INFO" "Deleting daemonsets in $namespace"
-  kubectl delete daemonsets --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all daemonsets in $namespace"
+  format-echo "INFO" "Deleting daemonsets in $namespace"
+  kubectl delete daemonsets --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all daemonsets in $namespace"
   
   # Delete jobs
-  log_message "INFO" "Deleting jobs in $namespace"
-  kubectl delete jobs --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all jobs in $namespace"
+  format-echo "INFO" "Deleting jobs in $namespace"
+  kubectl delete jobs --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all jobs in $namespace"
   
   # Delete cronjobs
-  log_message "INFO" "Deleting cronjobs in $namespace"
-  kubectl delete cronjobs --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all cronjobs in $namespace"
+  format-echo "INFO" "Deleting cronjobs in $namespace"
+  kubectl delete cronjobs --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all cronjobs in $namespace"
   
   # Delete any remaining pods
-  log_message "INFO" "Deleting remaining pods in $namespace"
-  kubectl delete pods --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all pods in $namespace"
+  format-echo "INFO" "Deleting remaining pods in $namespace"
+  kubectl delete pods --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all pods in $namespace"
   
   #---------------------------------------------------------------------
   # CONFIGURATION RESOURCES
   #---------------------------------------------------------------------
   # Delete configmaps if requested
   if [[ "$CLEAN_CONFIGMAPS" == true ]]; then
-    log_message "INFO" "Deleting configmaps in $namespace"
-    kubectl delete configmaps --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all configmaps in $namespace"
+    format-echo "INFO" "Deleting configmaps in $namespace"
+    kubectl delete configmaps --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all configmaps in $namespace"
   fi
   
   # Delete secrets if requested
   if [[ "$CLEAN_SECRETS" == true ]]; then
-    log_message "INFO" "Deleting secrets in $namespace"
-    kubectl delete secrets --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all secrets in $namespace"
+    format-echo "INFO" "Deleting secrets in $namespace"
+    kubectl delete secrets --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all secrets in $namespace"
   fi
   
   #---------------------------------------------------------------------
   # NETWORK RESOURCES
   #---------------------------------------------------------------------
   # Delete services
-  log_message "INFO" "Deleting services in $namespace"
+  format-echo "INFO" "Deleting services in $namespace"
   # Preserve kubernetes service in default namespace
   if [[ "$namespace" == "default" ]]; then
-    kubectl get services -n default -o name | grep -v "service/kubernetes" | xargs -r kubectl delete -n default --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete services in default namespace"
+    kubectl get services -n default -o name | grep -v "service/kubernetes" | xargs -r kubectl delete -n default --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete services in default namespace"
   else
-    kubectl delete services --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all services in $namespace"
+    kubectl delete services --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all services in $namespace"
   fi
   
   # Delete ingresses
-  log_message "INFO" "Deleting ingresses in $namespace"
+  format-echo "INFO" "Deleting ingresses in $namespace"
   kubectl delete ingress --all -n "$namespace" --timeout="${TIMEOUT}s" 2>/dev/null || true
   
   # Delete network policies
-  log_message "INFO" "Deleting network policies in $namespace"
+  format-echo "INFO" "Deleting network policies in $namespace"
   kubectl delete networkpolicies --all -n "$namespace" --timeout="${TIMEOUT}s" 2>/dev/null || true
   
   #---------------------------------------------------------------------
   # AUTOSCALING AND STORAGE
   #---------------------------------------------------------------------
   # Delete HPA
-  log_message "INFO" "Deleting horizontal pod autoscalers in $namespace"
+  format-echo "INFO" "Deleting horizontal pod autoscalers in $namespace"
   kubectl delete hpa --all -n "$namespace" --timeout="${TIMEOUT}s" 2>/dev/null || true
   
   # Delete PVCs if requested
   if [[ "$KEEP_PVCS" != true ]]; then
-    log_message "INFO" "Deleting persistent volume claims in $namespace"
-    kubectl delete pvc --all -n "$namespace" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete all PVCs in $namespace"
+    format-echo "INFO" "Deleting persistent volume claims in $namespace"
+    kubectl delete pvc --all -n "$namespace" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete all PVCs in $namespace"
   fi
   
-  log_message "SUCCESS" "Cleaned workloads in namespace $namespace"
+  format-echo "SUCCESS" "Cleaned workloads in namespace $namespace"
   return 0
 }
 
@@ -404,32 +404,32 @@ clean_namespace_workloads() {
 delete_namespace() {
   local namespace="$1"
   
-  log_message "INFO" "Deleting namespace: $namespace"
+  format-echo "INFO" "Deleting namespace: $namespace"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would delete namespace $namespace"
+    format-echo "DRY-RUN" "Would delete namespace $namespace"
     return 0
   fi
   
   # Delete the namespace
   if kubectl delete namespace "$namespace" --timeout="${TIMEOUT}s"; then
-    log_message "SUCCESS" "Deleted namespace $namespace"
+    format-echo "SUCCESS" "Deleted namespace $namespace"
     return 0
   else
-    log_message "ERROR" "Failed to delete namespace $namespace"
+    format-echo "ERROR" "Failed to delete namespace $namespace"
     
     # Try a force delete if it failed
-    log_message "INFO" "Attempting force delete of namespace $namespace"
+    format-echo "INFO" "Attempting force delete of namespace $namespace"
     kubectl get namespace "$namespace" -o json | \
       tr -d "\n" | sed "s/\"finalizers\": \[[^]]\+\]/\"finalizers\": []/" | \
       kubectl replace --raw "/api/v1/namespaces/$namespace/finalize" -f -
     
     # Check if namespace is gone
     if ! kubectl get namespace "$namespace" &>/dev/null; then
-      log_message "SUCCESS" "Force deleted namespace $namespace"
+      format-echo "SUCCESS" "Force deleted namespace $namespace"
       return 0
     else
-      log_message "ERROR" "Failed to force delete namespace $namespace"
+      format-echo "ERROR" "Failed to force delete namespace $namespace"
       return 1
     fi
   fi
@@ -440,14 +440,14 @@ delete_namespace() {
 #---------------------------------------------------------------------
 # Clean all workloads
 clean_workloads() {
-  log_message "INFO" "Cleaning all non-system workloads..."
+  format-echo "INFO" "Cleaning all non-system workloads..."
   
   # Get namespaces to clean
   local ns_to_clean=()
   IFS=" " read -r -a ns_to_clean <<< "$(get_namespaces_to_clean)"
   
   if [[ ${#ns_to_clean[@]} -eq 0 ]]; then
-    log_message "INFO" "No namespaces to clean"
+    format-echo "INFO" "No namespaces to clean"
     return 0
   fi
   
@@ -463,7 +463,7 @@ clean_workloads() {
     fi
   done
   
-  log_message "SUCCESS" "All non-system workloads cleaned"
+  format-echo "SUCCESS" "All non-system workloads cleaned"
   return 0
 }
 
@@ -473,14 +473,14 @@ clean_workloads() {
 # Clean persistent volumes
 clean_volumes() {
   if [[ "$CLEAN_VOLUMES" != true ]]; then
-    log_message "INFO" "Skipping volume cleaning"
+    format-echo "INFO" "Skipping volume cleaning"
     return 0
   fi
   
-  log_message "INFO" "Cleaning persistent volumes..."
+  format-echo "INFO" "Cleaning persistent volumes..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would clean all persistent volumes not bound to preserved namespaces"
+    format-echo "DRY-RUN" "Would clean all persistent volumes not bound to preserved namespaces"
     return 0
   fi
   
@@ -489,7 +489,7 @@ clean_volumes() {
   readarray -t pvs <<< "$(kubectl get pv -o name | cut -d/ -f2)"
   
   if [[ ${#pvs[@]} -eq 0 ]]; then
-    log_message "INFO" "No persistent volumes found"
+    format-echo "INFO" "No persistent volumes found"
     return 0
   fi
   
@@ -505,9 +505,9 @@ clean_volumes() {
     
     if [[ -z "$claim_info" || "$claim_info" == "/" ]]; then
       # Unbound PV
-      log_message "INFO" "PV $pv is unbound, deleting"
+      format-echo "INFO" "PV $pv is unbound, deleting"
       if [[ "$DRY_RUN" != true ]]; then
-        kubectl delete pv "$pv" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete PV $pv"
+        kubectl delete pv "$pv" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete PV $pv"
       fi
     else
       # Extract namespace
@@ -516,20 +516,20 @@ clean_volumes() {
       
       # Check if namespace should be preserved
       if should_preserve_namespace "$ns" "${preserved_ns[*]}"; then
-        log_message "INFO" "Preserving PV $pv bound to claim in namespace $ns"
+        format-echo "INFO" "Preserving PV $pv bound to claim in namespace $ns"
       else
-        log_message "INFO" "Deleting PV $pv bound to claim in namespace $ns"
+        format-echo "INFO" "Deleting PV $pv bound to claim in namespace $ns"
         if [[ "$DRY_RUN" != true ]]; then
           # Patch PV to remove finalizer
           kubectl patch pv "$pv" -p '{"metadata":{"finalizers":null}}' --type=merge || true
           # Delete PV
-          kubectl delete pv "$pv" --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete PV $pv"
+          kubectl delete pv "$pv" --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete PV $pv"
         fi
       fi
     fi
   done
   
-  log_message "SUCCESS" "Persistent volumes cleaned"
+  format-echo "SUCCESS" "Persistent volumes cleaned"
   return 0
 }
 
@@ -539,14 +539,14 @@ clean_volumes() {
 # Clean custom configurations
 clean_configurations() {
   if [[ "$CLEAN_CONFIG" != true ]]; then
-    log_message "INFO" "Skipping configuration cleaning"
+    format-echo "INFO" "Skipping configuration cleaning"
     return 0
   fi
   
-  log_message "INFO" "Cleaning custom configurations..."
+  format-echo "INFO" "Cleaning custom configurations..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would clean custom configurations like ClusterRoles, ClusterRoleBindings, StorageClasses, etc."
+    format-echo "DRY-RUN" "Would clean custom configurations like ClusterRoles, ClusterRoleBindings, StorageClasses, etc."
     return 0
   fi
   
@@ -554,50 +554,50 @@ clean_configurations() {
   # STORAGE RESOURCES
   #---------------------------------------------------------------------
   # Clean StorageClasses (except default)
-  log_message "INFO" "Cleaning non-default StorageClasses"
+  format-echo "INFO" "Cleaning non-default StorageClasses"
   local default_sc
   default_sc=$(kubectl get storageclass -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
   
   if [[ -n "$default_sc" ]]; then
-    log_message "INFO" "Preserving default StorageClass: $default_sc"
-    kubectl get storageclass -o name | grep -v "storageclass.storage.k8s.io/$default_sc" | xargs -r kubectl delete --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete some StorageClasses"
+    format-echo "INFO" "Preserving default StorageClass: $default_sc"
+    kubectl get storageclass -o name | grep -v "storageclass.storage.k8s.io/$default_sc" | xargs -r kubectl delete --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete some StorageClasses"
   else
-    log_message "INFO" "No default StorageClass found"
+    format-echo "INFO" "No default StorageClass found"
   fi
   
   #---------------------------------------------------------------------
   # RBAC RESOURCES
   #---------------------------------------------------------------------
   # Clean ClusterRoles (except system ones)
-  log_message "INFO" "Cleaning custom ClusterRoles"
+  format-echo "INFO" "Cleaning custom ClusterRoles"
   kubectl get clusterrole -o name | grep -v "clusterrole.rbac.authorization.k8s.io/system:" | \
   grep -v "clusterrole.rbac.authorization.k8s.io/cluster-admin" | \
   grep -v "clusterrole.rbac.authorization.k8s.io/admin" | \
   grep -v "clusterrole.rbac.authorization.k8s.io/edit" | \
   grep -v "clusterrole.rbac.authorization.k8s.io/view" | \
-  xargs -r kubectl delete --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete some ClusterRoles"
+  xargs -r kubectl delete --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete some ClusterRoles"
   
   # Clean ClusterRoleBindings (except system ones)
-  log_message "INFO" "Cleaning custom ClusterRoleBindings"
+  format-echo "INFO" "Cleaning custom ClusterRoleBindings"
   kubectl get clusterrolebinding -o name | grep -v "clusterrolebinding.rbac.authorization.k8s.io/system:" | \
   grep -v "clusterrolebinding.rbac.authorization.k8s.io/cluster-admin" | \
-  xargs -r kubectl delete --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete some ClusterRoleBindings"
+  xargs -r kubectl delete --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete some ClusterRoleBindings"
   
   #---------------------------------------------------------------------
   # ADMISSION CONTROL RESOURCES
   #---------------------------------------------------------------------
   # Clean custom Webhooks
-  log_message "INFO" "Cleaning MutatingWebhookConfigurations"
+  format-echo "INFO" "Cleaning MutatingWebhookConfigurations"
   kubectl get mutatingwebhookconfiguration -o name | grep -v "mutatingwebhookconfiguration.admissionregistration.k8s.io/pod-policy.kubernetes.io" | \
   xargs -r kubectl delete --timeout="${TIMEOUT}s" 2>/dev/null || true
   
-  log_message "INFO" "Cleaning ValidatingWebhookConfigurations"
+  format-echo "INFO" "Cleaning ValidatingWebhookConfigurations"
   kubectl get validatingwebhookconfiguration -o name | grep -v "validatingwebhookconfiguration.admissionregistration.k8s.io/validate.webhook.pod.security.kubernetes.io" | \
   xargs -r kubectl delete --timeout="${TIMEOUT}s" 2>/dev/null || true
   
   # Clean PodSecurityPolicies if the API is available
   if kubectl api-resources | grep -q "podsecuritypolicies"; then
-    log_message "INFO" "Cleaning PodSecurityPolicies"
+    format-echo "INFO" "Cleaning PodSecurityPolicies"
     kubectl get psp -o name | grep -v "podsecuritypolicy.policy/kube-system" | \
     xargs -r kubectl delete --timeout="${TIMEOUT}s" 2>/dev/null || true
   fi
@@ -607,19 +607,19 @@ clean_configurations() {
   #---------------------------------------------------------------------
   # Clean CRDs if requested
   if [[ "$CLEAN_CRDS" == true ]]; then
-    log_message "INFO" "Cleaning Custom Resource Definitions"
+    format-echo "INFO" "Cleaning Custom Resource Definitions"
     # Exclude potentially system-critical CRDs
     kubectl get crd -o name | grep -v "crd.apiextensions.k8s.io/podnetworks.kubernetes.io" | \
-    xargs -r kubectl delete --timeout="${TIMEOUT}s" || log_message "WARNING" "Failed to delete some CRDs"
+    xargs -r kubectl delete --timeout="${TIMEOUT}s" || format-echo "WARNING" "Failed to delete some CRDs"
   fi
   
   # Clean APIServices (non-system)
-  log_message "INFO" "Cleaning custom APIServices"
+  format-echo "INFO" "Cleaning custom APIServices"
   kubectl get apiservice -o name | grep -v "apiservice.apiregistration.k8s.io/v1." | \
   grep -v "apiservice.apiregistration.k8s.io/v2." | \
   xargs -r kubectl delete --timeout="${TIMEOUT}s" 2>/dev/null || true
   
-  log_message "SUCCESS" "Custom configurations cleaned"
+  format-echo "SUCCESS" "Custom configurations cleaned"
   return 0
 }
 
@@ -703,7 +703,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -730,7 +730,7 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
-  log_message "INFO" "Starting cluster cleaning process..."
+  format-echo "INFO" "Starting cluster cleaning process..."
   
   # Check requirements
   check_requirements
@@ -741,26 +741,26 @@ main() {
   fi
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Provider:           $PROVIDER"
-  log_message "INFO" "  Clean Workloads:    $CLEAN_WORKLOADS"
-  log_message "INFO" "  Clean Volumes:      $CLEAN_VOLUMES"
-  log_message "INFO" "  Clean Config:       $CLEAN_CONFIG"
-  log_message "INFO" "  Clean CRDs:         $CLEAN_CRDS"
-  log_message "INFO" "  Clean Secrets:      $CLEAN_SECRETS"
-  log_message "INFO" "  Clean ConfigMaps:   $CLEAN_CONFIGMAPS"
-  log_message "INFO" "  Keep PVCs:          $KEEP_PVCS"
-  log_message "INFO" "  All Namespaces:     $ALL_NAMESPACES"
-  log_message "INFO" "  Timeout:            ${TIMEOUT}s"
-  log_message "INFO" "  Dry Run:            $DRY_RUN"
-  log_message "INFO" "  Force:              $FORCE"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Provider:           $PROVIDER"
+  format-echo "INFO" "  Clean Workloads:    $CLEAN_WORKLOADS"
+  format-echo "INFO" "  Clean Volumes:      $CLEAN_VOLUMES"
+  format-echo "INFO" "  Clean Config:       $CLEAN_CONFIG"
+  format-echo "INFO" "  Clean CRDs:         $CLEAN_CRDS"
+  format-echo "INFO" "  Clean Secrets:      $CLEAN_SECRETS"
+  format-echo "INFO" "  Clean ConfigMaps:   $CLEAN_CONFIGMAPS"
+  format-echo "INFO" "  Keep PVCs:          $KEEP_PVCS"
+  format-echo "INFO" "  All Namespaces:     $ALL_NAMESPACES"
+  format-echo "INFO" "  Timeout:            ${TIMEOUT}s"
+  format-echo "INFO" "  Dry Run:            $DRY_RUN"
+  format-echo "INFO" "  Force:              $FORCE"
   
   if [[ ${#ADDITIONAL_PRESERVED_NS[@]} -gt 0 ]]; then
-    log_message "INFO" "  Additional Preserved Namespaces: ${ADDITIONAL_PRESERVED_NS[*]}"
+    format-echo "INFO" "  Additional Preserved Namespaces: ${ADDITIONAL_PRESERVED_NS[*]}"
   fi
   
   if [[ ${#PRESERVE_PATTERNS[@]} -gt 0 ]]; then
-    log_message "INFO" "  Preserve Patterns: ${PRESERVE_PATTERNS[*]}"
+    format-echo "INFO" "  Preserve Patterns: ${PRESERVE_PATTERNS[*]}"
   fi
   
   #---------------------------------------------------------------------
@@ -768,28 +768,28 @@ main() {
   #---------------------------------------------------------------------
   # Confirm operation if not forced or dry-run
   if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
-    log_message "WARNING" "This operation will remove all non-system workloads from your cluster"
-    log_message "WARNING" "Make sure you have backed up anything important before proceeding"
+    format-echo "WARNING" "This operation will remove all non-system workloads from your cluster"
+    format-echo "WARNING" "Make sure you have backed up anything important before proceeding"
     
     if [[ "$CLEAN_VOLUMES" == true ]]; then
-      log_message "WARNING" "Persistent volumes will be deleted - THIS WILL CAUSE DATA LOSS"
+      format-echo "WARNING" "Persistent volumes will be deleted - THIS WILL CAUSE DATA LOSS"
     fi
     
     if [[ "$CLEAN_CONFIG" == true ]]; then
-      log_message "WARNING" "Custom configurations will be reset"
+      format-echo "WARNING" "Custom configurations will be reset"
     fi
     
     if [[ "$CLEAN_CRDS" == true ]]; then
-      log_message "WARNING" "Custom Resource Definitions will be deleted"
+      format-echo "WARNING" "Custom Resource Definitions will be deleted"
     fi
     
     if [[ "$ALL_NAMESPACES" == true ]]; then
-      log_message "WARNING" "All namespaces including default will be cleaned"
+      format-echo "WARNING" "All namespaces including default will be cleaned"
     fi
     
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -800,7 +800,7 @@ main() {
   if [[ "$CLEAN_WORKLOADS" == true ]]; then
     clean_workloads
   else
-    log_message "INFO" "Skipping workload cleaning as requested"
+    format-echo "INFO" "Skipping workload cleaning as requested"
   fi
   
   # Then clean volumes

@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         elif [ -z "$RESOURCE_NAME" ]; then
           RESOURCE_NAME="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -96,7 +96,7 @@ check_resource_exists() {
 }
 
 inspect_resource() {
-  log_message "INFO" "Inspecting $RESOURCE_TYPE: $RESOURCE_NAME"
+  format-echo "INFO" "Inspecting $RESOURCE_TYPE: $RESOURCE_NAME"
   case "$RESOURCE_TYPE" in
     container)
       docker inspect "$RESOURCE_NAME"
@@ -108,7 +108,7 @@ inspect_resource() {
       docker volume inspect "$RESOURCE_NAME"
       ;;
     *)
-      log_message "ERROR" "Invalid resource type. Use 'container', 'network', or 'volume'."
+      format-echo "ERROR" "Invalid resource type. Use 'container', 'network', or 'volume'."
       exit 1
       ;;
   esac
@@ -127,25 +127,25 @@ main() {
   fi
 
   print_with_separator "Docker Resource Inspection Script"
-  log_message "INFO" "Starting Docker Resource Inspection Script..."
+  format-echo "INFO" "Starting Docker Resource Inspection Script..."
 
   # Validate required arguments
   if [ -z "$RESOURCE_TYPE" ] || [ -z "$RESOURCE_NAME" ]; then
-    log_message "ERROR" "Both <resource_type> and <resource_name> are required."
+    format-echo "ERROR" "Both <resource_type> and <resource_name> are required."
     print_with_separator "End of Docker Resource Inspection Script"
     usage
   fi
 
   # Check if Docker is installed
   if ! command -v docker &> /dev/null; then
-    log_message "ERROR" "Docker is not installed. Please install Docker first."
+    format-echo "ERROR" "Docker is not installed. Please install Docker first."
     print_with_separator "End of Docker Resource Inspection Script"
     exit 1
   fi
 
   # Check if the resource exists
   if ! check_resource_exists "$RESOURCE_TYPE" "$RESOURCE_NAME"; then
-    log_message "ERROR" "$RESOURCE_TYPE '$RESOURCE_NAME' does not exist."
+    format-echo "ERROR" "$RESOURCE_TYPE '$RESOURCE_NAME' does not exist."
     print_with_separator "End of Docker Resource Inspection Script"
     exit 1
   fi
@@ -154,9 +154,9 @@ main() {
 
   print_with_separator "End of Docker Resource Inspection Script"
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    log_message "SUCCESS" "Docker resource inspection results have been written to $LOG_FILE."
+    format-echo "SUCCESS" "Docker resource inspection results have been written to $LOG_FILE."
   else
-    log_message "INFO" "Docker resource inspection results displayed on the console."
+    format-echo "INFO" "Docker resource inspection results displayed on the console."
   fi
 }
 

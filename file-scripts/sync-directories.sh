@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           DEST_DIR="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,46 +110,46 @@ main() {
   fi
 
   print_with_separator "Synchronize Directories Script"
-  log_message "INFO" "Starting Synchronize Directories Script..."
+  format-echo "INFO" "Starting Synchronize Directories Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$SOURCE_DIR" ] || [ -z "$DEST_DIR" ]; then
-    log_message "ERROR" "<source_directory> and <destination_directory> are required."
+    format-echo "ERROR" "<source_directory> and <destination_directory> are required."
     print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
 
   if [ ! -d "$SOURCE_DIR" ]; then
-    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+    format-echo "ERROR" "Source directory $SOURCE_DIR does not exist."
     print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
 
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    format-echo "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
     if ! mkdir -p "$DEST_DIR"; then
-      log_message "ERROR" "Failed to create destination directory $DEST_DIR."
+      format-echo "ERROR" "Failed to create destination directory $DEST_DIR."
       print_with_separator "End of Synchronize Directories Script"
       exit 1
     fi
-    log_message "SUCCESS" "Created destination directory $DEST_DIR."
+    format-echo "SUCCESS" "Created destination directory $DEST_DIR."
   fi
 
   #---------------------------------------------------------------------
   # SYNCHRONIZATION OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
+  format-echo "INFO" "Synchronizing directories from $SOURCE_DIR to $DEST_DIR..."
   
   # Get source directory size
   SOURCE_SIZE=$(du -sh "$SOURCE_DIR" | cut -f1)
-  log_message "INFO" "Source directory size: $SOURCE_SIZE"
+  format-echo "INFO" "Source directory size: $SOURCE_SIZE"
   
   # Check if rsync is available
   if ! command -v rsync &> /dev/null; then
-    log_message "ERROR" "rsync is not installed or not available in the PATH."
+    format-echo "ERROR" "rsync is not installed or not available in the PATH."
     print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
@@ -161,12 +161,12 @@ main() {
     
     # Get destination directory size after sync
     DEST_SIZE=$(du -sh "$DEST_DIR" | cut -f1)
-    log_message "INFO" "Destination directory size after sync: $DEST_SIZE"
+    format-echo "INFO" "Destination directory size after sync: $DEST_SIZE"
     
-    log_message "SUCCESS" "Synchronization complete from $SOURCE_DIR to $DEST_DIR."
+    format-echo "SUCCESS" "Synchronization complete from $SOURCE_DIR to $DEST_DIR."
   else
     print_with_separator "End of Synchronization Output"
-    log_message "ERROR" "Failed to synchronize directories."
+    format-echo "ERROR" "Failed to synchronize directories."
     print_with_separator "End of Synchronize Directories Script"
     exit 1
   fi
@@ -174,7 +174,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Synchronization operation completed."
+  format-echo "INFO" "Synchronization operation completed."
   print_with_separator "End of Synchronize Directories Script"
 }
 

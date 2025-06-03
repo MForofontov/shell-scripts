@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           LINK_NAME="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,27 +110,27 @@ main() {
   fi
 
   print_with_separator "Create Symbolic Link Script"
-  log_message "INFO" "Starting Create Symbolic Link Script..."
+  format-echo "INFO" "Starting Create Symbolic Link Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$TARGET_FILE" ] || [ -z "$LINK_NAME" ]; then
-    log_message "ERROR" "<target_file> and <link_name> are required."
+    format-echo "ERROR" "<target_file> and <link_name> are required."
     print_with_separator "End of Create Symbolic Link Script"
     exit 1
   fi
 
   if [ ! -e "$TARGET_FILE" ]; then
-    log_message "ERROR" "Target file $TARGET_FILE does not exist."
+    format-echo "ERROR" "Target file $TARGET_FILE does not exist."
     print_with_separator "End of Create Symbolic Link Script"
     exit 1
   fi
 
   # Check if link already exists
   if [ -e "$LINK_NAME" ]; then
-    log_message "WARNING" "Link destination $LINK_NAME already exists."
+    format-echo "WARNING" "Link destination $LINK_NAME already exists."
     print_with_separator "End of Create Symbolic Link Script"
     exit 1
   fi
@@ -138,12 +138,12 @@ main() {
   #---------------------------------------------------------------------
   # LINK CREATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Creating symbolic link: $LINK_NAME -> $TARGET_FILE"
+  format-echo "INFO" "Creating symbolic link: $LINK_NAME -> $TARGET_FILE"
 
   if ln -s "$TARGET_FILE" "$LINK_NAME"; then
-    log_message "SUCCESS" "Symbolic link created: $LINK_NAME -> $TARGET_FILE"
+    format-echo "SUCCESS" "Symbolic link created: $LINK_NAME -> $TARGET_FILE"
   else
-    log_message "ERROR" "Failed to create symbolic link."
+    format-echo "ERROR" "Failed to create symbolic link."
     print_with_separator "End of Create Symbolic Link Script"
     exit 1
   fi
@@ -151,7 +151,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Symbolic link creation completed."
+  format-echo "INFO" "Symbolic link creation completed."
   print_with_separator "End of Create Symbolic Link Script"
 }
 

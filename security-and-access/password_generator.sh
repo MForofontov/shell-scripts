@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -54,7 +54,7 @@ parse_args() {
         ;;
       --length)
         if [ -z "${2:-}" ] || ! [[ "$2" =~ ^[0-9]+$ ]] || [ "$2" -le 0 ]; then
-          log_message "ERROR" "Invalid length value: $2"
+          format-echo "ERROR" "Invalid length value: $2"
           usage
         fi
         LENGTH="$2"
@@ -62,14 +62,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -94,16 +94,16 @@ main() {
   fi
 
   print_with_separator "Password Generator Script"
-  log_message "INFO" "Starting Password Generator Script..."
+  format-echo "INFO" "Starting Password Generator Script..."
 
-  log_message "INFO" "Generating a password of length $LENGTH..."
+  format-echo "INFO" "Generating a password of length $LENGTH..."
 
   PASSWORD=$(generate_password "$LENGTH")
 
-  log_message "INFO" "Generated password: $PASSWORD"
+  format-echo "INFO" "Generated password: $PASSWORD"
 
   print_with_separator "End of Password Generator Script"
-  log_message "SUCCESS" "Password generation completed successfully."
+  format-echo "SUCCESS" "Password generation completed successfully."
 }
 
 main "$@"

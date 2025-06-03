@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           OUTPUT_FILE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,20 +110,20 @@ main() {
   fi
 
   print_with_separator "Compress Directory Script"
-  log_message "INFO" "Starting Compress Directory Script..."
+  format-echo "INFO" "Starting Compress Directory Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$SOURCE_DIR" ] || [ -z "$OUTPUT_FILE" ]; then
-    log_message "ERROR" "<source_directory> and <output_file> are required."
+    format-echo "ERROR" "<source_directory> and <output_file> are required."
     print_with_separator "End of Compress Directory Script"
     exit 1
   fi
 
   if [ ! -d "$SOURCE_DIR" ]; then
-    log_message "ERROR" "Source directory $SOURCE_DIR does not exist."
+    format-echo "ERROR" "Source directory $SOURCE_DIR does not exist."
     print_with_separator "End of Compress Directory Script"
     exit 1
   fi
@@ -131,19 +131,19 @@ main() {
   #---------------------------------------------------------------------
   # COMPRESSION
   #---------------------------------------------------------------------
-  log_message "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
+  format-echo "INFO" "Compressing directory $SOURCE_DIR into $OUTPUT_FILE..."
 
   # Get directory size before compression
   DIR_SIZE=$(du -sh "$SOURCE_DIR" | cut -f1)
-  log_message "INFO" "Directory size before compression: $DIR_SIZE"
+  format-echo "INFO" "Directory size before compression: $DIR_SIZE"
 
   # Perform the compression
   if tar -czf "$OUTPUT_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
     ARCHIVE_SIZE=$(du -sh "$OUTPUT_FILE" | cut -f1)
-    log_message "SUCCESS" "Directory compressed successfully."
-    log_message "INFO" "Archive size: $ARCHIVE_SIZE"
+    format-echo "SUCCESS" "Directory compressed successfully."
+    format-echo "INFO" "Archive size: $ARCHIVE_SIZE"
   else
-    log_message "ERROR" "Failed to compress directory."
+    format-echo "ERROR" "Failed to compress directory."
     print_with_separator "End of Compress Directory Script"
     exit 1
   fi
@@ -151,7 +151,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Compression operation completed."
+  format-echo "INFO" "Compression operation completed."
   print_with_separator "End of Compress Directory Script"
 }
 

@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         elif [ -z "$SESSION_NAME" ]; then
           SESSION_NAME="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -89,58 +89,58 @@ main() {
   fi
 
   print_with_separator "Start Docker Compose in Tmux Script"
-  log_message "INFO" "Starting Docker Compose in tmux session: $SESSION_NAME"
+  format-echo "INFO" "Starting Docker Compose in tmux session: $SESSION_NAME"
 
   # Validate required arguments
   if [ -z "$DOCKER_COMPOSE_DIR" ] || [ -z "$SESSION_NAME" ]; then
-    log_message "ERROR" "Both <docker_compose_dir> and <tmux_session_name> are required."
+    format-echo "ERROR" "Both <docker_compose_dir> and <tmux_session_name> are required."
     print_with_separator "End of Start Docker Compose in Tmux Script"
     usage
   fi
 
   # Check if required commands are available
   if ! command -v tmux &> /dev/null; then
-    log_message "ERROR" "tmux is not installed. Please install tmux first."
+    format-echo "ERROR" "tmux is not installed. Please install tmux first."
     print_with_separator "End of Start Docker Compose in Tmux Script"
     exit 1
   fi
 
   if ! command -v docker-compose &> /dev/null; then
-    log_message "ERROR" "docker-compose is not installed. Please install Docker Compose first."
+    format-echo "ERROR" "docker-compose is not installed. Please install Docker Compose first."
     print_with_separator "End of Start Docker Compose in Tmux Script"
     exit 1
   fi
 
   # Check if the directory exists
   if [ ! -d "$DOCKER_COMPOSE_DIR" ]; then
-    log_message "ERROR" "Directory $DOCKER_COMPOSE_DIR does not exist."
+    format-echo "ERROR" "Directory $DOCKER_COMPOSE_DIR does not exist."
     print_with_separator "End of Start Docker Compose in Tmux Script"
     exit 1
   fi
 
   # Check if the tmux session already exists
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    log_message "INFO" "Tmux session '$SESSION_NAME' already exists."
+    format-echo "INFO" "Tmux session '$SESSION_NAME' already exists."
     read -p "Do you want to attach to the existing session? (y/n) " ATTACH_EXISTING
     if [ "$ATTACH_EXISTING" = "y" ]; then
       tmux attach-session -t "$SESSION_NAME"
       print_with_separator "End of Start Docker Compose in Tmux Script"
       exit 0
     else
-      log_message "INFO" "Exiting without attaching to the existing session."
+      format-echo "INFO" "Exiting without attaching to the existing session."
       print_with_separator "End of Start Docker Compose in Tmux Script"
       exit 0
     fi
   fi
 
   # Create a new tmux session and start Docker Compose
-  log_message "INFO" "Creating a new tmux session and starting Docker Compose..."
+  format-echo "INFO" "Creating a new tmux session and starting Docker Compose..."
   tmux new-session -d -s "$SESSION_NAME" -c "$DOCKER_COMPOSE_DIR" "docker-compose up"
 
   if [ $? -eq 0 ]; then
-    log_message "SUCCESS" "Docker Compose started in tmux session '$SESSION_NAME'."
+    format-echo "SUCCESS" "Docker Compose started in tmux session '$SESSION_NAME'."
   else
-    log_message "ERROR" "Failed to start Docker Compose in tmux session."
+    format-echo "ERROR" "Failed to start Docker Compose in tmux session."
     print_with_separator "End of Start Docker Compose in Tmux Script"
     exit 1
   fi
@@ -152,7 +152,7 @@ main() {
   fi
 
   print_with_separator "End of Start Docker Compose in Tmux Script"
-  log_message "SUCCESS" "Docker Compose session setup complete."
+  format-echo "SUCCESS" "Docker Compose session setup complete."
 }
 
 main "$@"

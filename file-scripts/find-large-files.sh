@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           SIZE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,27 +110,27 @@ main() {
   fi
 
   print_with_separator "Find Large Files Script"
-  log_message "INFO" "Starting Find Large Files Script..."
+  format-echo "INFO" "Starting Find Large Files Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$DIRECTORY" ] || [ -z "$SIZE" ]; then
-    log_message "ERROR" "<directory> and <size> are required."
+    format-echo "ERROR" "<directory> and <size> are required."
     print_with_separator "End of Find Large Files Script"
     exit 1
   fi
 
   if [ ! -d "$DIRECTORY" ]; then
-    log_message "ERROR" "Directory $DIRECTORY does not exist."
+    format-echo "ERROR" "Directory $DIRECTORY does not exist."
     print_with_separator "End of Find Large Files Script"
     exit 1
   fi
 
   # Validate size format
   if ! [[ "$SIZE" =~ ^\+?[0-9]+[KMG]$ ]]; then
-    log_message "ERROR" "Invalid size format. Use +<size>[KMG] (e.g., +100M)."
+    format-echo "ERROR" "Invalid size format. Use +<size>[KMG] (e.g., +100M)."
     print_with_separator "End of Find Large Files Script"
     exit 1
   fi
@@ -138,22 +138,22 @@ main() {
   # Ensure size has a leading plus sign
   if [[ "$SIZE" != +* ]]; then
     SIZE="+$SIZE"
-    log_message "INFO" "Added '+' prefix to size: $SIZE"
+    format-echo "INFO" "Added '+' prefix to size: $SIZE"
   fi
 
   #---------------------------------------------------------------------
   # FILE SEARCH OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Finding files larger than $SIZE in $DIRECTORY..."
+  format-echo "INFO" "Finding files larger than $SIZE in $DIRECTORY..."
   print_with_separator "Large Files Output"
 
   # Count number of files matching the criteria
   FILE_COUNT=$(find "$DIRECTORY" -type f -size "$SIZE" | wc -l | tr -d ' ')
   
   if [ "$FILE_COUNT" -eq 0 ]; then
-    log_message "INFO" "No files larger than $SIZE found in $DIRECTORY."
+    format-echo "INFO" "No files larger than $SIZE found in $DIRECTORY."
   else
-    log_message "INFO" "Found $FILE_COUNT files larger than $SIZE."
+    format-echo "INFO" "Found $FILE_COUNT files larger than $SIZE."
     
     # List files with their sizes, sorted by size (largest first)
     find "$DIRECTORY" -type f -size "$SIZE" -exec du -h {} \; | sort -hr | \
@@ -163,7 +163,7 @@ main() {
     
     # Show total disk space used by these files
     TOTAL_SIZE=$(find "$DIRECTORY" -type f -size "$SIZE" -exec du -ch {} \; | grep total$ | cut -f1)
-    log_message "INFO" "Total disk space used by these files: $TOTAL_SIZE"
+    format-echo "INFO" "Total disk space used by these files: $TOTAL_SIZE"
   fi
   
   print_with_separator "End of Large Files Output"
@@ -171,7 +171,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "SUCCESS" "File search operation completed."
+  format-echo "SUCCESS" "File search operation completed."
   print_with_separator "End of Find Large Files Script"
 }
 

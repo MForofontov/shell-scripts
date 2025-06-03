@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -66,7 +66,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -142,50 +142,50 @@ main() {
   fi
 
   print_with_separator "DNS Resolver Script"
-  log_message "INFO" "Starting DNS Resolver Script..."
+  format-echo "INFO" "Starting DNS Resolver Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Check if dig command is available
   if ! command -v dig &> /dev/null; then
-    log_message "ERROR" "The 'dig' command is not available. Please install bind-utils or dnsutils package."
+    format-echo "ERROR" "The 'dig' command is not available. Please install bind-utils or dnsutils package."
     print_with_separator "End of DNS Resolver Script"
     exit 1
   fi
   
   # Validate domains
   if [ "${#DOMAINS[@]}" -eq 0 ]; then
-    log_message "ERROR" "At least one domain is required."
+    format-echo "ERROR" "At least one domain is required."
     print_with_separator "End of DNS Resolver Script"
     exit 1
   fi
 
-  log_message "INFO" "Testing DNS resolution for the following domains: ${DOMAINS[*]}"
+  format-echo "INFO" "Testing DNS resolution for the following domains: ${DOMAINS[*]}"
   
   # Check if we can reach a DNS server
   if ! dig +short +time=2 +tries=1 google.com &> /dev/null; then
-    log_message "WARNING" "DNS connectivity check failed. Name resolution may not work properly."
+    format-echo "WARNING" "DNS connectivity check failed. Name resolution may not work properly."
   else
-    log_message "INFO" "DNS connectivity check passed."
+    format-echo "INFO" "DNS connectivity check passed."
   fi
 
   #---------------------------------------------------------------------
   # DNS RESOLUTION OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Beginning DNS resolution..."
+  format-echo "INFO" "Beginning DNS resolution..."
   
   # Perform DNS resolution
   if resolve_domains; then
-    log_message "SUCCESS" "All domains resolved successfully."
+    format-echo "SUCCESS" "All domains resolved successfully."
   else
-    log_message "WARNING" "Some domains failed to resolve. Check the output for details."
+    format-echo "WARNING" "Some domains failed to resolve. Check the output for details."
   fi
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "DNS resolution operation completed."
+  format-echo "INFO" "DNS resolution operation completed."
   print_with_separator "End of DNS Resolver Script"
 }
 

@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -79,26 +79,26 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   case "$PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube not found. Please install it first:"
+        format-echo "ERROR" "minikube not found. Please install it first:"
         echo "https://minikube.sigs.k8s.io/docs/start/"
         exit 1
       fi
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind not found. Please install it first:"
+        format-echo "ERROR" "kind not found. Please install it first:"
         echo "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
         exit 1
       fi
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d not found. Please install it first:"
+        format-echo "ERROR" "k3d not found. Please install it first:"
         echo "https://k3d.io/#installation"
         exit 1
       fi
@@ -106,12 +106,12 @@ check_requirements() {
   esac
 
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
 
-  log_message "SUCCESS" "Required tools are available."
+  format-echo "SUCCESS" "Required tools are available."
 }
 
 #=====================================================================
@@ -119,7 +119,7 @@ check_requirements() {
 #=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
-  log_message "INFO" "Checking if cluster exists..."
+  format-echo "INFO" "Checking if cluster exists..."
   
   local cluster_exists=false
   
@@ -142,10 +142,10 @@ check_cluster_exists() {
   esac
   
   if $cluster_exists; then
-    log_message "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
+    format-echo "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
     return 0
   else
-    log_message "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
+    format-echo "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
     exit 1
   fi
 }
@@ -155,7 +155,7 @@ check_cluster_exists() {
 #=====================================================================
 # Get cluster info before restart
 get_cluster_info() {
-  log_message "INFO" "Getting cluster information before restart..."
+  format-echo "INFO" "Getting cluster information before restart..."
   
   case "$PROVIDER" in
     minikube)
@@ -163,18 +163,18 @@ get_cluster_info() {
       CLUSTER_INFO=$(minikube profile list -o json | jq -r ".[] | select(.Name==\"$CLUSTER_NAME\")")
       K8S_VERSION=$(echo "$CLUSTER_INFO" | jq -r ".Config.KubernetesConfig.KubernetesVersion")
       NODE_COUNT=$(minikube node list -p "$CLUSTER_NAME" 2>/dev/null | wc -l | tr -d ' ')
-      log_message "INFO" "Kubernetes Version: $K8S_VERSION"
-      log_message "INFO" "Node Count: $NODE_COUNT"
+      format-echo "INFO" "Kubernetes Version: $K8S_VERSION"
+      format-echo "INFO" "Node Count: $NODE_COUNT"
       ;;
     kind)
       # For kind, we can't easily get detailed config, but we can get node info
       NODE_COUNT=$(kind get nodes --name "$CLUSTER_NAME" 2>/dev/null | wc -l | tr -d ' ')
-      log_message "INFO" "Node Count: $NODE_COUNT"
+      format-echo "INFO" "Node Count: $NODE_COUNT"
       ;;
     k3d)
       # For k3d, get node info
       NODE_COUNT=$(k3d node list -o json | jq -r "[.[] | select(.clusterAssociation.cluster==\"$CLUSTER_NAME\")] | length")
-      log_message "INFO" "Node Count: $NODE_COUNT"
+      format-echo "INFO" "Node Count: $NODE_COUNT"
       ;;
   esac
 }
@@ -188,21 +188,21 @@ get_cluster_info() {
 #---------------------------------------------------------------------
 # Restart minikube cluster
 restart_minikube_cluster() {
-  log_message "INFO" "Restarting minikube cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Restarting minikube cluster '${CLUSTER_NAME}'..."
   
   # Stop the cluster
-  log_message "INFO" "Stopping minikube cluster..."
+  format-echo "INFO" "Stopping minikube cluster..."
   if ! minikube stop -p "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to stop minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to stop minikube cluster '${CLUSTER_NAME}'."
     exit 1
   fi
   
   # Start the cluster
-  log_message "INFO" "Starting minikube cluster..."
+  format-echo "INFO" "Starting minikube cluster..."
   if minikube start -p "${CLUSTER_NAME}"; then
-    log_message "SUCCESS" "minikube cluster '${CLUSTER_NAME}' restarted successfully."
+    format-echo "SUCCESS" "minikube cluster '${CLUSTER_NAME}' restarted successfully."
   else
-    log_message "ERROR" "Failed to start minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to start minikube cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -212,25 +212,25 @@ restart_minikube_cluster() {
 #---------------------------------------------------------------------
 # Restart kind cluster (requires delete and recreate)
 restart_kind_cluster() {
-  log_message "INFO" "Restarting kind cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Restarting kind cluster '${CLUSTER_NAME}'..."
   
   # For kind, we need to save the config if available
   local temp_config=""
   if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
     temp_config=$(mktemp)
-    log_message "INFO" "Saving cluster configuration..."
+    format-echo "INFO" "Saving cluster configuration..."
     kubectl --context="kind-${CLUSTER_NAME}" get nodes -o json > "${temp_config}"
   fi
   
   # Delete the cluster
-  log_message "INFO" "Deleting kind cluster..."
+  format-echo "INFO" "Deleting kind cluster..."
   if ! kind delete cluster --name "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}'."
     exit 1
   fi
   
   # Create new cluster with similar configuration
-  log_message "INFO" "Creating new kind cluster..."
+  format-echo "INFO" "Creating new kind cluster..."
   
   # If we have a saved config with node count
   local node_args=""
@@ -255,13 +255,13 @@ restart_kind_cluster() {
   fi
   
   if kind create cluster --name "${CLUSTER_NAME}" $node_args; then
-    log_message "SUCCESS" "kind cluster '${CLUSTER_NAME}' recreated successfully."
+    format-echo "SUCCESS" "kind cluster '${CLUSTER_NAME}' recreated successfully."
     
     # Clean up temporary files
     [[ -f "${temp_config}" ]] && rm "${temp_config}"
     [[ -f "${kind_config}" ]] && rm "${kind_config}"
   else
-    log_message "ERROR" "Failed to recreate kind cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to recreate kind cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -271,21 +271,21 @@ restart_kind_cluster() {
 #---------------------------------------------------------------------
 # Restart k3d cluster
 restart_k3d_cluster() {
-  log_message "INFO" "Restarting k3d cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Restarting k3d cluster '${CLUSTER_NAME}'..."
   
   # Stop the cluster
-  log_message "INFO" "Stopping k3d cluster..."
+  format-echo "INFO" "Stopping k3d cluster..."
   if ! k3d cluster stop "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to stop k3d cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to stop k3d cluster '${CLUSTER_NAME}'."
     exit 1
   fi
   
   # Start the cluster
-  log_message "INFO" "Starting k3d cluster..."
+  format-echo "INFO" "Starting k3d cluster..."
   if k3d cluster start "${CLUSTER_NAME}"; then
-    log_message "SUCCESS" "k3d cluster '${CLUSTER_NAME}' restarted successfully."
+    format-echo "SUCCESS" "k3d cluster '${CLUSTER_NAME}' restarted successfully."
   else
-    log_message "ERROR" "Failed to start k3d cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to start k3d cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -295,7 +295,7 @@ restart_k3d_cluster() {
 #=====================================================================
 # Wait for cluster to be ready
 wait_for_cluster() {
-  log_message "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
+  format-echo "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
   
   local start_time=$(date +%s)
   local end_time=$((start_time + WAIT_TIMEOUT))
@@ -318,24 +318,24 @@ wait_for_cluster() {
     
     current_time=$(date +%s)
     if [[ $current_time -ge $end_time ]]; then
-      log_message "ERROR" "Timeout waiting for cluster to be ready."
+      format-echo "ERROR" "Timeout waiting for cluster to be ready."
       exit 1
     fi
     
     sleep 5
   done
   
-  log_message "SUCCESS" "Cluster is ready."
+  format-echo "SUCCESS" "Cluster is ready."
 }
 
 # Display cluster info
 display_cluster_info() {
   print_with_separator "Cluster Information After Restart"
   
-  log_message "INFO" "Nodes:"
+  format-echo "INFO" "Nodes:"
   kubectl get nodes
   
-  log_message "INFO" "Cluster Info:"
+  format-echo "INFO" "Cluster Info:"
   kubectl cluster-info
   
   print_with_separator
@@ -359,7 +359,7 @@ confirm_restart() {
       return 0
       ;;
     *)
-      log_message "INFO" "Restart canceled by user."
+      format-echo "INFO" "Restart canceled by user."
       exit 0
       ;;
   esac
@@ -384,8 +384,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -404,7 +404,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -412,7 +412,7 @@ parse_args() {
   
   # Check if cluster name is provided
   if [ -z "$CLUSTER_NAME" ]; then
-    log_message "ERROR" "Cluster name is required. Use -n or --name to specify."
+    format-echo "ERROR" "Cluster name is required. Use -n or --name to specify."
     usage
   fi
 }
@@ -437,13 +437,13 @@ main() {
   
   print_with_separator "Kubernetes Cluster Restart"
 
-  log_message "INFO" "Starting Kubernetes cluster restart..."
+  format-echo "INFO" "Starting Kubernetes cluster restart..."
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
-  log_message "INFO" "  Provider:     $PROVIDER"
-  log_message "INFO" "  Force Restart: $FORCE"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name: $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:     $PROVIDER"
+  format-echo "INFO" "  Force Restart: $FORCE"
   
   # Check requirements
   check_requirements
@@ -477,7 +477,7 @@ main() {
   display_cluster_info
   
   print_with_separator "End of Kubernetes Cluster Restart"
-  log_message "SUCCESS" "Kubernetes cluster restart completed successfully."
+  format-echo "SUCCESS" "Kubernetes cluster restart completed successfully."
 }
 
 # Run the main function

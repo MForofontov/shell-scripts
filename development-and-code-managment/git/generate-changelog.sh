@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -66,7 +66,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -78,7 +78,7 @@ parse_args() {
           OUTPUT_FILE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option: $1"
+          format-echo "ERROR" "Unknown option: $1"
           usage
         fi
         ;;
@@ -105,28 +105,28 @@ main() {
   fi
 
   print_with_separator "Generate Changelog Script"
-  log_message "INFO" "Starting Generate Changelog Script..."
+  format-echo "INFO" "Starting Generate Changelog Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate required arguments
   if [ -z "$OUTPUT_FILE" ]; then
-    log_message "ERROR" "<output_file> is required."
+    format-echo "ERROR" "<output_file> is required."
     print_with_separator "End of Generate Changelog Script"
     usage
   fi
 
   # Validate output file
   if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-    log_message "ERROR" "Cannot write to output file $OUTPUT_FILE"
+    format-echo "ERROR" "Cannot write to output file $OUTPUT_FILE"
     print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
 
   # Validate git is available
   if ! command -v git &> /dev/null; then
-    log_message "ERROR" "git is not installed or not available in the PATH."
+    format-echo "ERROR" "git is not installed or not available in the PATH."
     print_with_separator "End of Generate Changelog Script"
     exit 1
   fi
@@ -138,7 +138,7 @@ main() {
   PROJECT_NAME=$(basename "$(pwd)")
   CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
-  log_message "INFO" "Generating changelog for $PROJECT_NAME..."
+  format-echo "INFO" "Generating changelog for $PROJECT_NAME..."
 
   # Add a header to the changelog
   {
@@ -149,9 +149,9 @@ main() {
 
   # Append the git log to the changelog
   if git log --pretty=format:"- %h %s (%an, %ar)" 2>&1 | tee -a "$OUTPUT_FILE"; then
-    log_message "SUCCESS" "Changelog saved to $OUTPUT_FILE"
+    format-echo "SUCCESS" "Changelog saved to $OUTPUT_FILE"
   else
-    log_message "ERROR" "Failed to generate changelog."
+    format-echo "ERROR" "Failed to generate changelog."
     print_with_separator "End of Generate Changelog Script"
     exit 1
   fi

@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -84,7 +84,7 @@ command_exists() {
 
 # Clean up temporary files on exit
 cleanup() {
-  log_message "INFO" "Cleaning up temporary files..."
+  format-echo "INFO" "Cleaning up temporary files..."
   rm -rf "$TEMP_DIR"
 }
 
@@ -96,21 +96,21 @@ trap cleanup EXIT
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
   if ! command_exists yq; then
-    log_message "ERROR" "yq not found. Please install it first:"
+    format-echo "ERROR" "yq not found. Please install it first:"
     echo "https://github.com/mikefarah/yq#install"
     exit 1
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -118,10 +118,10 @@ check_requirements() {
 #=====================================================================
 # Validate input files
 validate_input_files() {
-  log_message "INFO" "Validating input files..."
+  format-echo "INFO" "Validating input files..."
   
   if [[ ${#INPUT_FILES[@]} -eq 0 ]]; then
-    log_message "ERROR" "No input files specified."
+    format-echo "ERROR" "No input files specified."
     usage
   fi
   
@@ -129,30 +129,30 @@ validate_input_files() {
   
   for file in "${INPUT_FILES[@]}"; do
     if [[ ! -f "$file" ]]; then
-      log_message "ERROR" "Input file not found: $file"
+      format-echo "ERROR" "Input file not found: $file"
       continue
     fi
     
     # Verify it's a valid YAML file
     if ! yq eval . "$file" > /dev/null 2>&1; then
-      log_message "ERROR" "Invalid YAML file: $file"
+      format-echo "ERROR" "Invalid YAML file: $file"
       continue
     fi
     
     # Verify it's a kubeconfig file (has apiVersion and kind fields)
     if ! yq eval '.apiVersion == "v1" and .kind == "Config"' "$file" | grep -q "true"; then
-      log_message "WARNING" "File may not be a valid kubeconfig: $file"
+      format-echo "WARNING" "File may not be a valid kubeconfig: $file"
     fi
     
     valid_count=$((valid_count + 1))
   done
   
   if [[ $valid_count -eq 0 ]]; then
-    log_message "ERROR" "No valid kubeconfig files found."
+    format-echo "ERROR" "No valid kubeconfig files found."
     exit 1
   fi
   
-  log_message "SUCCESS" "Found $valid_count valid input files."
+  format-echo "SUCCESS" "Found $valid_count valid input files."
 }
 
 #=====================================================================
@@ -162,12 +162,12 @@ validate_input_files() {
 backup_existing_config() {
   if [[ "$BACKUP" == true && -f "$OUTPUT_FILE" ]]; then
     local backup_file="${OUTPUT_FILE}.$(date +%Y%m%d%H%M%S).bak"
-    log_message "INFO" "Creating backup of existing config: $backup_file"
+    format-echo "INFO" "Creating backup of existing config: $backup_file"
     
     if cp "$OUTPUT_FILE" "$backup_file"; then
-      log_message "SUCCESS" "Backup created successfully."
+      format-echo "SUCCESS" "Backup created successfully."
     else
-      log_message "ERROR" "Failed to create backup."
+      format-echo "ERROR" "Failed to create backup."
       exit 1
     fi
   fi
@@ -175,7 +175,7 @@ backup_existing_config() {
 
 # Merge kubeconfig files
 merge_kubeconfig_files() {
-  log_message "INFO" "Merging kubeconfig files..."
+  format-echo "INFO" "Merging kubeconfig files..."
   
   # Create a temporary file for kubectl to use
   local merged_config="$TEMP_DIR/merged-kubeconfig.yaml"
@@ -184,11 +184,11 @@ merge_kubeconfig_files() {
   local kubeconfig_env=$(IFS=:; echo "${INPUT_FILES[*]}")
   
   # Merge configs using kubectl
-  log_message "INFO" "Running: KUBECONFIG=$kubeconfig_env kubectl config view --flatten"
+  format-echo "INFO" "Running: KUBECONFIG=$kubeconfig_env kubectl config view --flatten"
   if KUBECONFIG=$kubeconfig_env kubectl config view --flatten > "$merged_config"; then
-    log_message "SUCCESS" "Configurations merged successfully."
+    format-echo "SUCCESS" "Configurations merged successfully."
   else
-    log_message "ERROR" "Failed to merge configurations."
+    format-echo "ERROR" "Failed to merge configurations."
     exit 1
   fi
   
@@ -206,10 +206,10 @@ merge_kubeconfig_files() {
 # Deduplicate contexts and clusters
 deduplicate_entries() {
   local input_file="$1"
-  log_message "INFO" "Deduplicating contexts and clusters..."
+  format-echo "INFO" "Deduplicating contexts and clusters..."
   
   if [[ "$DEDUPLICATE" != true ]]; then
-    log_message "INFO" "Deduplication skipped."
+    format-echo "INFO" "Deduplication skipped."
     echo "$input_file"
     return
   fi
@@ -245,10 +245,10 @@ deduplicate_entries() {
   local users_after=$(yq eval '.users | length' "$deduplicated_config")
   
   # Report deduplication results
-  log_message "INFO" "Deduplication summary:"
-  log_message "INFO" "  Clusters: $clusters_before → $clusters_after (removed $(($clusters_before - $clusters_after)))"
-  log_message "INFO" "  Contexts: $contexts_before → $contexts_after (removed $(($contexts_before - $contexts_after)))"
-  log_message "INFO" "  Users:    $users_before → $users_after (removed $(($users_before - $users_after)))"
+  format-echo "INFO" "Deduplication summary:"
+  format-echo "INFO" "  Clusters: $clusters_before → $clusters_after (removed $(($clusters_before - $clusters_after)))"
+  format-echo "INFO" "  Contexts: $contexts_before → $contexts_after (removed $(($contexts_before - $contexts_after)))"
+  format-echo "INFO" "  Users:    $users_before → $users_after (removed $(($users_before - $users_after)))"
   
   # Return the path to the deduplicated config
   echo "$deduplicated_config"
@@ -260,10 +260,10 @@ deduplicate_entries() {
 # Organize contexts by provider (add comments and sort)
 organize_contexts_by_provider() {
   local input_file="$1"
-  log_message "INFO" "Organizing contexts by provider..."
+  format-echo "INFO" "Organizing contexts by provider..."
   
   if [[ "$ORGANIZE" != true ]]; then
-    log_message "INFO" "Organization skipped."
+    format-echo "INFO" "Organization skipped."
     echo "$input_file"
     return
   fi
@@ -285,7 +285,7 @@ organize_contexts_by_provider() {
   
   # Add provider comments and sort contexts
   if [[ ${#minikube_contexts[@]} -gt 0 ]]; then
-    log_message "INFO" "  Found ${#minikube_contexts[@]} minikube contexts"
+    format-echo "INFO" "  Found ${#minikube_contexts[@]} minikube contexts"
     echo "# Minikube Contexts" >> "$temp_contexts"
     for ctx in "${minikube_contexts[@]}"; do
       yq eval '.contexts[] | select(.name == "'"$ctx"'")' "$organized_config" >> "$temp_contexts"
@@ -293,7 +293,7 @@ organize_contexts_by_provider() {
   fi
   
   if [[ ${#kind_contexts[@]} -gt 0 ]]; then
-    log_message "INFO" "  Found ${#kind_contexts[@]} kind contexts"
+    format-echo "INFO" "  Found ${#kind_contexts[@]} kind contexts"
     echo "# Kind Contexts" >> "$temp_contexts"
     for ctx in "${kind_contexts[@]}"; do
       yq eval '.contexts[] | select(.name == "'"$ctx"'")' "$organized_config" >> "$temp_contexts"
@@ -301,7 +301,7 @@ organize_contexts_by_provider() {
   fi
   
   if [[ ${#k3d_contexts[@]} -gt 0 ]]; then
-    log_message "INFO" "  Found ${#k3d_contexts[@]} k3d contexts"
+    format-echo "INFO" "  Found ${#k3d_contexts[@]} k3d contexts"
     echo "# K3d Contexts" >> "$temp_contexts"
     for ctx in "${k3d_contexts[@]}"; do
       yq eval '.contexts[] | select(.name == "'"$ctx"'")' "$organized_config" >> "$temp_contexts"
@@ -309,7 +309,7 @@ organize_contexts_by_provider() {
   fi
   
   if [[ ${#other_contexts[@]} -gt 0 ]]; then
-    log_message "INFO" "  Found ${#other_contexts[@]} other contexts"
+    format-echo "INFO" "  Found ${#other_contexts[@]} other contexts"
     echo "# Other Contexts" >> "$temp_contexts"
     for ctx in "${other_contexts[@]}"; do
       yq eval '.contexts[] | select(.name == "'"$ctx"'")' "$organized_config" >> "$temp_contexts"
@@ -330,10 +330,10 @@ organize_contexts_by_provider() {
 # Validate merged config
 validate_merged_config() {
   local input_file="$1"
-  log_message "INFO" "Validating merged configuration..."
+  format-echo "INFO" "Validating merged configuration..."
   
   if [[ "$VALIDATE" != true ]]; then
-    log_message "INFO" "Validation skipped."
+    format-echo "INFO" "Validation skipped."
     echo "$input_file"
     return
   fi
@@ -343,28 +343,28 @@ validate_merged_config() {
   
   # Check for basic structure
   if ! yq eval '.apiVersion == "v1" and .kind == "Config"' "$validated_config" | grep -q "true"; then
-    log_message "ERROR" "Invalid kubeconfig: Missing required fields (apiVersion, kind)."
+    format-echo "ERROR" "Invalid kubeconfig: Missing required fields (apiVersion, kind)."
     exit 1
   fi
   
   # Check for empty arrays
   if [[ $(yq eval '.clusters | length' "$validated_config") -eq 0 ]]; then
-    log_message "ERROR" "Invalid kubeconfig: No clusters found."
+    format-echo "ERROR" "Invalid kubeconfig: No clusters found."
     exit 1
   fi
   
   if [[ $(yq eval '.contexts | length' "$validated_config") -eq 0 ]]; then
-    log_message "ERROR" "Invalid kubeconfig: No contexts found."
+    format-echo "ERROR" "Invalid kubeconfig: No contexts found."
     exit 1
   fi
   
   if [[ $(yq eval '.users | length' "$validated_config") -eq 0 ]]; then
-    log_message "ERROR" "Invalid kubeconfig: No users found."
+    format-echo "ERROR" "Invalid kubeconfig: No users found."
     exit 1
   fi
   
   # Check for references integrity
-  log_message "INFO" "Checking context references..."
+  format-echo "INFO" "Checking context references..."
   
   # Extract all cluster names
   local cluster_names=($(yq eval '.clusters[].name' "$validated_config"))
@@ -390,26 +390,26 @@ validate_merged_config() {
     local user_ref=$(yq eval ".contexts[$i].context.user" "$validated_config")
     
     if [[ -z "$cluster_ref" || ! "$cluster_lookup" =~ $cluster_ref ]]; then
-      log_message "WARNING" "  Context '$context_name' references non-existent cluster: $cluster_ref"
+      format-echo "WARNING" "  Context '$context_name' references non-existent cluster: $cluster_ref"
       invalid_contexts=$((invalid_contexts + 1))
     fi
     
     if [[ -z "$user_ref" || ! "$user_lookup" =~ $user_ref ]]; then
-      log_message "WARNING" "  Context '$context_name' references non-existent user: $user_ref"
+      format-echo "WARNING" "  Context '$context_name' references non-existent user: $user_ref"
       invalid_contexts=$((invalid_contexts + 1))
     fi
   done
   
   if [[ $invalid_contexts -gt 0 ]]; then
-    log_message "WARNING" "Found $invalid_contexts contexts with invalid references."
+    format-echo "WARNING" "Found $invalid_contexts contexts with invalid references."
     
     # Optional: Attempt to fix invalid contexts
     # This would require more complex logic to update or remove invalid contexts
   else
-    log_message "SUCCESS" "All contexts have valid references."
+    format-echo "SUCCESS" "All contexts have valid references."
   fi
   
-  log_message "SUCCESS" "Merged configuration validated successfully."
+  format-echo "SUCCESS" "Merged configuration validated successfully."
   echo "$validated_config"
 }
 
@@ -419,14 +419,14 @@ validate_merged_config() {
 # Write final config to output file
 write_output_file() {
   local input_file="$1"
-  log_message "INFO" "Writing merged configuration to: $OUTPUT_FILE"
+  format-echo "INFO" "Writing merged configuration to: $OUTPUT_FILE"
   
   # Check if output file exists and we're not forcing overwrite
   if [[ -f "$OUTPUT_FILE" && "$FORCE" != true ]]; then
-    log_message "WARNING" "Output file already exists: $OUTPUT_FILE"
+    format-echo "WARNING" "Output file already exists: $OUTPUT_FILE"
     read -p "Do you want to overwrite it? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -441,10 +441,10 @@ write_output_file() {
   if cp "$input_file" "$OUTPUT_FILE"; then
     # Set secure permissions
     chmod 600 "$OUTPUT_FILE"
-    log_message "SUCCESS" "Merged configuration written to: $OUTPUT_FILE"
+    format-echo "SUCCESS" "Merged configuration written to: $OUTPUT_FILE"
     ls -l "$OUTPUT_FILE"
   else
-    log_message "ERROR" "Failed to write configuration to: $OUTPUT_FILE"
+    format-echo "ERROR" "Failed to write configuration to: $OUTPUT_FILE"
     exit 1
   fi
 }
@@ -488,7 +488,7 @@ parse_args() {
         shift 2
         ;;
       -*)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
       *)
@@ -520,20 +520,20 @@ main() {
 
   print_with_separator "Kubernetes Kubeconfig Merge Script"
   
-  log_message "INFO" "Starting kubeconfig merge process..."
+  format-echo "INFO" "Starting kubeconfig merge process..."
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Input Files: ${#INPUT_FILES[@]}"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Input Files: ${#INPUT_FILES[@]}"
   for file in "${INPUT_FILES[@]}"; do
-    log_message "INFO" "    - $file"
+    format-echo "INFO" "    - $file"
   done
-  log_message "INFO" "  Output File: $OUTPUT_FILE"
-  log_message "INFO" "  Backup:      $BACKUP"
-  log_message "INFO" "  Organize:    $ORGANIZE"
-  log_message "INFO" "  Deduplicate: $DEDUPLICATE"
-  log_message "INFO" "  Validate:    $VALIDATE"
-  log_message "INFO" "  Force:       $FORCE"
+  format-echo "INFO" "  Output File: $OUTPUT_FILE"
+  format-echo "INFO" "  Backup:      $BACKUP"
+  format-echo "INFO" "  Organize:    $ORGANIZE"
+  format-echo "INFO" "  Deduplicate: $DEDUPLICATE"
+  format-echo "INFO" "  Validate:    $VALIDATE"
+  format-echo "INFO" "  Force:       $FORCE"
   
   # Check requirements
   check_requirements

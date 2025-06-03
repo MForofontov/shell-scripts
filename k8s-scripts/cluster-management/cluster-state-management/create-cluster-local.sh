@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -84,16 +84,16 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   case "$PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "WARNING" "minikube not found. Attempting to install..."
+        format-echo "WARNING" "minikube not found. Attempting to install..."
         if command_exists brew; then
           brew install minikube
         else
-          log_message "ERROR" "minikube not found. Please install it manually:"
+          format-echo "ERROR" "minikube not found. Please install it manually:"
           echo "https://minikube.sigs.k8s.io/docs/start/"
           exit 1
         fi
@@ -101,11 +101,11 @@ check_requirements() {
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "WARNING" "kind not found. Attempting to install..."
+        format-echo "WARNING" "kind not found. Attempting to install..."
         if command_exists brew; then
           brew install kind
         else
-          log_message "ERROR" "kind not found. Please install it manually:"
+          format-echo "ERROR" "kind not found. Please install it manually:"
           echo "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
           exit 1
         fi
@@ -113,11 +113,11 @@ check_requirements() {
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "WARNING" "k3d not found. Attempting to install..."
+        format-echo "WARNING" "k3d not found. Attempting to install..."
         if command_exists brew; then
           brew install k3d
         else
-          log_message "ERROR" "k3d not found. Please install it manually:"
+          format-echo "ERROR" "k3d not found. Please install it manually:"
           echo "https://k3d.io/#installation"
           exit 1
         fi
@@ -126,17 +126,17 @@ check_requirements() {
   esac
 
   if ! command_exists kubectl; then
-    log_message "WARNING" "kubectl not found. Attempting to install..."
+    format-echo "WARNING" "kubectl not found. Attempting to install..."
     if command_exists brew; then
       brew install kubectl
     else
-      log_message "ERROR" "kubectl not found. Please install it manually:"
+      format-echo "ERROR" "kubectl not found. Please install it manually:"
       echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
       exit 1
     fi
   fi
 
-  log_message "SUCCESS" "All required tools are installed."
+  format-echo "SUCCESS" "All required tools are installed."
 }
 
 #=====================================================================
@@ -144,30 +144,30 @@ check_requirements() {
 #=====================================================================
 # Check if cluster already exists
 check_cluster_exists() {
-  log_message "INFO" "Checking if cluster already exists..."
+  format-echo "INFO" "Checking if cluster already exists..."
   
   case "$PROVIDER" in
     minikube)
       if minikube profile list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
-        log_message "ERROR" "minikube profile '${CLUSTER_NAME}' already exists."
+        format-echo "ERROR" "minikube profile '${CLUSTER_NAME}' already exists."
         exit 1
       fi
       ;;
     kind)
       if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-        log_message "ERROR" "kind cluster '${CLUSTER_NAME}' already exists."
+        format-echo "ERROR" "kind cluster '${CLUSTER_NAME}' already exists."
         exit 1
       fi
       ;;
     k3d)
       if k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
-        log_message "ERROR" "k3d cluster '${CLUSTER_NAME}' already exists."
+        format-echo "ERROR" "k3d cluster '${CLUSTER_NAME}' already exists."
         exit 1
       fi
       ;;
   esac
   
-  log_message "SUCCESS" "No existing cluster with name '${CLUSTER_NAME}' found."
+  format-echo "SUCCESS" "No existing cluster with name '${CLUSTER_NAME}' found."
 }
 
 #=====================================================================
@@ -179,7 +179,7 @@ check_cluster_exists() {
 #---------------------------------------------------------------------
 # Create cluster with minikube
 create_minikube_cluster() {
-  log_message "INFO" "Creating minikube cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Creating minikube cluster '${CLUSTER_NAME}'..."
   
   MINIKUBE_ARGS="start -p ${CLUSTER_NAME}"
   
@@ -192,17 +192,17 @@ create_minikube_cluster() {
   fi
   
   if [[ -n "$CONFIG_FILE" ]]; then
-    log_message "INFO" "Using custom config file: $CONFIG_FILE"
+    format-echo "INFO" "Using custom config file: $CONFIG_FILE"
     # Minikube doesn't directly accept a config file parameter like kind or k3d
     # We could parse the file and extract values if needed
-    log_message "WARNING" "Custom config file for minikube is used as a reference only. Some settings may not be applied."
+    format-echo "WARNING" "Custom config file for minikube is used as a reference only. Some settings may not be applied."
   fi
   
-  log_message "INFO" "Running: minikube $MINIKUBE_ARGS"
+  format-echo "INFO" "Running: minikube $MINIKUBE_ARGS"
   if minikube $MINIKUBE_ARGS; then
-    log_message "SUCCESS" "minikube cluster '${CLUSTER_NAME}' created successfully."
+    format-echo "SUCCESS" "minikube cluster '${CLUSTER_NAME}' created successfully."
   else
-    log_message "ERROR" "Failed to create minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to create minikube cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -212,7 +212,7 @@ create_minikube_cluster() {
 #---------------------------------------------------------------------
 # Create cluster with kind
 create_kind_cluster() {
-  log_message "INFO" "Creating kind cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Creating kind cluster '${CLUSTER_NAME}'..."
   
   KIND_ARGS="--name ${CLUSTER_NAME}"
   
@@ -235,14 +235,14 @@ create_kind_cluster() {
     done
     
     KIND_ARGS="$KIND_ARGS --config $TEMP_CONFIG"
-    log_message "INFO" "Generated temporary config for $NODE_COUNT nodes."
+    format-echo "INFO" "Generated temporary config for $NODE_COUNT nodes."
   fi
   
-  log_message "INFO" "Running: kind create cluster $KIND_ARGS"
+  format-echo "INFO" "Running: kind create cluster $KIND_ARGS"
   if kind create cluster $KIND_ARGS; then
-    log_message "SUCCESS" "kind cluster '${CLUSTER_NAME}' created successfully."
+    format-echo "SUCCESS" "kind cluster '${CLUSTER_NAME}' created successfully."
   else
-    log_message "ERROR" "Failed to create kind cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to create kind cluster '${CLUSTER_NAME}'."
     exit 1
   fi
   
@@ -256,7 +256,7 @@ create_kind_cluster() {
 #---------------------------------------------------------------------
 # Create cluster with k3d
 create_k3d_cluster() {
-  log_message "INFO" "Creating k3d cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Creating k3d cluster '${CLUSTER_NAME}'..."
   
   K3D_ARGS="cluster create ${CLUSTER_NAME}"
   
@@ -272,11 +272,11 @@ create_k3d_cluster() {
     K3D_ARGS="$K3D_ARGS --config $CONFIG_FILE"
   fi
   
-  log_message "INFO" "Running: k3d $K3D_ARGS"
+  format-echo "INFO" "Running: k3d $K3D_ARGS"
   if k3d $K3D_ARGS; then
-    log_message "SUCCESS" "k3d cluster '${CLUSTER_NAME}' created successfully."
+    format-echo "SUCCESS" "k3d cluster '${CLUSTER_NAME}' created successfully."
   else
-    log_message "ERROR" "Failed to create k3d cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to create k3d cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -286,7 +286,7 @@ create_k3d_cluster() {
 #=====================================================================
 # Wait for cluster to be ready
 wait_for_cluster() {
-  log_message "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
+  format-echo "INFO" "Waiting for cluster to be ready (timeout: ${WAIT_TIMEOUT}s)..."
   
   local start_time=$(date +%s)
   local end_time=$((start_time + WAIT_TIMEOUT))
@@ -312,7 +312,7 @@ wait_for_cluster() {
     current_time=$(date +%s)
     if [[ $current_time -ge $end_time ]]; then
       echo "" # New line after progress dots
-      log_message "ERROR" "Timed out waiting for cluster to be ready."
+      format-echo "ERROR" "Timed out waiting for cluster to be ready."
       exit 1
     fi
     
@@ -331,7 +331,7 @@ wait_for_cluster() {
     sleep 5
   done
   
-  log_message "SUCCESS" "Cluster is ready."
+  format-echo "SUCCESS" "Cluster is ready."
 }
 
 #=====================================================================
@@ -341,10 +341,10 @@ wait_for_cluster() {
 display_cluster_info() {
   print_with_separator "Cluster Information"
   
-  log_message "INFO" "Nodes:"
+  format-echo "INFO" "Nodes:"
   kubectl get nodes
   
-  log_message "INFO" "Cluster Info:"
+  format-echo "INFO" "Cluster Info:"
   kubectl cluster-info
   
   case "$PROVIDER" in
@@ -382,8 +382,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -392,7 +392,7 @@ parse_args() {
       -c|--nodes)
         NODE_COUNT="$2"
         if ! [[ "$NODE_COUNT" =~ ^[1-9][0-9]*$ ]]; then
-          log_message "ERROR" "Node count must be a positive integer."
+          format-echo "ERROR" "Node count must be a positive integer."
           exit 1
         fi
         shift 2
@@ -404,7 +404,7 @@ parse_args() {
       -f|--config)
         CONFIG_FILE="$2"
         if [[ ! -f "$CONFIG_FILE" ]]; then
-          log_message "ERROR" "Config file not found: ${CONFIG_FILE}"
+          format-echo "ERROR" "Config file not found: ${CONFIG_FILE}"
           exit 1
         fi
         shift 2
@@ -412,7 +412,7 @@ parse_args() {
       -t|--timeout)
         WAIT_TIMEOUT="$2"
         if ! [[ "$WAIT_TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
-          log_message "ERROR" "Timeout must be a positive integer."
+          format-echo "ERROR" "Timeout must be a positive integer."
           exit 1
         fi
         shift 2
@@ -422,7 +422,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -449,16 +449,16 @@ main() {
 
   print_with_separator "Kubernetes Cluster Creation Script"
   
-  log_message "INFO" "Starting Kubernetes cluster creation..."
+  format-echo "INFO" "Starting Kubernetes cluster creation..."
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
-  log_message "INFO" "  Provider:     $PROVIDER"
-  log_message "INFO" "  Node Count:   $NODE_COUNT"
-  log_message "INFO" "  K8s Version:  $K8S_VERSION"
-  log_message "INFO" "  Config File:  ${CONFIG_FILE:-None}"
-  log_message "INFO" "  Timeout:      ${WAIT_TIMEOUT}s"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name: $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:     $PROVIDER"
+  format-echo "INFO" "  Node Count:   $NODE_COUNT"
+  format-echo "INFO" "  K8s Version:  $K8S_VERSION"
+  format-echo "INFO" "  Config File:  ${CONFIG_FILE:-None}"
+  format-echo "INFO" "  Timeout:      ${WAIT_TIMEOUT}s"
   
   # Check requirements
   check_requirements
@@ -483,7 +483,7 @@ main() {
   display_cluster_info
   
   print_with_separator "End of Kubernetes Cluster Creation"
-  log_message "SUCCESS" "Kubernetes cluster creation completed successfully."
+  format-echo "SUCCESS" "Kubernetes cluster creation completed successfully."
 }
 
 # Run the main function

@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -53,7 +53,7 @@ parse_args() {
         ;;
       --ssh_dir)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No SSH directory provided after --ssh_dir."
+          format-echo "ERROR" "No SSH directory provided after --ssh_dir."
           usage
         fi
         SSH_DIR="$2"
@@ -61,14 +61,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -79,10 +79,10 @@ scan_unused_ssh_keys() {
   for user in $(ls "$SSH_DIR"); do
     USER_SSH_DIR="$SSH_DIR/$user/.ssh"
     if [ -d "$USER_SSH_DIR" ]; then
-      log_message "INFO" "Scanning $USER_SSH_DIR for unused SSH keys..."
+      format-echo "INFO" "Scanning $USER_SSH_DIR for unused SSH keys..."
       find "$USER_SSH_DIR" -type f -name "*.pub" -exec ls -l {} \;
     else
-      log_message "WARNING" "No .ssh directory found for user $user."
+      format-echo "WARNING" "No .ssh directory found for user $user."
     fi
   done
 }
@@ -100,11 +100,11 @@ main() {
   fi
 
   print_with_separator "Unused SSH Key Detector Script"
-  log_message "INFO" "Starting Unused SSH Key Detector Script..."
+  format-echo "INFO" "Starting Unused SSH Key Detector Script..."
 
   # Validate SSH directory
   if [ ! -d "$SSH_DIR" ]; then
-    log_message "ERROR" "Directory $SSH_DIR does not exist."
+    format-echo "ERROR" "Directory $SSH_DIR does not exist."
     print_with_separator "End of Unused SSH Key Detector Script"
     exit 1
   fi
@@ -112,7 +112,7 @@ main() {
   scan_unused_ssh_keys
 
   print_with_separator "End of Unused SSH Key Detector Script"
-  log_message "SUCCESS" "Unused SSH key scan completed."
+  format-echo "SUCCESS" "Unused SSH key scan completed."
 }
 
 main "$@"

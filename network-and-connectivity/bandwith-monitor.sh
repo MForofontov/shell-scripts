@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -66,7 +66,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -78,7 +78,7 @@ parse_args() {
           INTERFACE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -95,7 +95,7 @@ monitor_bandwidth() {
   local DISPLAY_COUNTER=0
   local DISPLAY_INTERVAL=5
   
-  log_message "INFO" "Beginning bandwidth monitoring on $INTERFACE..."
+  format-echo "INFO" "Beginning bandwidth monitoring on $INTERFACE..."
   print_with_separator "Bandwidth Statistics"
   
   echo -e "\033[1;34mTimestamp\033[0m               \033[1;32mDownload\033[0m     \033[1;33mUpload\033[0m"
@@ -110,13 +110,13 @@ monitor_bandwidth() {
       RX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $7}' | head -n 1)
       TX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $10}' | head -n 1)
     else
-      log_message "ERROR" "Unsupported operating system: $(uname)"
+      format-echo "ERROR" "Unsupported operating system: $(uname)"
       exit 1
     fi
 
     # Validate retrieved statistics
     if ! [[ "$RX_CURRENT" =~ ^[0-9]+$ ]] || ! [[ "$TX_CURRENT" =~ ^[0-9]+$ ]]; then
-      log_message "ERROR" "Failed to retrieve network statistics for interface $INTERFACE."
+      format-echo "ERROR" "Failed to retrieve network statistics for interface $INTERFACE."
       exit 1
     fi
 
@@ -140,10 +140,10 @@ monitor_bandwidth() {
     DISPLAY_COUNTER=$((DISPLAY_COUNTER + 1))
     if [ $DISPLAY_COUNTER -ge $DISPLAY_INTERVAL ]; then
       print_with_separator "Current Statistics"
-      log_message "INFO" "Download rate: $RX_KB KB/s"
-      log_message "INFO" "Upload rate: $TX_KB KB/s"
-      log_message "INFO" "Total received since start: $((RX_CURRENT / 1048576)) MB"
-      log_message "INFO" "Total transmitted since start: $((TX_CURRENT / 1048576)) MB"
+      format-echo "INFO" "Download rate: $RX_KB KB/s"
+      format-echo "INFO" "Upload rate: $TX_KB KB/s"
+      format-echo "INFO" "Total received since start: $((RX_CURRENT / 1048576)) MB"
+      format-echo "INFO" "Total transmitted since start: $((TX_CURRENT / 1048576)) MB"
       print_with_separator "Continuing Monitoring"
       
       echo -e "\033[1;34mTimestamp\033[0m               \033[1;32mDownload\033[0m     \033[1;33mUpload\033[0m"
@@ -174,14 +174,14 @@ main() {
   fi
 
   print_with_separator "Bandwidth Monitor Script"
-  log_message "INFO" "Starting Bandwidth Monitor Script..."
+  format-echo "INFO" "Starting Bandwidth Monitor Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Check if interface is provided
   if [ -z "$INTERFACE" ]; then
-    log_message "ERROR" "<interface> is required."
+    format-echo "ERROR" "<interface> is required."
     print_with_separator "End of Bandwidth Monitor Script"
     exit 1
   fi
@@ -189,13 +189,13 @@ main() {
   # Verify that the interface exists
   if [[ "$(uname)" == "Linux" ]]; then
     if [ ! -d "/sys/class/net/$INTERFACE" ]; then
-      log_message "ERROR" "Interface $INTERFACE does not exist."
+      format-echo "ERROR" "Interface $INTERFACE does not exist."
       print_with_separator "End of Bandwidth Monitor Script"
       exit 1
     fi
   elif [[ "$(uname)" == "Darwin" ]]; then
     if ! ifconfig "$INTERFACE" &> /dev/null; then
-      log_message "ERROR" "Interface $INTERFACE does not exist."
+      format-echo "ERROR" "Interface $INTERFACE does not exist."
       print_with_separator "End of Bandwidth Monitor Script"
       exit 1
     fi
@@ -204,18 +204,18 @@ main() {
   #---------------------------------------------------------------------
   # MONITORING OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Monitoring bandwidth usage on interface $INTERFACE..."
-  log_message "INFO" "Press Ctrl+C to stop."
+  format-echo "INFO" "Monitoring bandwidth usage on interface $INTERFACE..."
+  format-echo "INFO" "Press Ctrl+C to stop."
 
   # Start the monitoring
-  trap 'echo -e "\n"; log_message "INFO" "Bandwidth monitoring stopped."; print_with_separator "End of Bandwidth Monitor Script"; exit 0' INT
+  trap 'echo -e "\n"; format-echo "INFO" "Bandwidth monitoring stopped."; print_with_separator "End of Bandwidth Monitor Script"; exit 0' INT
   monitor_bandwidth
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
   # This section will only be reached if monitor_bandwidth exits normally
-  log_message "INFO" "Bandwidth monitoring completed."
+  format-echo "INFO" "Bandwidth monitoring completed."
   print_with_separator "End of Bandwidth Monitor Script"
 }
 

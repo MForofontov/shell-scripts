@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -59,7 +59,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -75,7 +75,7 @@ parse_args() {
         elif [ -z "$COMPRESSED_BACKUP_FILE" ]; then
           COMPRESSED_BACKUP_FILE="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -97,11 +97,11 @@ main() {
   fi
 
   print_with_separator "PostgreSQL Restore Script"
-  log_message "INFO" "Starting PostgreSQL Restore Script..."
+  format-echo "INFO" "Starting PostgreSQL Restore Script..."
 
   # Validate required arguments
   if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ] || [ -z "$COMPRESSED_BACKUP_FILE" ]; then
-    log_message "ERROR" "All required arguments <db_name>, <db_user>, <db_password>, and <compressed_backup_file> must be provided."
+    format-echo "ERROR" "All required arguments <db_name>, <db_user>, <db_password>, and <compressed_backup_file> must be provided."
     print_with_separator "End of PostgreSQL Restore Script"
     usage
   fi
@@ -111,42 +111,42 @@ main() {
 
   # Decompress the backup file
   TEMP_BACKUP_FILE="/tmp/$(basename "$COMPRESSED_BACKUP_FILE" .gz)"
-  log_message "INFO" "Decompressing backup file $COMPRESSED_BACKUP_FILE..."
+  format-echo "INFO" "Decompressing backup file $COMPRESSED_BACKUP_FILE..."
   if gunzip -c "$COMPRESSED_BACKUP_FILE" > "$TEMP_BACKUP_FILE"; then
-    log_message "SUCCESS" "Decompression successful. Temporary file: $TEMP_BACKUP_FILE"
+    format-echo "SUCCESS" "Decompression successful. Temporary file: $TEMP_BACKUP_FILE"
   else
     print_with_separator "End of PostgreSQL Restore Script"
-    log_message "ERROR" "Decompression failed."
+    format-echo "ERROR" "Decompression failed."
     unset PGPASSWORD
     exit 1
   fi
 
   # Check the backup file format and restore
   if [[ "$COMPRESSED_BACKUP_FILE" == *.sql.gz ]]; then
-    log_message "INFO" "Restoring database from SQL dump file..."
+    format-echo "INFO" "Restoring database from SQL dump file..."
     if psql -U "$DB_USER" -d "$DB_NAME" -f "$TEMP_BACKUP_FILE"; then
-      log_message "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
+      format-echo "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
     else
       print_with_separator "End of PostgreSQL Restore Script"
-      log_message "ERROR" "Failed to restore database from SQL dump file."
+      format-echo "ERROR" "Failed to restore database from SQL dump file."
       rm -f "$TEMP_BACKUP_FILE"
       unset PGPASSWORD
       exit 1
     fi
   elif [[ "$COMPRESSED_BACKUP_FILE" == *.dump.gz ]]; then
-    log_message "INFO" "Restoring database from custom format dump file..."
+    format-echo "INFO" "Restoring database from custom format dump file..."
     if pg_restore -U "$DB_USER" -d "$DB_NAME" "$TEMP_BACKUP_FILE"; then
-      log_message "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
+      format-echo "SUCCESS" "Database restored successfully from $COMPRESSED_BACKUP_FILE."
     else
       print_with_separator "End of PostgreSQL Restore Script"
-      log_message "ERROR" "Failed to restore database from custom format dump file."
+      format-echo "ERROR" "Failed to restore database from custom format dump file."
       rm -f "$TEMP_BACKUP_FILE"
       unset PGPASSWORD
       exit 1
     fi
   else
     print_with_separator "End of PostgreSQL Restore Script"
-    log_message "ERROR" "Unsupported backup file format: $COMPRESSED_BACKUP_FILE"
+    format-echo "ERROR" "Unsupported backup file format: $COMPRESSED_BACKUP_FILE"
     rm -f "$TEMP_BACKUP_FILE"
     unset PGPASSWORD
     exit 1
@@ -154,13 +154,13 @@ main() {
 
   # Clean up temporary file
   rm -f "$TEMP_BACKUP_FILE"
-  log_message "INFO" "Temporary file $TEMP_BACKUP_FILE removed."
+  format-echo "INFO" "Temporary file $TEMP_BACKUP_FILE removed."
 
   # Unset the database password
   unset PGPASSWORD
 
   print_with_separator "End of PostgreSQL Restore Script"
-  log_message "SUCCESS" "PostgreSQL restore process completed successfully."
+  format-echo "SUCCESS" "PostgreSQL restore process completed successfully."
 }
 
 main "$@"

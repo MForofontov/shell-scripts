@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -90,7 +90,7 @@ command_exists() {
 
 # Clean up temporary files on exit
 cleanup() {
-  log_message "INFO" "Cleaning up temporary files..."
+  format-echo "INFO" "Cleaning up temporary files..."
   rm -rf "$TEMP_DIR"
 }
 
@@ -102,20 +102,20 @@ trap cleanup EXIT
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
   if [[ -n "$EXPIRY" ]] && ! command_exists openssl; then
-    log_message "ERROR" "openssl not found but required for expiring credentials."
+    format-echo "ERROR" "openssl not found but required for expiring credentials."
     exit 1
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -123,13 +123,13 @@ check_requirements() {
 #=====================================================================
 # List available contexts
 list_contexts() {
-  log_message "INFO" "Listing available Kubernetes contexts..."
+  format-echo "INFO" "Listing available Kubernetes contexts..."
   
   local contexts=($(kubectl config get-contexts -o name))
   local current_context=$(kubectl config current-context 2>/dev/null || echo "none")
   
   if [[ ${#contexts[@]} -eq 0 ]]; then
-    log_message "ERROR" "No Kubernetes contexts found."
+    format-echo "ERROR" "No Kubernetes contexts found."
     exit 1
   fi
   
@@ -175,7 +175,7 @@ list_contexts() {
   
   # Display filtered contexts
   if [[ ${#filtered_contexts[@]} -eq 0 ]]; then
-    log_message "ERROR" "No contexts match the specified filters."
+    format-echo "ERROR" "No contexts match the specified filters."
     exit 1
   fi
   
@@ -210,11 +210,11 @@ export_kubeconfig() {
   local target_context="$1"
   local output_file="$2"
   
-  log_message "INFO" "Exporting kubeconfig for context: $target_context"
+  format-echo "INFO" "Exporting kubeconfig for context: $target_context"
   
   # Check if context exists
   if ! kubectl config get-contexts -o name | grep -q "^${target_context}$"; then
-    log_message "ERROR" "Context '$target_context' does not exist."
+    format-echo "ERROR" "Context '$target_context' does not exist."
     exit 1
   fi
   
@@ -223,22 +223,22 @@ export_kubeconfig() {
   
   # Export specific context to temp file
   if ! kubectl config view --minify --flatten --context="$target_context" > "$temp_kubeconfig"; then
-    log_message "ERROR" "Failed to export kubeconfig for context '$target_context'."
+    format-echo "ERROR" "Failed to export kubeconfig for context '$target_context'."
     exit 1
   fi
   
   # Apply namespace if specified
   if [[ -n "$NAMESPACE" ]]; then
-    log_message "INFO" "Setting default namespace to: $NAMESPACE"
+    format-echo "INFO" "Setting default namespace to: $NAMESPACE"
     kubectl config set-context "$target_context" --namespace="$NAMESPACE" --kubeconfig="$temp_kubeconfig" > /dev/null
   fi
   
   # Apply user filter if specified
   if [[ -n "$USER_ONLY" ]]; then
-    log_message "INFO" "Filtering for user: $USER_ONLY"
+    format-echo "INFO" "Filtering for user: $USER_ONLY"
     # This would require more complex manipulation of the kubeconfig file
     # For simplicity, we'll just note that this would need to be implemented
-    log_message "WARNING" "User filtering not fully implemented."
+    format-echo "WARNING" "User filtering not fully implemented."
   fi
   
   # Apply expiry if specified
@@ -258,7 +258,7 @@ export_kubeconfig() {
   
   # Merge with existing config if requested
   if [[ "$MERGE" == true && -f "$output_file" ]]; then
-    log_message "INFO" "Merging with existing kubeconfig at: $output_file"
+    format-echo "INFO" "Merging with existing kubeconfig at: $output_file"
     # Create a merged config
     local merged_config="$TEMP_DIR/merged-kubeconfig.yaml"
     KUBECONFIG="$output_file:$temp_kubeconfig" kubectl config view --flatten > "$merged_config"
@@ -267,13 +267,13 @@ export_kubeconfig() {
   
   # Copy final kubeconfig to output location
   if cp "$temp_kubeconfig" "$output_file"; then
-    log_message "SUCCESS" "Kubeconfig exported to: $output_file"
+    format-echo "SUCCESS" "Kubeconfig exported to: $output_file"
     
     # Show file permissions
     chmod 600 "$output_file"  # Ensure secure permissions
     ls -l "$output_file"
   else
-    log_message "ERROR" "Failed to write kubeconfig to: $output_file"
+    format-echo "ERROR" "Failed to write kubeconfig to: $output_file"
     exit 1
   fi
 }
@@ -284,7 +284,7 @@ export_kubeconfig() {
 # Sanitize kubeconfig to remove sensitive information
 sanitize_kubeconfig() {
   local kubeconfig_file="$1"
-  log_message "INFO" "Sanitizing kubeconfig to remove sensitive information..."
+  format-echo "INFO" "Sanitizing kubeconfig to remove sensitive information..."
   
   # Create a temporary file for the sanitized version
   local sanitized_file="$TEMP_DIR/sanitized-kubeconfig.yaml"
@@ -298,7 +298,7 @@ sanitize_kubeconfig() {
   # Replace the original with the sanitized version
   mv "$sanitized_file" "$kubeconfig_file"
   
-  log_message "SUCCESS" "Kubeconfig sanitized successfully."
+  format-echo "SUCCESS" "Kubeconfig sanitized successfully."
 }
 
 # Set credential expiry
@@ -306,7 +306,7 @@ set_expiry() {
   local kubeconfig_file="$1"
   local duration="$2"
   
-  log_message "INFO" "Setting credential expiry to: $duration"
+  format-echo "INFO" "Setting credential expiry to: $duration"
   
   # This is a placeholder for credential expiry setting
   # In a real implementation, this would require deep changes to the credential data
@@ -317,11 +317,11 @@ set_expiry() {
   if [[ -n "$expiry_date" ]]; then
     sed -i.bak "1s/^/# CREDENTIALS EXPIRE: $expiry_date\n/" "$kubeconfig_file"
     rm "${kubeconfig_file}.bak"
-    log_message "SUCCESS" "Added expiry note: $expiry_date"
-    log_message "WARNING" "Actual token expiry is not modified - this is just a note."
+    format-echo "SUCCESS" "Added expiry note: $expiry_date"
+    format-echo "WARNING" "Actual token expiry is not modified - this is just a note."
   else
-    log_message "ERROR" "Failed to calculate expiry date from: $duration"
-    log_message "WARNING" "Please use formats like '24h' or '7d'"
+    format-echo "ERROR" "Failed to calculate expiry date from: $duration"
+    format-echo "WARNING" "Please use formats like '24h' or '7d'"
   fi
 }
 
@@ -334,7 +334,7 @@ interactive_selection() {
   list_contexts
   
   if [[ ${#AVAILABLE_CONTEXTS[@]} -eq 1 ]]; then
-    log_message "INFO" "Only one context available. Exporting automatically."
+    format-echo "INFO" "Only one context available. Exporting automatically."
     export_kubeconfig "${AVAILABLE_CONTEXTS[0]}" "$OUTPUT_FILE"
     return
   fi
@@ -345,12 +345,12 @@ interactive_selection() {
   
   # Validate input
   if [[ "$selection" == "q" || "$selection" == "Q" ]]; then
-    log_message "INFO" "Operation cancelled by user."
+    format-echo "INFO" "Operation cancelled by user."
     exit 0
   fi
   
   if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt ${#AVAILABLE_CONTEXTS[@]} ]; then
-    log_message "ERROR" "Invalid selection. Please enter a number between 1 and ${#AVAILABLE_CONTEXTS[@]}."
+    format-echo "ERROR" "Invalid selection. Please enter a number between 1 and ${#AVAILABLE_CONTEXTS[@]}."
     exit 1
   fi
   
@@ -388,8 +388,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -428,7 +428,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -443,8 +443,8 @@ parse_args() {
       # No filters and no context, default to current context
       CONTEXT=$(kubectl config current-context 2>/dev/null)
       if [[ -z "$CONTEXT" ]]; then
-        log_message "ERROR" "No current context found and no context specified."
-        log_message "ERROR" "Please specify a context with --context or use --interactive."
+        format-echo "ERROR" "No current context found and no context specified."
+        format-echo "ERROR" "Please specify a context with --context or use --interactive."
         exit 1
       fi
     fi
@@ -471,18 +471,18 @@ main() {
 
   print_with_separator "Kubernetes Kubeconfig Export Script"
   
-  log_message "INFO" "Starting Kubernetes kubeconfig export..."
+  format-echo "INFO" "Starting Kubernetes kubeconfig export..."
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  [[ -n "$CONTEXT" ]] && log_message "INFO" "  Context:    $CONTEXT"
-  [[ -n "$CLUSTER_NAME" ]] && log_message "INFO" "  Cluster:    $CLUSTER_NAME"
-  [[ -n "$PROVIDER" ]] && log_message "INFO" "  Provider:   $PROVIDER"
-  [[ -n "$OUTPUT_FILE" ]] && log_message "INFO" "  Output:     $OUTPUT_FILE"
-  [[ "$SANITIZE" == true ]] && log_message "INFO" "  Sanitize:   Yes"
-  [[ -n "$EXPIRY" ]] && log_message "INFO" "  Expire:     $EXPIRY"
-  [[ -n "$NAMESPACE" ]] && log_message "INFO" "  Namespace:  $NAMESPACE"
-  [[ "$MERGE" == true ]] && log_message "INFO" "  Merge:      Yes"
+  format-echo "INFO" "Configuration:"
+  [[ -n "$CONTEXT" ]] && format-echo "INFO" "  Context:    $CONTEXT"
+  [[ -n "$CLUSTER_NAME" ]] && format-echo "INFO" "  Cluster:    $CLUSTER_NAME"
+  [[ -n "$PROVIDER" ]] && format-echo "INFO" "  Provider:   $PROVIDER"
+  [[ -n "$OUTPUT_FILE" ]] && format-echo "INFO" "  Output:     $OUTPUT_FILE"
+  [[ "$SANITIZE" == true ]] && format-echo "INFO" "  Sanitize:   Yes"
+  [[ -n "$EXPIRY" ]] && format-echo "INFO" "  Expire:     $EXPIRY"
+  [[ -n "$NAMESPACE" ]] && format-echo "INFO" "  Namespace:  $NAMESPACE"
+  [[ "$MERGE" == true ]] && format-echo "INFO" "  Merge:      Yes"
   
   # Check requirements
   check_requirements

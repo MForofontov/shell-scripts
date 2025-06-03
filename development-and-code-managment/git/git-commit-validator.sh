@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -65,7 +65,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -77,7 +77,7 @@ parse_args() {
           COMMIT_MESSAGE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option: $1"
+          format-echo "ERROR" "Unknown option: $1"
           usage
         fi
         ;;
@@ -104,36 +104,36 @@ main() {
   fi
 
   print_with_separator "Git Commit Validator Script"
-  log_message "INFO" "Starting Git Commit Validator Script..."
+  format-echo "INFO" "Starting Git Commit Validator Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate required arguments
   if [ -z "$COMMIT_MESSAGE" ]; then
-    log_message "ERROR" "<commit_message> is required."
+    format-echo "ERROR" "<commit_message> is required."
     print_with_separator "End of Git Commit Validator Script"
     usage
   fi
 
   # Validate git is available
   if ! command -v git &> /dev/null; then
-    log_message "ERROR" "git is not installed or not available in the PATH."
+    format-echo "ERROR" "git is not installed or not available in the PATH."
     print_with_separator "End of Git Commit Validator Script"
     exit 1
   fi
 
   # Validate commit message format (example: must start with a capital letter and be at least 10 characters long)
   if [[ ! "$COMMIT_MESSAGE" =~ ^[A-Z] ]] || [ ${#COMMIT_MESSAGE} -lt 10 ]; then
-    log_message "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
+    format-echo "ERROR" "Invalid commit message format! Must start with a capital letter and be at least 10 characters long."
     print_with_separator "End of Git Commit Validator Script"
     exit 1
   fi
 
   # Check if there are changes staged for commit
-  log_message "INFO" "Validating staged changes..."
+  format-echo "INFO" "Validating staged changes..."
   if git diff --cached --quiet; then
-    log_message "ERROR" "No changes staged for commit!"
+    format-echo "ERROR" "No changes staged for commit!"
     print_with_separator "End of Git Commit Validator Script"
     exit 1
   fi
@@ -142,13 +142,13 @@ main() {
   # COMMIT OPERATION
   #---------------------------------------------------------------------
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "Committing changes with message: $COMMIT_MESSAGE"
+  format-echo "INFO" "Committing changes with message: $COMMIT_MESSAGE"
 
   # Commit the changes
   if git commit -m "$COMMIT_MESSAGE"; then
-    log_message "SUCCESS" "Commit successful!"
+    format-echo "SUCCESS" "Commit successful!"
   else
-    log_message "ERROR" "Failed to commit changes."
+    format-echo "ERROR" "Failed to commit changes."
     print_with_separator "End of Git Commit Validator Script"
     exit 1
   fi
@@ -156,7 +156,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "$TIMESTAMP: Commit process completed."
+  format-echo "INFO" "$TIMESTAMP: Commit process completed."
   print_with_separator "End of Git Commit Validator Script"
 }
 

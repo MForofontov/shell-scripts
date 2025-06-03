@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           DEST_DIR="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,100 +110,100 @@ main() {
   fi
 
   print_with_separator "Extract Tar Archive Script"
-  log_message "INFO" "Starting Extract Tar Archive Script..."
+  format-echo "INFO" "Starting Extract Tar Archive Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$TAR_FILE" ] || [ -z "$DEST_DIR" ]; then
-    log_message "ERROR" "<tar_file> and <destination_directory> are required."
+    format-echo "ERROR" "<tar_file> and <destination_directory> are required."
     print_with_separator "End of Extract Tar Archive Script"
     exit 1
   fi
 
   if [ ! -f "$TAR_FILE" ]; then
-    log_message "ERROR" "Tar file $TAR_FILE does not exist."
+    format-echo "ERROR" "Tar file $TAR_FILE does not exist."
     print_with_separator "End of Extract Tar Archive Script"
     exit 1
   fi
 
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    format-echo "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
     if ! mkdir -p "$DEST_DIR"; then
-      log_message "ERROR" "Failed to create destination directory $DEST_DIR."
+      format-echo "ERROR" "Failed to create destination directory $DEST_DIR."
       print_with_separator "End of Extract Tar Archive Script"
       exit 1
     fi
-    log_message "SUCCESS" "Created destination directory $DEST_DIR."
+    format-echo "SUCCESS" "Created destination directory $DEST_DIR."
   fi
 
   #---------------------------------------------------------------------
   # EXTRACTION OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Extracting tar archive $TAR_FILE to $DEST_DIR..."
+  format-echo "INFO" "Extracting tar archive $TAR_FILE to $DEST_DIR..."
   
   # Detect archive type
   ARCHIVE_TYPE=$(file -b "$TAR_FILE" | tr '[:upper:]' '[:lower:]')
-  log_message "INFO" "Archive type: $ARCHIVE_TYPE"
+  format-echo "INFO" "Archive type: $ARCHIVE_TYPE"
   
   # Extract based on file type
   if [[ "$ARCHIVE_TYPE" == *"gzip"* ]]; then
-    log_message "INFO" "Extracting gzip compressed tar archive..."
+    format-echo "INFO" "Extracting gzip compressed tar archive..."
     if tar -xzf "$TAR_FILE" -C "$DEST_DIR"; then
-      log_message "SUCCESS" "Tar archive extracted successfully."
+      format-echo "SUCCESS" "Tar archive extracted successfully."
     else
-      log_message "ERROR" "Failed to extract tar archive."
+      format-echo "ERROR" "Failed to extract tar archive."
       print_with_separator "End of Extract Tar Archive Script"
       exit 1
     fi
   elif [[ "$ARCHIVE_TYPE" == *"bzip2"* ]]; then
-    log_message "INFO" "Extracting bzip2 compressed tar archive..."
+    format-echo "INFO" "Extracting bzip2 compressed tar archive..."
     if tar -xjf "$TAR_FILE" -C "$DEST_DIR"; then
-      log_message "SUCCESS" "Tar archive extracted successfully."
+      format-echo "SUCCESS" "Tar archive extracted successfully."
     else
-      log_message "ERROR" "Failed to extract tar archive."
+      format-echo "ERROR" "Failed to extract tar archive."
       print_with_separator "End of Extract Tar Archive Script"
       exit 1
     fi
   elif [[ "$ARCHIVE_TYPE" == *"xz"* ]]; then
-    log_message "INFO" "Extracting xz compressed tar archive..."
+    format-echo "INFO" "Extracting xz compressed tar archive..."
     if tar -xJf "$TAR_FILE" -C "$DEST_DIR"; then
-      log_message "SUCCESS" "Tar archive extracted successfully."
+      format-echo "SUCCESS" "Tar archive extracted successfully."
     else
-      log_message "ERROR" "Failed to extract tar archive."
+      format-echo "ERROR" "Failed to extract tar archive."
       print_with_separator "End of Extract Tar Archive Script"
       exit 1
     fi
   elif [[ "$ARCHIVE_TYPE" == *"tar"* ]]; then
-    log_message "INFO" "Extracting uncompressed tar archive..."
+    format-echo "INFO" "Extracting uncompressed tar archive..."
     if tar -xf "$TAR_FILE" -C "$DEST_DIR"; then
-      log_message "SUCCESS" "Tar archive extracted successfully."
+      format-echo "SUCCESS" "Tar archive extracted successfully."
     else
-      log_message "ERROR" "Failed to extract tar archive."
+      format-echo "ERROR" "Failed to extract tar archive."
       print_with_separator "End of Extract Tar Archive Script"
       exit 1
     fi
   else
-    log_message "ERROR" "Unsupported archive type: $ARCHIVE_TYPE"
+    format-echo "ERROR" "Unsupported archive type: $ARCHIVE_TYPE"
     print_with_separator "End of Extract Tar Archive Script"
     exit 1
   fi
   
   # List extracted files (top level only)
-  log_message "INFO" "Files extracted:"
+  format-echo "INFO" "Files extracted:"
   ls -la "$DEST_DIR" | head -n 20
   
   # Show more details if there are many files
   FILE_COUNT=$(find "$DEST_DIR" -type f | wc -l | tr -d ' ')
   if [ "$FILE_COUNT" -gt 20 ]; then
-    log_message "INFO" "Total files extracted: $FILE_COUNT (showing first 20 only)"
+    format-echo "INFO" "Total files extracted: $FILE_COUNT (showing first 20 only)"
   fi
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Extraction operation completed."
+  format-echo "INFO" "Extraction operation completed."
   print_with_separator "End of Extract Tar Archive Script"
 }
 

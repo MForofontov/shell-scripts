@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -51,14 +51,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -68,43 +68,43 @@ parse_args() {
 show_docker_info() {
   # Check if Docker is installed
   if ! command -v docker &> /dev/null; then
-    log_message "ERROR" "Docker is not installed. Please install Docker first."
+    format-echo "ERROR" "Docker is not installed. Please install Docker first."
     print_with_separator "End of Docker Info Script"
     exit 1
   fi
 
   # Check if Docker is running
   if ! docker info &> /dev/null; then
-    log_message "ERROR" "Docker is not running. Please start Docker first."
+    format-echo "ERROR" "Docker is not running. Please start Docker first."
     print_with_separator "End of Docker Info Script"
     exit 1
   fi
 
-  log_message "INFO" "Docker Containers:"
+  format-echo "INFO" "Docker Containers:"
   docker ps -a
   echo
 
-  log_message "INFO" "Docker Images:"
+  format-echo "INFO" "Docker Images:"
   docker images
   echo
 
-  log_message "INFO" "Docker Volumes:"
+  format-echo "INFO" "Docker Volumes:"
   docker volume ls
   echo
 
-  log_message "INFO" "Docker Networks:"
+  format-echo "INFO" "Docker Networks:"
   docker network ls
   echo
 
-  log_message "INFO" "Docker System Information:"
+  format-echo "INFO" "Docker System Information:"
   docker system df
   echo
 
-  log_message "INFO" "Docker Version:"
+  format-echo "INFO" "Docker Version:"
   docker --version
   echo
 
-  log_message "INFO" "Docker Info:"
+  format-echo "INFO" "Docker Info:"
   docker info
   echo
 }
@@ -122,15 +122,15 @@ main() {
   fi
 
   print_with_separator "Docker Info Script"
-  log_message "INFO" "Starting Docker Info Script..."
+  format-echo "INFO" "Starting Docker Info Script..."
 
   show_docker_info
 
   print_with_separator "End of Docker Info Script"
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    log_message "SUCCESS" "Docker information has been written to $LOG_FILE."
+    format-echo "SUCCESS" "Docker information has been written to $LOG_FILE."
   else
-    log_message "INFO" "Docker information displayed on the console."
+    format-echo "INFO" "Docker information displayed on the console."
   fi
 }
 

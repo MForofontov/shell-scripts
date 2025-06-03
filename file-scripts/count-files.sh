@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -66,7 +66,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -78,7 +78,7 @@ parse_args() {
           DIRECTORY="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -105,20 +105,20 @@ main() {
   fi
 
   print_with_separator "Count Files Script"
-  log_message "INFO" "Starting Count Files Script..."
+  format-echo "INFO" "Starting Count Files Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$DIRECTORY" ]; then
-    log_message "ERROR" "<directory> is required."
+    format-echo "ERROR" "<directory> is required."
     print_with_separator "End of Count Files Script"
     exit 1
   fi
 
   if [ ! -d "$DIRECTORY" ]; then
-    log_message "ERROR" "Directory $DIRECTORY does not exist."
+    format-echo "ERROR" "Directory $DIRECTORY does not exist."
     print_with_separator "End of Count Files Script"
     exit 1
   fi
@@ -126,7 +126,7 @@ main() {
   #---------------------------------------------------------------------
   # COUNTING OPERATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Counting files and directories in $DIRECTORY..."
+  format-echo "INFO" "Counting files and directories in $DIRECTORY..."
 
   # Count files and directories
   FILE_COUNT=$(find "$DIRECTORY" -type f | wc -l | tr -d ' ')
@@ -135,14 +135,14 @@ main() {
   # Remove the leading directory from the count of directories
   DIR_COUNT=$((DIR_COUNT - 1))
 
-  log_message "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
-  log_message "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
-  log_message "INFO" "Total items: $((FILE_COUNT + DIR_COUNT))"
+  format-echo "INFO" "Number of files in $DIRECTORY: $FILE_COUNT"
+  format-echo "INFO" "Number of directories in $DIRECTORY: $DIR_COUNT"
+  format-echo "INFO" "Total items: $((FILE_COUNT + DIR_COUNT))"
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "File counting operation completed."
+  format-echo "INFO" "File counting operation completed."
   print_with_separator "End of Count Files Script"
 }
 

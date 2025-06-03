@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -68,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -83,7 +83,7 @@ parse_args() {
           DAYS="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -110,28 +110,28 @@ main() {
   fi
 
   print_with_separator "Clean Old Files Script"
-  log_message "INFO" "Starting Clean Old Files Script..."
+  format-echo "INFO" "Starting Clean Old Files Script..."
 
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   # Check required arguments
   if [ -z "$DIRECTORY" ] || [ -z "$DAYS" ]; then
-    log_message "ERROR" "<directory> and <days> are required."
+    format-echo "ERROR" "<directory> and <days> are required."
     print_with_separator "End of Clean Old Files Script"
     exit 1
   fi
 
   # Validate directory
   if [ ! -d "$DIRECTORY" ]; then
-    log_message "ERROR" "Directory $DIRECTORY does not exist."
+    format-echo "ERROR" "Directory $DIRECTORY does not exist."
     print_with_separator "End of Clean Old Files Script"
     exit 1
   fi
 
   # Validate DAYS is a positive integer
   if ! [[ "$DAYS" =~ ^[0-9]+$ ]]; then
-    log_message "ERROR" "DAYS must be a valid positive number."
+    format-echo "ERROR" "DAYS must be a valid positive number."
     print_with_separator "End of Clean Old Files Script"
     exit 1
   fi
@@ -139,21 +139,21 @@ main() {
   #---------------------------------------------------------------------
   # FILE CLEANING
   #---------------------------------------------------------------------
-  log_message "INFO" "Removing files older than $DAYS days from $DIRECTORY..."
+  format-echo "INFO" "Removing files older than $DAYS days from $DIRECTORY..."
   
   # Count files to be removed
   FILE_COUNT=$(find "$DIRECTORY" -type f -mtime +"$DAYS" | wc -l | tr -d ' ')
   
   if [ "$FILE_COUNT" -eq 0 ]; then
-    log_message "INFO" "No files older than $DAYS days found in $DIRECTORY."
+    format-echo "INFO" "No files older than $DAYS days found in $DIRECTORY."
   else
-    log_message "INFO" "Found $FILE_COUNT files to remove."
+    format-echo "INFO" "Found $FILE_COUNT files to remove."
     
     # Remove the files
     if find "$DIRECTORY" -type f -mtime +"$DAYS" -exec rm -v {} \; ; then
-      log_message "SUCCESS" "Successfully removed $FILE_COUNT files older than $DAYS days from $DIRECTORY."
+      format-echo "SUCCESS" "Successfully removed $FILE_COUNT files older than $DAYS days from $DIRECTORY."
     else
-      log_message "ERROR" "Failed to remove some files from $DIRECTORY."
+      format-echo "ERROR" "Failed to remove some files from $DIRECTORY."
       print_with_separator "End of Clean Old Files Script"
       exit 1
     fi
@@ -162,7 +162,7 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "INFO" "Clean Old Files operation completed."
+  format-echo "INFO" "Clean Old Files operation completed."
   print_with_separator "End of Clean Old Files Script"
 }
 

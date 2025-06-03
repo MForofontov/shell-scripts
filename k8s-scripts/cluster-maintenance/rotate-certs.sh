@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -112,60 +112,60 @@ command_exists() {
 #=====================================================================
 # Auto-detect provider
 detect_provider() {
-  log_message "INFO" "Auto-detecting Kubernetes cluster provider..."
+  format-echo "INFO" "Auto-detecting Kubernetes cluster provider..."
   
   # Check if kubeadm is installed and configured
   if command_exists kubeadm && kubeadm config view &>/dev/null; then
-    log_message "INFO" "Detected provider: kubeadm"
+    format-echo "INFO" "Detected provider: kubeadm"
     echo "kubeadm"
     return 0
   fi
   
   # Check for k3s
   if command_exists k3s || [ -f "/etc/systemd/system/k3s.service" ]; then
-    log_message "INFO" "Detected provider: k3s"
+    format-echo "INFO" "Detected provider: k3s"
     echo "k3s"
     return 0
   fi
   
   # Check for RKE
   if command_exists rke && [ -f "./cluster.yml" ]; then
-    log_message "INFO" "Detected provider: rke"
+    format-echo "INFO" "Detected provider: rke"
     echo "rke"
     return 0
   fi
   
   # Check for RKE2
   if command_exists rke2 || [ -f "/etc/systemd/system/rke2-server.service" ]; then
-    log_message "INFO" "Detected provider: rke2"
+    format-echo "INFO" "Detected provider: rke2"
     echo "rke2"
     return 0
   fi
   
   # Check for kops
   if command_exists kops && kops get cluster &>/dev/null; then
-    log_message "INFO" "Detected provider: kops"
+    format-echo "INFO" "Detected provider: kops"
     echo "kops"
     return 0
   fi
   
   # Check for minikube
   if command_exists minikube && minikube status &>/dev/null; then
-    log_message "INFO" "Detected provider: minikube"
+    format-echo "INFO" "Detected provider: minikube"
     echo "minikube"
     return 0
   fi
   
   # Check for kind
   if command_exists kind && kind get clusters &>/dev/null; then
-    log_message "INFO" "Detected provider: kind"
+    format-echo "INFO" "Detected provider: kind"
     echo "kind"
     return 0
   fi
   
   # Check for k3d
   if command_exists k3d && k3d cluster list &>/dev/null; then
-    log_message "INFO" "Detected provider: k3d"
+    format-echo "INFO" "Detected provider: k3d"
     echo "k3d"
     return 0
   fi
@@ -173,20 +173,20 @@ detect_provider() {
   # Check for managed providers (this is approximate)
   context=$(kubectl config current-context 2>/dev/null)
   if [[ "$context" == *"eks"* ]]; then
-    log_message "INFO" "Detected provider: eks"
+    format-echo "INFO" "Detected provider: eks"
     echo "eks"
     return 0
   elif [[ "$context" == *"gke"* ]]; then
-    log_message "INFO" "Detected provider: gke"
+    format-echo "INFO" "Detected provider: gke"
     echo "gke"
     return 0
   elif [[ "$context" == *"aks"* ]]; then
-    log_message "INFO" "Detected provider: aks"
+    format-echo "INFO" "Detected provider: aks"
     echo "aks"
     return 0
   fi
   
-  log_message "WARNING" "Could not detect provider automatically"
+  format-echo "WARNING" "Could not detect provider automatically"
   echo "unknown"
   return 1
 }
@@ -203,10 +203,10 @@ backup_certificates() {
     backup_dir="/tmp/k8s-certs-backup-$(date +%Y%m%d-%H%M%S)"
   fi
   
-  log_message "INFO" "Backing up certificates to $backup_dir"
+  format-echo "INFO" "Backing up certificates to $backup_dir"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would back up certificates to $backup_dir"
+    format-echo "DRY-RUN" "Would back up certificates to $backup_dir"
     return 0
   fi
   
@@ -221,9 +221,9 @@ backup_certificates() {
         cp /etc/kubernetes/kubelet.conf "$backup_dir/" 2>/dev/null || true
         cp /etc/kubernetes/controller-manager.conf "$backup_dir/" 2>/dev/null || true
         cp /etc/kubernetes/scheduler.conf "$backup_dir/" 2>/dev/null || true
-        log_message "SUCCESS" "Backed up kubeadm certificates to $backup_dir"
+        format-echo "SUCCESS" "Backed up kubeadm certificates to $backup_dir"
       else
-        log_message "WARNING" "Directory /etc/kubernetes/pki not found, skipping backup"
+        format-echo "WARNING" "Directory /etc/kubernetes/pki not found, skipping backup"
       fi
       ;;
       
@@ -231,9 +231,9 @@ backup_certificates() {
       # Backup k3s certificates
       if [[ -d "/var/lib/rancher/k3s/server/tls" ]]; then
         cp -r /var/lib/rancher/k3s/server/tls "$backup_dir/"
-        log_message "SUCCESS" "Backed up k3s certificates to $backup_dir"
+        format-echo "SUCCESS" "Backed up k3s certificates to $backup_dir"
       else
-        log_message "WARNING" "Directory /var/lib/rancher/k3s/server/tls not found, skipping backup"
+        format-echo "WARNING" "Directory /var/lib/rancher/k3s/server/tls not found, skipping backup"
       fi
       ;;
       
@@ -241,22 +241,22 @@ backup_certificates() {
       # Backup RKE/RKE2 certificates
       if [[ -d "/etc/kubernetes/ssl" ]]; then
         cp -r /etc/kubernetes/ssl "$backup_dir/"
-        log_message "SUCCESS" "Backed up RKE certificates to $backup_dir"
+        format-echo "SUCCESS" "Backed up RKE certificates to $backup_dir"
       elif [[ -d "/var/lib/rancher/rke2/server/tls" ]]; then
         cp -r /var/lib/rancher/rke2/server/tls "$backup_dir/"
-        log_message "SUCCESS" "Backed up RKE2 certificates to $backup_dir"
+        format-echo "SUCCESS" "Backed up RKE2 certificates to $backup_dir"
       else
-        log_message "WARNING" "Certificate directories not found, skipping backup"
+        format-echo "WARNING" "Certificate directories not found, skipping backup"
       fi
       ;;
       
     *)
-      log_message "WARNING" "Backup not supported for provider $provider"
+      format-echo "WARNING" "Backup not supported for provider $provider"
       return 1
       ;;
   esac
   
-  log_message "INFO" "Certificates backed up to $backup_dir"
+  format-echo "INFO" "Certificates backed up to $backup_dir"
   return 0
 }
 
@@ -268,7 +268,7 @@ check_certificate_expiration() {
   local provider="$1"
   local days_warning="$2"
   
-  log_message "INFO" "Checking certificate expiration for provider: $provider"
+  format-echo "INFO" "Checking certificate expiration for provider: $provider"
   
   local has_expiring=false
   local expiry_data=""
@@ -288,13 +288,13 @@ check_certificate_expiration() {
         # Check if any certificates are expiring soon
         if grep -q "CERTIFICATE.*< ${days_warning}d" "$temp_file"; then
           has_expiring=true
-          log_message "WARNING" "Some certificates will expire within $days_warning days:"
+          format-echo "WARNING" "Some certificates will expire within $days_warning days:"
           grep -A1 "CERTIFICATE.*< ${days_warning}d" "$temp_file"
         else
-          log_message "SUCCESS" "No certificates will expire within $days_warning days"
+          format-echo "SUCCESS" "No certificates will expire within $days_warning days"
         fi
       else
-        log_message "ERROR" "kubeadm not found, cannot check certificate expiration"
+        format-echo "ERROR" "kubeadm not found, cannot check certificate expiration"
         return 1
       fi
       ;;
@@ -312,7 +312,7 @@ check_certificate_expiration() {
       fi
       
       if [[ ${#cert_dirs[@]} -eq 0 ]]; then
-        log_message "ERROR" "Certificate directories not found for provider $provider"
+        format-echo "ERROR" "Certificate directories not found for provider $provider"
         return 1
       fi
       
@@ -344,17 +344,17 @@ check_certificate_expiration() {
       expiry_data=$(cat "$temp_file")
       
       if [[ "$has_expiring" == true ]]; then
-        log_message "WARNING" "Some certificates will expire within $days_warning days"
+        format-echo "WARNING" "Some certificates will expire within $days_warning days"
         grep -A1 ".*($days_left days left).*" "$temp_file" | grep -B1 ".*([0-9]\{1,2\} days left).*"
       else
-        log_message "SUCCESS" "No certificates will expire within $days_warning days"
+        format-echo "SUCCESS" "No certificates will expire within $days_warning days"
       fi
       ;;
       
     minikube|kind|k3d)
       # These providers usually handle certificate rotation automatically
-      log_message "INFO" "Certificate rotation for $provider is typically handled automatically"
-      log_message "INFO" "Checking API server certificate..."
+      format-echo "INFO" "Certificate rotation for $provider is typically handled automatically"
+      format-echo "INFO" "Checking API server certificate..."
       
       # Get the API server URL
       local api_server
@@ -371,7 +371,7 @@ check_certificate_expiration() {
         # Get the certificate from the API server
         if ! echo | openssl s_client -connect "$host_port" -servername "kubernetes" 2>/dev/null | \
              openssl x509 -noout -enddate -subject > /dev/null; then
-          log_message "ERROR" "Could not connect to API server at $host_port"
+          format-echo "ERROR" "Could not connect to API server at $host_port"
           return 1
         fi
         
@@ -398,20 +398,20 @@ check_certificate_expiration() {
         
         if [[ $days_left -lt $days_warning ]]; then
           has_expiring=true
-          log_message "WARNING" "API server certificate will expire within $days_warning days"
+          format-echo "WARNING" "API server certificate will expire within $days_warning days"
         else
-          log_message "SUCCESS" "API server certificate will not expire within $days_warning days"
+          format-echo "SUCCESS" "API server certificate will not expire within $days_warning days"
         fi
       else
-        log_message "ERROR" "Could not determine API server URL"
+        format-echo "ERROR" "Could not determine API server URL"
         return 1
       fi
       ;;
       
     eks|gke|aks)
       # Managed Kubernetes providers handle certificate rotation automatically
-      log_message "INFO" "Certificate rotation for $provider is handled by the cloud provider"
-      log_message "INFO" "Checking API server certificate..."
+      format-echo "INFO" "Certificate rotation for $provider is handled by the cloud provider"
+      format-echo "INFO" "Checking API server certificate..."
       
       # Get the API server URL
       local api_server
@@ -428,7 +428,7 @@ check_certificate_expiration() {
         # Get the certificate from the API server
         if ! echo | openssl s_client -connect "$host_port" -servername "kubernetes" 2>/dev/null | \
              openssl x509 -noout -enddate -subject > /dev/null; then
-          log_message "ERROR" "Could not connect to API server at $host_port"
+          format-echo "ERROR" "Could not connect to API server at $host_port"
           return 1
         fi
         
@@ -455,19 +455,19 @@ check_certificate_expiration() {
         
         if [[ $days_left -lt $days_warning ]]; then
           has_expiring=true
-          log_message "WARNING" "API server certificate will expire within $days_warning days"
-          log_message "INFO" "Contact your cloud provider to handle certificate rotation"
+          format-echo "WARNING" "API server certificate will expire within $days_warning days"
+          format-echo "INFO" "Contact your cloud provider to handle certificate rotation"
         else
-          log_message "SUCCESS" "API server certificate will not expire within $days_warning days"
+          format-echo "SUCCESS" "API server certificate will not expire within $days_warning days"
         fi
       else
-        log_message "ERROR" "Could not determine API server URL"
+        format-echo "ERROR" "Could not determine API server URL"
         return 1
       fi
       ;;
       
     *)
-      log_message "ERROR" "Certificate expiration check not supported for provider $provider"
+      format-echo "ERROR" "Certificate expiration check not supported for provider $provider"
       return 1
       ;;
   esac
@@ -477,7 +477,7 @@ check_certificate_expiration() {
   #---------------------------------------------------------------------
   # If verbose, show all expiry data
   if [[ "$VERBOSE" == true ]]; then
-    log_message "INFO" "Certificate expiration details:"
+    format-echo "INFO" "Certificate expiration details:"
     echo "$expiry_data"
   fi
   
@@ -499,10 +499,10 @@ rotate_certificates() {
   local provider="$1"
   local rotate_ca="$2"
   
-  log_message "INFO" "Rotating certificates for provider: $provider"
+  format-echo "INFO" "Rotating certificates for provider: $provider"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would rotate certificates for provider $provider"
+    format-echo "DRY-RUN" "Would rotate certificates for provider $provider"
     return 0
   fi
   
@@ -513,16 +513,16 @@ rotate_certificates() {
     kubeadm)
       # Use kubeadm to rotate certificates
       if [[ "$rotate_ca" == true ]]; then
-        log_message "WARNING" "Rotating CA certificates requires manual intervention and may break your cluster"
-        log_message "INFO" "Please refer to Kubernetes documentation for CA rotation"
+        format-echo "WARNING" "Rotating CA certificates requires manual intervention and may break your cluster"
+        format-echo "INFO" "Please refer to Kubernetes documentation for CA rotation"
         return 1
       else
-        log_message "INFO" "Rotating certificates using kubeadm..."
+        format-echo "INFO" "Rotating certificates using kubeadm..."
         if kubeadm certs renew all; then
-          log_message "SUCCESS" "Certificates rotated successfully with kubeadm"
+          format-echo "SUCCESS" "Certificates rotated successfully with kubeadm"
           return 0
         else
-          log_message "ERROR" "Failed to rotate certificates with kubeadm"
+          format-echo "ERROR" "Failed to rotate certificates with kubeadm"
           return 1
         fi
       fi
@@ -530,19 +530,19 @@ rotate_certificates() {
       
     k3s)
       # K3s requires a restart to rotate certificates
-      log_message "INFO" "K3s requires a restart to rotate certificates"
+      format-echo "INFO" "K3s requires a restart to rotate certificates"
       
       if [[ "$RESTART_COMPONENTS" != true ]]; then
-        log_message "WARNING" "Certificate rotation for k3s requires component restart, but --no-restart was specified"
+        format-echo "WARNING" "Certificate rotation for k3s requires component restart, but --no-restart was specified"
         return 1
       fi
       
-      log_message "INFO" "Restarting k3s service..."
+      format-echo "INFO" "Restarting k3s service..."
       if systemctl restart k3s; then
-        log_message "SUCCESS" "K3s restarted, certificates should be rotated"
+        format-echo "SUCCESS" "K3s restarted, certificates should be rotated"
         return 0
       else
-        log_message "ERROR" "Failed to restart k3s service"
+        format-echo "ERROR" "Failed to restart k3s service"
         return 1
       fi
       ;;
@@ -556,35 +556,35 @@ rotate_certificates() {
           rotate_cmd="$rotate_cmd --rotate-ca"
         fi
         
-        log_message "INFO" "Rotating certificates using RKE..."
+        format-echo "INFO" "Rotating certificates using RKE..."
         if eval "$rotate_cmd"; then
-          log_message "SUCCESS" "Certificates rotated successfully with RKE"
+          format-echo "SUCCESS" "Certificates rotated successfully with RKE"
           return 0
         else
-          log_message "ERROR" "Failed to rotate certificates with RKE"
+          format-echo "ERROR" "Failed to rotate certificates with RKE"
           return 1
         fi
       else
-        log_message "ERROR" "rke command not found"
+        format-echo "ERROR" "rke command not found"
         return 1
       fi
       ;;
       
     rke2)
       # RKE2 requires a restart to rotate certificates
-      log_message "INFO" "RKE2 requires a restart to rotate certificates"
+      format-echo "INFO" "RKE2 requires a restart to rotate certificates"
       
       if [[ "$RESTART_COMPONENTS" != true ]]; then
-        log_message "WARNING" "Certificate rotation for RKE2 requires component restart, but --no-restart was specified"
+        format-echo "WARNING" "Certificate rotation for RKE2 requires component restart, but --no-restart was specified"
         return 1
       fi
       
-      log_message "INFO" "Restarting rke2-server service..."
+      format-echo "INFO" "Restarting rke2-server service..."
       if systemctl restart rke2-server; then
-        log_message "SUCCESS" "RKE2 server restarted, certificates should be rotated"
+        format-echo "SUCCESS" "RKE2 server restarted, certificates should be rotated"
         return 0
       else
-        log_message "ERROR" "Failed to restart rke2-server service"
+        format-echo "ERROR" "Failed to restart rke2-server service"
         return 1
       fi
       ;;
@@ -592,26 +592,26 @@ rotate_certificates() {
     kops)
       # Use kops to rotate certificates
       if command_exists kops; then
-        log_message "INFO" "Rotating certificates using kops..."
+        format-echo "INFO" "Rotating certificates using kops..."
         
         local cluster_name="$CLUSTER_NAME"
         if [[ -z "$cluster_name" ]]; then
           cluster_name=$(kops get cluster -o name)
           if [[ -z "$cluster_name" ]]; then
-            log_message "ERROR" "Could not determine kops cluster name"
+            format-echo "ERROR" "Could not determine kops cluster name"
             return 1
           fi
         fi
         
         if kops update cluster "$cluster_name" --yes; then
-          log_message "SUCCESS" "Certificates rotated successfully with kops"
+          format-echo "SUCCESS" "Certificates rotated successfully with kops"
           return 0
         else
-          log_message "ERROR" "Failed to rotate certificates with kops"
+          format-echo "ERROR" "Failed to rotate certificates with kops"
           return 1
         fi
       else
-        log_message "ERROR" "kops command not found"
+        format-echo "ERROR" "kops command not found"
         return 1
       fi
       ;;
@@ -619,7 +619,7 @@ rotate_certificates() {
     minikube)
       # Minikube requires a restart
       if command_exists minikube; then
-        log_message "INFO" "Restarting minikube to rotate certificates..."
+        format-echo "INFO" "Restarting minikube to rotate certificates..."
         
         local minikube_profile="$CLUSTER_NAME"
         if [[ -z "$minikube_profile" ]]; then
@@ -628,37 +628,37 @@ rotate_certificates() {
         
         if minikube stop -p "$minikube_profile" && \
            minikube start -p "$minikube_profile" --extra-config=apiserver.enable-admission-plugins=DefaultStorageClass; then
-          log_message "SUCCESS" "Minikube restarted, certificates should be rotated"
+          format-echo "SUCCESS" "Minikube restarted, certificates should be rotated"
           return 0
         else
-          log_message "ERROR" "Failed to restart minikube"
+          format-echo "ERROR" "Failed to restart minikube"
           return 1
         fi
       else
-        log_message "ERROR" "minikube command not found"
+        format-echo "ERROR" "minikube command not found"
         return 1
       fi
       ;;
       
     kind)
       # kind uses Docker certs, requires cluster recreation for full rotation
-      log_message "WARNING" "Full certificate rotation for kind requires cluster recreation"
-      log_message "INFO" "Exporting updated kubeconfig..."
+      format-echo "WARNING" "Full certificate rotation for kind requires cluster recreation"
+      format-echo "INFO" "Exporting updated kubeconfig..."
       
       local kind_cluster="$CLUSTER_NAME"
       if [[ -z "$kind_cluster" ]]; then
         kind_cluster=$(kind get clusters | head -1)
         if [[ -z "$kind_cluster" ]]; then
-          log_message "ERROR" "Could not determine kind cluster name"
+          format-echo "ERROR" "Could not determine kind cluster name"
           return 1
         fi
       fi
       
       if kind export kubeconfig --name "$kind_cluster"; then
-        log_message "SUCCESS" "Updated kubeconfig for kind cluster $kind_cluster"
+        format-echo "SUCCESS" "Updated kubeconfig for kind cluster $kind_cluster"
         return 0
       else
-        log_message "ERROR" "Failed to export kubeconfig for kind cluster"
+        format-echo "ERROR" "Failed to export kubeconfig for kind cluster"
         return 1
       fi
       ;;
@@ -666,39 +666,39 @@ rotate_certificates() {
     k3d)
       # k3d requires a restart
       if command_exists k3d; then
-        log_message "INFO" "Restarting k3d cluster to rotate certificates..."
+        format-echo "INFO" "Restarting k3d cluster to rotate certificates..."
         
         local k3d_cluster="$CLUSTER_NAME"
         if [[ -z "$k3d_cluster" ]]; then
           k3d_cluster=$(k3d cluster list -o json | jq -r '.[0].name')
           if [[ -z "$k3d_cluster" ]]; then
-            log_message "ERROR" "Could not determine k3d cluster name"
+            format-echo "ERROR" "Could not determine k3d cluster name"
             return 1
           fi
         fi
         
         if k3d cluster restart "$k3d_cluster"; then
-          log_message "SUCCESS" "K3d cluster restarted, certificates should be rotated"
+          format-echo "SUCCESS" "K3d cluster restarted, certificates should be rotated"
           return 0
         else
-          log_message "ERROR" "Failed to restart k3d cluster"
+          format-echo "ERROR" "Failed to restart k3d cluster"
           return 1
         fi
       else
-        log_message "ERROR" "k3d command not found"
+        format-echo "ERROR" "k3d command not found"
         return 1
       fi
       ;;
       
     eks|gke|aks)
       # Managed Kubernetes providers handle certificate rotation automatically
-      log_message "WARNING" "Certificate rotation for $provider is handled by the cloud provider"
-      log_message "INFO" "No action needed for managed Kubernetes services"
+      format-echo "WARNING" "Certificate rotation for $provider is handled by the cloud provider"
+      format-echo "INFO" "No action needed for managed Kubernetes services"
       return 0
       ;;
       
     *)
-      log_message "ERROR" "Certificate rotation not supported for provider $provider"
+      format-echo "ERROR" "Certificate rotation not supported for provider $provider"
       return 1
       ;;
   esac
@@ -712,14 +712,14 @@ restart_components() {
   local provider="$1"
   
   if [[ "$RESTART_COMPONENTS" != true ]]; then
-    log_message "INFO" "Skipping component restart as requested"
+    format-echo "INFO" "Skipping component restart as requested"
     return 0
   fi
   
-  log_message "INFO" "Restarting Kubernetes components for provider: $provider"
+  format-echo "INFO" "Restarting Kubernetes components for provider: $provider"
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would restart components for provider $provider"
+    format-echo "DRY-RUN" "Would restart components for provider $provider"
     return 0
   fi
   
@@ -729,7 +729,7 @@ restart_components() {
   case "$provider" in
     kubeadm)
       # Restart control plane components
-      log_message "INFO" "Restarting kubeadm control plane components..."
+      format-echo "INFO" "Restarting kubeadm control plane components..."
       
       local restart_failed=false
       
@@ -737,16 +737,16 @@ restart_components() {
       if [[ -f "/etc/kubernetes/admin.conf" ]]; then
         # Restart kubelet
         if systemctl restart kubelet; then
-          log_message "SUCCESS" "Restarted kubelet"
+          format-echo "SUCCESS" "Restarted kubelet"
         else
-          log_message "ERROR" "Failed to restart kubelet"
+          format-echo "ERROR" "Failed to restart kubelet"
           restart_failed=true
         fi
         
         # For containerized control plane, we rely on kubelet to restart static pods
-        log_message "INFO" "Kubelet will automatically restart control plane components as static pods"
+        format-echo "INFO" "Kubelet will automatically restart control plane components as static pods"
       else
-        log_message "WARNING" "Not on a control plane node, skipping control plane restart"
+        format-echo "WARNING" "Not on a control plane node, skipping control plane restart"
       fi
       
       if [[ "$restart_failed" == true ]]; then
@@ -757,30 +757,30 @@ restart_components() {
       
     k3s|rke2)
       # Already restarted during certificate rotation
-      log_message "INFO" "Components already restarted during certificate rotation"
+      format-echo "INFO" "Components already restarted during certificate rotation"
       return 0
       ;;
       
     rke)
       # RKE manages its own components
-      log_message "INFO" "RKE manages its own components, no restart needed"
+      format-echo "INFO" "RKE manages its own components, no restart needed"
       return 0
       ;;
       
     kops|minikube|kind|k3d)
       # Already handled during certificate rotation
-      log_message "INFO" "Components already restarted during certificate rotation"
+      format-echo "INFO" "Components already restarted during certificate rotation"
       return 0
       ;;
       
     eks|gke|aks)
       # Managed Kubernetes providers handle component management
-      log_message "INFO" "Component management for $provider is handled by the cloud provider"
+      format-echo "INFO" "Component management for $provider is handled by the cloud provider"
       return 0
       ;;
       
     *)
-      log_message "WARNING" "Component restart not supported for provider $provider"
+      format-echo "WARNING" "Component restart not supported for provider $provider"
       return 0
       ;;
   esac
@@ -794,17 +794,17 @@ validate_certificates() {
   local provider="$1"
   
   if [[ "$SKIP_VALIDATION" == true ]]; then
-    log_message "INFO" "Skipping validation as requested"
+    format-echo "INFO" "Skipping validation as requested"
     return 0
   fi
   
-  log_message "INFO" "Validating certificates after rotation for provider: $provider"
+  format-echo "INFO" "Validating certificates after rotation for provider: $provider"
   
   #---------------------------------------------------------------------
   # API SERVER CONNECTIVITY CHECK
   #---------------------------------------------------------------------
   # Check API server connectivity
-  log_message "INFO" "Checking API server connectivity..."
+  format-echo "INFO" "Checking API server connectivity..."
   local start_time=$(date +%s)
   local end_time=$((start_time + 60))  # 60 second timeout
   local connected=false
@@ -814,39 +814,39 @@ validate_certificates() {
       connected=true
       break
     fi
-    log_message "INFO" "Waiting for API server to become available..."
+    format-echo "INFO" "Waiting for API server to become available..."
     sleep 5
   done
   
   if [[ "$connected" != true ]]; then
-    log_message "ERROR" "API server is not responding after certificate rotation"
+    format-echo "ERROR" "API server is not responding after certificate rotation"
     return 1
   fi
   
-  log_message "SUCCESS" "API server is responding"
+  format-echo "SUCCESS" "API server is responding"
   
   #---------------------------------------------------------------------
   # COMPONENT STATUS CHECK
   #---------------------------------------------------------------------
   # Check component status
-  log_message "INFO" "Checking component status..."
+  format-echo "INFO" "Checking component status..."
   kubectl get componentstatuses
   
   #---------------------------------------------------------------------
   # CERTIFICATE VERIFICATION
   #---------------------------------------------------------------------
   # Re-check certificate expiration
-  log_message "INFO" "Verifying certificate expiration dates..."
+  format-echo "INFO" "Verifying certificate expiration dates..."
   if ! check_certificate_expiration "$provider" "$DAYS_WARNING"; then
     if [[ $? -eq 10 ]]; then
-      log_message "WARNING" "Some certificates still appear to be expiring soon"
+      format-echo "WARNING" "Some certificates still appear to be expiring soon"
     else
-      log_message "ERROR" "Failed to verify certificate expiration dates"
+      format-echo "ERROR" "Failed to verify certificate expiration dates"
       return 1
     fi
   fi
   
-  log_message "SUCCESS" "Certificate validation completed successfully"
+  format-echo "SUCCESS" "Certificate validation completed successfully"
   return 0
 }
 
@@ -914,7 +914,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -941,7 +941,7 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
-  log_message "INFO" "Starting certificate rotation process..."
+  format-echo "INFO" "Starting certificate rotation process..."
   
   #---------------------------------------------------------------------
   # PROVIDER DETECTION AND CONFIGURATION
@@ -951,30 +951,30 @@ main() {
     PROVIDER=$(detect_provider)
     
     if [[ "$PROVIDER" == "unknown" ]]; then
-      log_message "ERROR" "Could not auto-detect provider, please specify with --provider"
+      format-echo "ERROR" "Could not auto-detect provider, please specify with --provider"
       exit 1
     fi
   fi
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Provider:           $PROVIDER"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Provider:           $PROVIDER"
   
   if [[ -n "$CLUSTER_NAME" ]]; then
-    log_message "INFO" "  Cluster Name:       $CLUSTER_NAME"
+    format-echo "INFO" "  Cluster Name:       $CLUSTER_NAME"
   fi
   
   if [[ -n "$KUBECONFIG_PATH" ]]; then
-    log_message "INFO" "  Kubeconfig Path:    $KUBECONFIG_PATH"
+    format-echo "INFO" "  Kubeconfig Path:    $KUBECONFIG_PATH"
   fi
   
-  log_message "INFO" "  Warning Days:       $DAYS_WARNING"
-  log_message "INFO" "  Backup Directory:   ${BACKUP_DIR:-Auto-generated}"
-  log_message "INFO" "  Rotate CA:          $ROTATE_CA"
-  log_message "INFO" "  Restart Components: $RESTART_COMPONENTS"
-  log_message "INFO" "  Skip Validation:    $SKIP_VALIDATION"
-  log_message "INFO" "  Dry Run:            $DRY_RUN"
-  log_message "INFO" "  Force:              $FORCE"
+  format-echo "INFO" "  Warning Days:       $DAYS_WARNING"
+  format-echo "INFO" "  Backup Directory:   ${BACKUP_DIR:-Auto-generated}"
+  format-echo "INFO" "  Rotate CA:          $ROTATE_CA"
+  format-echo "INFO" "  Restart Components: $RESTART_COMPONENTS"
+  format-echo "INFO" "  Skip Validation:    $SKIP_VALIDATION"
+  format-echo "INFO" "  Dry Run:            $DRY_RUN"
+  format-echo "INFO" "  Force:              $FORCE"
   
   #---------------------------------------------------------------------
   # CERTIFICATE EXPIRATION CHECK
@@ -982,25 +982,25 @@ main() {
   # Check if certificates need rotation
   local need_rotation=false
   
-  log_message "INFO" "Checking if certificates need rotation..."
+  format-echo "INFO" "Checking if certificates need rotation..."
   if ! check_certificate_expiration "$PROVIDER" "$DAYS_WARNING"; then
     exit_code=$?
     
     if [[ $exit_code -eq 10 ]]; then
       need_rotation=true
-      log_message "WARNING" "Certificates are expiring soon, rotation needed"
+      format-echo "WARNING" "Certificates are expiring soon, rotation needed"
     else
-      log_message "ERROR" "Failed to check certificate expiration"
+      format-echo "ERROR" "Failed to check certificate expiration"
       exit 1
     fi
   elif [[ "$FORCE" == true ]]; then
     need_rotation=true
-    log_message "INFO" "Forcing certificate rotation as requested"
+    format-echo "INFO" "Forcing certificate rotation as requested"
   else
-    log_message "SUCCESS" "Certificates are not expiring soon, rotation not needed"
+    format-echo "SUCCESS" "Certificates are not expiring soon, rotation not needed"
     
     if [[ "$FORCE" != true ]]; then
-      log_message "INFO" "Use --force to rotate certificates anyway"
+      format-echo "INFO" "Use --force to rotate certificates anyway"
       exit 0
     fi
   fi
@@ -1012,11 +1012,11 @@ main() {
   if [[ "$need_rotation" == true || "$FORCE" == true ]]; then
     # Confirm rotation if not forced
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
-      log_message "WARNING" "You are about to rotate certificates for your Kubernetes cluster"
-      log_message "WARNING" "This may cause temporary disruption to cluster operations"
+      format-echo "WARNING" "You are about to rotate certificates for your Kubernetes cluster"
+      format-echo "WARNING" "This may cause temporary disruption to cluster operations"
       read -p "Do you want to continue? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 0
       fi
     fi
@@ -1025,28 +1025,28 @@ main() {
     if [[ "$DRY_RUN" != true ]]; then
       backup_certificates "$BACKUP_DIR" "$PROVIDER"
     else
-      log_message "DRY-RUN" "Would back up certificates to ${BACKUP_DIR:-auto-generated directory}"
+      format-echo "DRY-RUN" "Would back up certificates to ${BACKUP_DIR:-auto-generated directory}"
     fi
     
     # Rotate certificates
     if ! rotate_certificates "$PROVIDER" "$ROTATE_CA"; then
-      log_message "ERROR" "Certificate rotation failed"
+      format-echo "ERROR" "Certificate rotation failed"
       exit 1
     fi
     
     # Restart components if needed
     if ! restart_components "$PROVIDER"; then
-      log_message "ERROR" "Component restart failed"
+      format-echo "ERROR" "Component restart failed"
       exit 1
     fi
     
     # Validate certificates
     if ! validate_certificates "$PROVIDER"; then
-      log_message "ERROR" "Certificate validation failed"
+      format-echo "ERROR" "Certificate validation failed"
       exit 1
     fi
     
-    log_message "SUCCESS" "Certificate rotation completed successfully"
+    format-echo "SUCCESS" "Certificate rotation completed successfully"
   fi
   
   print_with_separator "End of Kubernetes Certificate Rotation"

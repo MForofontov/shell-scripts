@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         elif [ -z "$KEY_DIR" ]; then
           KEY_DIR="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -89,40 +89,40 @@ main() {
   fi
 
   print_with_separator "Generate SSH Key Script"
-  log_message "INFO" "Starting Generate SSH Key Script..."
+  format-echo "INFO" "Starting Generate SSH Key Script..."
 
   # Validate required arguments
   if [ -z "$KEY_NAME" ] || [ -z "$KEY_DIR" ]; then
-    log_message "ERROR" "Both <key_name> and <key_dir> are required."
+    format-echo "ERROR" "Both <key_name> and <key_dir> are required."
     print_with_separator "End of Generate SSH Key Script"
     usage
   fi
 
   # Check if ssh-keygen is installed
   if ! command -v ssh-keygen &> /dev/null; then
-    log_message "ERROR" "ssh-keygen is not installed. Please install OpenSSH tools."
+    format-echo "ERROR" "ssh-keygen is not installed. Please install OpenSSH tools."
     print_with_separator "End of Generate SSH Key Script"
     exit 1
   fi
 
   # Ensure the key directory exists
-  log_message "INFO" "Ensuring the key directory exists: $KEY_DIR"
+  format-echo "INFO" "Ensuring the key directory exists: $KEY_DIR"
   mkdir -p "$KEY_DIR"
 
   # Generate SSH key pair
-  log_message "INFO" "Generating SSH key pair..."
+  format-echo "INFO" "Generating SSH key pair..."
   if ssh-keygen -t rsa -b 4096 -f "$KEY_DIR/$KEY_NAME" -N ""; then
-    log_message "SUCCESS" "SSH key pair generated successfully at:"
-    log_message "SUCCESS" "Private key: $KEY_DIR/$KEY_NAME"
-    log_message "SUCCESS" "Public key: $KEY_DIR/${KEY_NAME}.pub"
+    format-echo "SUCCESS" "SSH key pair generated successfully at:"
+    format-echo "SUCCESS" "Private key: $KEY_DIR/$KEY_NAME"
+    format-echo "SUCCESS" "Public key: $KEY_DIR/${KEY_NAME}.pub"
   else
     print_with_separator "End of Generate SSH Key Script"
-    log_message "ERROR" "Failed to generate SSH key pair."
+    format-echo "ERROR" "Failed to generate SSH key pair."
     exit 1
   fi
 
   print_with_separator "End of Generate SSH Key Script"
-  log_message "SUCCESS" "SSH key generation process completed successfully."
+  format-echo "SUCCESS" "SSH key generation process completed successfully."
 }
 
 main "$@"

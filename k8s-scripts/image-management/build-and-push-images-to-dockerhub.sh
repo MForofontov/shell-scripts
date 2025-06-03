@@ -12,14 +12,14 @@ set -euo pipefail
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -107,15 +107,15 @@ build_and_push_images() {
     
     # Increment counter
     ((current_image++))
-    log_message "INFO" "Processing image $current_image of $total_images: $registry_image"
+    format-echo "INFO" "Processing image $current_image of $total_images: $registry_image"
     
     #---------------------------------------------------------------------
     # BUILD OPERATION
     #---------------------------------------------------------------------
     # Build the Docker image
-    log_message "INFO" "Building $registry_image from $context_path"
+    format-echo "INFO" "Building $registry_image from $context_path"
     if ! docker build -t "$registry_image" "$context_path"; then
-      log_message "ERROR" "Failed to build $registry_image"
+      format-echo "ERROR" "Failed to build $registry_image"
       exit 1
     fi
     
@@ -123,16 +123,16 @@ build_and_push_images() {
     # PUSH OPERATION
     #---------------------------------------------------------------------
     # Push the Docker image to the registry
-    log_message "INFO" "Pushing $registry_image to Docker registry"
+    format-echo "INFO" "Pushing $registry_image to Docker registry"
     if ! docker push "$registry_image"; then
-      log_message "ERROR" "Failed to push $registry_image"
+      format-echo "ERROR" "Failed to push $registry_image"
       exit 1
     fi
     
-    log_message "SUCCESS" "Successfully built and pushed $registry_image"
+    format-echo "SUCCESS" "Successfully built and pushed $registry_image"
   done < "$image_list"
   
-  log_message "INFO" "Processed $current_image images"
+  format-echo "INFO" "Processed $current_image images"
 }
 
 #=====================================================================
@@ -148,25 +148,25 @@ prepare_manifests() {
   #---------------------------------------------------------------------
   # Create a temporary directory to store modified manifests
   TMP_MANIFEST_DIR=$(mktemp -d)
-  log_message "INFO" "Creating temporary directory for manifests: $TMP_MANIFEST_DIR"
+  format-echo "INFO" "Creating temporary directory for manifests: $TMP_MANIFEST_DIR"
   
   #---------------------------------------------------------------------
   # MANIFEST COPYING
   #---------------------------------------------------------------------
   # Copy manifests from source directory to temporary directory
-  log_message "INFO" "Copying manifests from $manifest_dir to temporary directory $TMP_MANIFEST_DIR"
+  format-echo "INFO" "Copying manifests from $manifest_dir to temporary directory $TMP_MANIFEST_DIR"
   cp "$manifest_dir"/*.yaml "$TMP_MANIFEST_DIR"/
   
   #---------------------------------------------------------------------
   # PLACEHOLDER REPLACEMENT
   #---------------------------------------------------------------------
   # Replace Docker username placeholder in all YAML files
-  log_message "INFO" "Replacing <DOCKER_USERNAME> with $docker_username in all YAMLs in $TMP_MANIFEST_DIR"
+  format-echo "INFO" "Replacing <DOCKER_USERNAME> with $docker_username in all YAMLs in $TMP_MANIFEST_DIR"
   for file in "$TMP_MANIFEST_DIR"/*.yaml; do
     sed -i '' "s|<DOCKER_USERNAME>|$docker_username|g" "$file"
   done
   
-  log_message "SUCCESS" "Replaced <DOCKER_USERNAME> in all deployment YAMLs in $TMP_MANIFEST_DIR."
+  format-echo "SUCCESS" "Replaced <DOCKER_USERNAME> in all deployment YAMLs in $TMP_MANIFEST_DIR."
   echo "$TMP_MANIFEST_DIR"
 }
 
@@ -183,11 +183,11 @@ create_k8s_secret() {
   #---------------------------------------------------------------------
   # SECRET CREATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Creating Docker registry secret in namespace $project"
+  format-echo "INFO" "Creating Docker registry secret in namespace $project"
   
   # Check if namespace exists, create if not
   if ! kubectl get namespace "$project" &>/dev/null; then
-    log_message "INFO" "Namespace $project does not exist, creating it"
+    format-echo "INFO" "Namespace $project does not exist, creating it"
     kubectl create namespace "$project"
   fi
   
@@ -199,16 +199,16 @@ create_k8s_secret() {
     --docker-email="$email" \
     -n "$project" --dry-run=client -o yaml | kubectl apply -f -
   
-  log_message "SUCCESS" "Docker registry secret 'regcred' created or updated in namespace $project"
+  format-echo "SUCCESS" "Docker registry secret 'regcred' created or updated in namespace $project"
   
   #---------------------------------------------------------------------
   # SECRET VERIFICATION
   #---------------------------------------------------------------------
   # Verify the secret was created successfully
   if kubectl get secret regcred -n "$project" &>/dev/null; then
-    log_message "INFO" "Secret 'regcred' verified in namespace $project"
+    format-echo "INFO" "Secret 'regcred' verified in namespace $project"
   else
-    log_message "WARNING" "Could not verify existence of secret 'regcred' in namespace $project"
+    format-echo "WARNING" "Could not verify existence of secret 'regcred' in namespace $project"
   fi
 }
 
@@ -251,7 +251,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -262,19 +262,19 @@ parse_args() {
   #---------------------------------------------------------------------
   # Check if required parameters are provided
   if [[ -z "$DOCKER_USERNAME" || -z "$DOCKER_PAT" || -z "$EMAIL" || -z "$PROJECT_NAME" ]]; then
-    log_message "ERROR" "Docker username, PAT, email, and project name are required."
+    format-echo "ERROR" "Docker username, PAT, email, and project name are required."
     usage
   fi
   
   # Check if image list file exists
   if [[ ! -f "$IMAGE_LIST" ]]; then
-    log_message "ERROR" "Image list file not found: $IMAGE_LIST"
+    format-echo "ERROR" "Image list file not found: $IMAGE_LIST"
     exit 1
   fi
   
   # Check if manifest directory exists if provided
   if [[ -n "$MANIFEST_DIR" && ! -d "$MANIFEST_DIR" ]]; then
-    log_message "ERROR" "Manifest directory not found: $MANIFEST_DIR"
+    format-echo "ERROR" "Manifest directory not found: $MANIFEST_DIR"
     exit 1
   fi
 }
@@ -306,34 +306,34 @@ main() {
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
-  log_message "INFO" "Starting build and push process..."
-  log_message "INFO" "  Docker Username: $DOCKER_USERNAME"
-  log_message "INFO" "  Email:           $EMAIL"
-  log_message "INFO" "  K8s Namespace:   $PROJECT_NAME"
-  log_message "INFO" "  Image List:      $IMAGE_LIST"
+  format-echo "INFO" "Starting build and push process..."
+  format-echo "INFO" "  Docker Username: $DOCKER_USERNAME"
+  format-echo "INFO" "  Email:           $EMAIL"
+  format-echo "INFO" "  K8s Namespace:   $PROJECT_NAME"
+  format-echo "INFO" "  Image List:      $IMAGE_LIST"
   if [[ -n "$MANIFEST_DIR" ]]; then
-    log_message "INFO" "  Manifest Dir:    $MANIFEST_DIR"
+    format-echo "INFO" "  Manifest Dir:    $MANIFEST_DIR"
   fi
 
   #---------------------------------------------------------------------
   # DOCKER LOGIN
   #---------------------------------------------------------------------
   # Log in to Docker registry
-  log_message "INFO" "Logging in to Docker registry as $DOCKER_USERNAME"
+  format-echo "INFO" "Logging in to Docker registry as $DOCKER_USERNAME"
   if ! echo "$DOCKER_PAT" | docker login --username "$DOCKER_USERNAME" --password-stdin; then
-    log_message "ERROR" "Failed to log in to Docker registry"
+    format-echo "ERROR" "Failed to log in to Docker registry"
     exit 1
   fi
-  log_message "SUCCESS" "Successfully logged in to Docker registry"
+  format-echo "SUCCESS" "Successfully logged in to Docker registry"
 
   #---------------------------------------------------------------------
   # BUILD AND PUSH
   #---------------------------------------------------------------------
   # Build and push Docker images
-  log_message "INFO" "Building and pushing images from $IMAGE_LIST to Docker registry"
+  format-echo "INFO" "Building and pushing images from $IMAGE_LIST to Docker registry"
   build_and_push_images "$DOCKER_USERNAME" "$IMAGE_LIST"
-  log_message "SUCCESS" "All images built and pushed to Docker registry as $DOCKER_USERNAME"
-  log_message "INFO" "Use image references like: $DOCKER_USERNAME/<image-name>:latest in your Kubernetes manifests."
+  format-echo "SUCCESS" "All images built and pushed to Docker registry as $DOCKER_USERNAME"
+  format-echo "INFO" "Use image references like: $DOCKER_USERNAME/<image-name>:latest in your Kubernetes manifests."
 
   #---------------------------------------------------------------------
   # KUBERNETES SECRET CREATION
@@ -346,9 +346,9 @@ main() {
   #---------------------------------------------------------------------
   # If manifest directory is provided, process manifests
   if [[ -n "$MANIFEST_DIR" && -d "$MANIFEST_DIR" ]]; then
-    log_message "INFO" "Processing Kubernetes manifests in $MANIFEST_DIR"
+    format-echo "INFO" "Processing Kubernetes manifests in $MANIFEST_DIR"
     TMP_MANIFEST_DIR=$(prepare_manifests "$MANIFEST_DIR" "$DOCKER_USERNAME")
-    log_message "SUCCESS" "Processed manifests available at: $TMP_MANIFEST_DIR"
+    format-echo "SUCCESS" "Processed manifests available at: $TMP_MANIFEST_DIR"
     echo "Processed manifest directory: $TMP_MANIFEST_DIR"
   fi
 
@@ -356,7 +356,7 @@ main() {
   # COMPLETION
   #---------------------------------------------------------------------
   print_with_separator "End of Build and Push Images to Docker Registry Script"
-  log_message "SUCCESS" "Operation completed successfully."
+  format-echo "SUCCESS" "Operation completed successfully."
 }
 
 #=====================================================================
