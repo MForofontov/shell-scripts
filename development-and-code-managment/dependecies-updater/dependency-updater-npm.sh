@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"

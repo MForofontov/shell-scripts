@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,9 +25,15 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 REQUIREMENTS_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Python Dependency Updater Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -46,6 +55,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -74,7 +86,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -89,6 +107,9 @@ main() {
   print_with_separator "Python Dependency Updater Script"
   log_message "INFO" "Starting Python Dependency Updater Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate requirements file argument
   if [ -z "$REQUIREMENTS_FILE" ]; then
     log_message "ERROR" "Requirements file is required."
@@ -109,6 +130,9 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # DEPENDENCY UPDATES
+  #---------------------------------------------------------------------
   log_message "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
   log_message "INFO" "Starting dependency update process..."
 
@@ -120,8 +144,14 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "INFO" "Dependency update process completed."
   print_with_separator "End of Python Dependency Updater Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
