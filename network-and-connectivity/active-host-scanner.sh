@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,9 +25,15 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 NETWORK=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Active Host Scanner Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -46,6 +55,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -74,17 +86,43 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# NETWORK SCANNING FUNCTIONS
+#=====================================================================
 scan_network() {
+  local active_count=0
+  local total_ips=254
+  
+  log_message "INFO" "Beginning scan of $total_ips IP addresses in $NETWORK.0/24 network..."
+  print_with_separator "Scanning Network"
+  
   for IP in $(seq 1 254); do
     TARGET="$NETWORK.$IP"
     if ping -c 1 -W 1 "$TARGET" &> /dev/null; then
       TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-      log_message "INFO" "$TIMESTAMP: $TARGET is active"
+      log_message "SUCCESS" "$TIMESTAMP: $TARGET is active"
+      active_count=$((active_count + 1))
+    fi
+    
+    # Show progress every 25 IPs
+    if [ $((IP % 25)) -eq 0 ]; then
+      log_message "INFO" "Progress: $IP/$total_ips IPs scanned ($(( (IP * 100) / total_ips ))%)"
     fi
   done
+  
+  print_with_separator "End of Network Scan"
+  log_message "INFO" "Found $active_count active hosts out of $total_ips scanned IPs."
+  
+  return $active_count
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -99,19 +137,24 @@ main() {
   print_with_separator "Active Host Scanner Script"
   log_message "INFO" "Starting Active Host Scanner Script..."
 
-  # Validate arguments
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Validate network argument
   if [ -z "$NETWORK" ]; then
     log_message "ERROR" "<network_prefix> is required."
     print_with_separator "End of Active Host Scanner Script"
     exit 1
   fi
 
+  # Validate network format
   if ! [[ "$NETWORK" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then
     log_message "ERROR" "Invalid network prefix format: $NETWORK. Expected format: X.X.X (e.g., 192.168.1)"
     print_with_separator "End of Active Host Scanner Script"
     exit 1
   fi
 
+  # Validate IP octets are in valid range
   IFS='.' read -r A B C <<< "$NETWORK"
   if (( A < 0 || A > 255 || B < 0 || B > 255 || C < 0 || C > 255 )); then
     log_message "ERROR" "Network prefix out of range: $NETWORK. Each octet must be between 0 and 255."
@@ -119,11 +162,31 @@ main() {
     exit 1
   fi
 
+  # Check if ping is available
+  if ! command -v ping &> /dev/null; then
+    log_message "ERROR" "The 'ping' utility is not available. Please install it to use this script."
+    print_with_separator "End of Active Host Scanner Script"
+    exit 1
+  fi
+
+  #---------------------------------------------------------------------
+  # SCANNING OPERATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Scanning network $NETWORK.0/24 for active hosts..."
-
+  
+  # Perform network scan
   scan_network
-
+  ACTIVE_HOSTS=$?
+  
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "SUCCESS" "Network scan completed successfully."
+  log_message "INFO" "Total active hosts: $ACTIVE_HOSTS"
   print_with_separator "End of Active Host Scanner Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
