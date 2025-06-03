@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,8 +25,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Git Stash Manager Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -47,6 +56,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -70,7 +82,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -85,6 +103,9 @@ main() {
   print_with_separator "Git Stash Manager Script"
   log_message "INFO" "Starting Git Stash Manager Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate git is available
   if ! command -v git &> /dev/null; then
     log_message "ERROR" "git is not installed or not available in the PATH."
@@ -92,9 +113,26 @@ main() {
     exit 1
   fi
 
+  # Validate that we're in a git repository
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    log_message "ERROR" "Not in a git repository. Please run this script inside a git repository."
+    print_with_separator "End of Git Stash Manager Script"
+    exit 1
+  fi
+
+  #---------------------------------------------------------------------
+  # STASH MANAGEMENT
+  #---------------------------------------------------------------------
   # Display available stashes
   log_message "INFO" "Listing available stashes..."
   git stash list
+
+  # Check if there are any stashes
+  if [[ -z "$(git stash list)" ]]; then
+    log_message "INFO" "No stashes found in this repository."
+    print_with_separator "End of Git Stash Manager Script"
+    exit 0
+  fi
 
   # Prompt user for stash index
   log_message "INFO" "Enter stash index to apply or drop (e.g., stash@{0}):"
@@ -141,8 +179,14 @@ main() {
     fi
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   log_message "INFO" "Git Stash Manager Script completed."
   print_with_separator "End of Git Stash Manager Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
