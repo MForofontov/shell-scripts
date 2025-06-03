@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 SOURCE=""
 OUTPUT_ZIP=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Create Zip Archive Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Create Zip Archive Script"
   log_message "INFO" "Starting Create Zip Archive Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$SOURCE" ] || [ -z "$OUTPUT_ZIP" ]; then
     log_message "ERROR" "<source> and <output_zip> are required."
@@ -107,17 +128,39 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # ZIP CREATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Creating zip archive: $OUTPUT_ZIP from $SOURCE"
 
+  # Get source size before compression
+  if [ -d "$SOURCE" ]; then
+    SOURCE_SIZE=$(du -sh "$SOURCE" | cut -f1)
+    log_message "INFO" "Source directory size: $SOURCE_SIZE"
+  elif [ -f "$SOURCE" ]; then
+    SOURCE_SIZE=$(du -sh "$SOURCE" | cut -f1)
+    log_message "INFO" "Source file size: $SOURCE_SIZE"
+  fi
+
+  # Create the zip archive
   if zip -r "$OUTPUT_ZIP" "$SOURCE"; then
+    ZIP_SIZE=$(du -sh "$OUTPUT_ZIP" | cut -f1)
     log_message "SUCCESS" "Zip archive created: $OUTPUT_ZIP"
+    log_message "INFO" "Archive size: $ZIP_SIZE"
   else
     log_message "ERROR" "Failed to create zip archive."
     print_with_separator "End of Create Zip Archive Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Zip creation operation completed."
   print_with_separator "End of Create Zip Archive Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
