@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 DIRECTORY=""
 PREFIX=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Add Prefix to Files Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,34 +112,61 @@ main() {
   print_with_separator "Add Prefix to Files Script"
   log_message "INFO" "Starting Add Prefix to Files Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Validate required arguments
   if [ -z "$DIRECTORY" ] || [ -z "$PREFIX" ]; then
     log_message "ERROR" "<directory> and <prefix> are required."
     print_with_separator "End of Add Prefix to Files Script"
     exit 1
   fi
 
+  # Validate directory exists
   if [ ! -d "$DIRECTORY" ]; then
     log_message "ERROR" "Directory $DIRECTORY does not exist."
     print_with_separator "End of Add Prefix to Files Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # FILE PROCESSING
+  #---------------------------------------------------------------------
   log_message "INFO" "Adding prefix '$PREFIX' to files in $DIRECTORY..."
 
+  # Count files to be processed
+  FILE_COUNT=$(find "$DIRECTORY" -maxdepth 1 -type f | wc -l | tr -d ' ')
+  log_message "INFO" "Found $FILE_COUNT files to process in directory"
+  
+  # Process each file
+  RENAMED_COUNT=0
   for FILE in "$DIRECTORY"/*; do
     if [ -f "$FILE" ]; then
       BASENAME=$(basename "$FILE")
       NEW_NAME="${DIRECTORY}/${PREFIX}${BASENAME}"
+      
+      if [ "$FILE" = "$NEW_NAME" ]; then
+        log_message "INFO" "Skipping $BASENAME (already has prefix)"
+        continue
+      fi
+      
       if mv "$FILE" "$NEW_NAME"; then
         log_message "SUCCESS" "Renamed $BASENAME to ${PREFIX}${BASENAME}"
+        RENAMED_COUNT=$((RENAMED_COUNT + 1))
       else
         log_message "ERROR" "Failed to rename $BASENAME"
       fi
     fi
   done
 
-  log_message "INFO" "Prefix addition completed."
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Prefix addition completed: $RENAMED_COUNT of $FILE_COUNT files renamed."
   print_with_separator "End of Add Prefix to Files Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
