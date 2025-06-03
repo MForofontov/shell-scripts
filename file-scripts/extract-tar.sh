@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 TAR_FILE=""
 DEST_DIR=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Extract Tar Archive Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -94,6 +112,9 @@ main() {
   print_with_separator "Extract Tar Archive Script"
   log_message "INFO" "Starting Extract Tar Archive Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$TAR_FILE" ] || [ -z "$DEST_DIR" ]; then
     log_message "ERROR" "<tar_file> and <destination_directory> are required."
@@ -108,22 +129,85 @@ main() {
   fi
 
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "ERROR" "Destination directory $DEST_DIR does not exist."
-    print_with_separator "End of Extract Tar Archive Script"
-    exit 1
+    log_message "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    if ! mkdir -p "$DEST_DIR"; then
+      log_message "ERROR" "Failed to create destination directory $DEST_DIR."
+      print_with_separator "End of Extract Tar Archive Script"
+      exit 1
+    fi
+    log_message "SUCCESS" "Created destination directory $DEST_DIR."
   fi
 
+  #---------------------------------------------------------------------
+  # EXTRACTION OPERATION
+  #---------------------------------------------------------------------
   log_message "INFO" "Extracting tar archive $TAR_FILE to $DEST_DIR..."
-
-  if tar -xzf "$TAR_FILE" -C "$DEST_DIR"; then
-    log_message "SUCCESS" "Tar archive extracted to $DEST_DIR."
+  
+  # Detect archive type
+  ARCHIVE_TYPE=$(file -b "$TAR_FILE" | tr '[:upper:]' '[:lower:]')
+  log_message "INFO" "Archive type: $ARCHIVE_TYPE"
+  
+  # Extract based on file type
+  if [[ "$ARCHIVE_TYPE" == *"gzip"* ]]; then
+    log_message "INFO" "Extracting gzip compressed tar archive..."
+    if tar -xzf "$TAR_FILE" -C "$DEST_DIR"; then
+      log_message "SUCCESS" "Tar archive extracted successfully."
+    else
+      log_message "ERROR" "Failed to extract tar archive."
+      print_with_separator "End of Extract Tar Archive Script"
+      exit 1
+    fi
+  elif [[ "$ARCHIVE_TYPE" == *"bzip2"* ]]; then
+    log_message "INFO" "Extracting bzip2 compressed tar archive..."
+    if tar -xjf "$TAR_FILE" -C "$DEST_DIR"; then
+      log_message "SUCCESS" "Tar archive extracted successfully."
+    else
+      log_message "ERROR" "Failed to extract tar archive."
+      print_with_separator "End of Extract Tar Archive Script"
+      exit 1
+    fi
+  elif [[ "$ARCHIVE_TYPE" == *"xz"* ]]; then
+    log_message "INFO" "Extracting xz compressed tar archive..."
+    if tar -xJf "$TAR_FILE" -C "$DEST_DIR"; then
+      log_message "SUCCESS" "Tar archive extracted successfully."
+    else
+      log_message "ERROR" "Failed to extract tar archive."
+      print_with_separator "End of Extract Tar Archive Script"
+      exit 1
+    fi
+  elif [[ "$ARCHIVE_TYPE" == *"tar"* ]]; then
+    log_message "INFO" "Extracting uncompressed tar archive..."
+    if tar -xf "$TAR_FILE" -C "$DEST_DIR"; then
+      log_message "SUCCESS" "Tar archive extracted successfully."
+    else
+      log_message "ERROR" "Failed to extract tar archive."
+      print_with_separator "End of Extract Tar Archive Script"
+      exit 1
+    fi
   else
-    log_message "ERROR" "Failed to extract tar archive."
+    log_message "ERROR" "Unsupported archive type: $ARCHIVE_TYPE"
     print_with_separator "End of Extract Tar Archive Script"
     exit 1
   fi
+  
+  # List extracted files (top level only)
+  log_message "INFO" "Files extracted:"
+  ls -la "$DEST_DIR" | head -n 20
+  
+  # Show more details if there are many files
+  FILE_COUNT=$(find "$DEST_DIR" -type f | wc -l | tr -d ' ')
+  if [ "$FILE_COUNT" -gt 20 ]; then
+    log_message "INFO" "Total files extracted: $FILE_COUNT (showing first 20 only)"
+  fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  log_message "INFO" "Extraction operation completed."
   print_with_separator "End of Extract Tar Archive Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
