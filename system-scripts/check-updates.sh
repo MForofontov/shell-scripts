@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -51,14 +51,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -78,22 +78,22 @@ main() {
   fi
 
   print_with_separator "Check Updates Script"
-  log_message "INFO" "Starting Check Updates Script..."
+  format-echo "INFO" "Starting Check Updates Script..."
 
   # Check for updates
   if [ -x "$(command -v apt-get)" ]; then
-    log_message "INFO" "Using apt-get package manager."
+    format-echo "INFO" "Using apt-get package manager."
     sudo apt-get update && sudo apt-get upgrade -y
   elif [ -x "$(command -v yum)" ]; then
-    log_message "INFO" "Using yum package manager."
+    format-echo "INFO" "Using yum package manager."
     sudo yum check-update && sudo yum update -y
   else
     print_with_separator "End of Check Updates Script"
-    log_message "ERROR" "Unsupported package manager."
+    format-echo "ERROR" "Unsupported package manager."
     exit 1
   fi
 
-  log_message "SUCCESS" "System updates completed successfully."
+  format-echo "SUCCESS" "System updates completed successfully."
   print_with_separator "End of Check Updates Script"
 }
 

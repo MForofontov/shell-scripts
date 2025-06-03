@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 SOURCE=""
 OUTPUT_ZIP=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Create Zip Archive Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -56,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -71,7 +83,7 @@ parse_args() {
           OUTPUT_ZIP="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -92,32 +110,57 @@ main() {
   fi
 
   print_with_separator "Create Zip Archive Script"
-  log_message "INFO" "Starting Create Zip Archive Script..."
+  format-echo "INFO" "Starting Create Zip Archive Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$SOURCE" ] || [ -z "$OUTPUT_ZIP" ]; then
-    log_message "ERROR" "<source> and <output_zip> are required."
+    format-echo "ERROR" "<source> and <output_zip> are required."
     print_with_separator "End of Create Zip Archive Script"
     exit 1
   fi
 
   if [ ! -e "$SOURCE" ]; then
-    log_message "ERROR" "Source $SOURCE does not exist."
+    format-echo "ERROR" "Source $SOURCE does not exist."
     print_with_separator "End of Create Zip Archive Script"
     exit 1
   fi
 
-  log_message "INFO" "Creating zip archive: $OUTPUT_ZIP from $SOURCE"
+  #---------------------------------------------------------------------
+  # ZIP CREATION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Creating zip archive: $OUTPUT_ZIP from $SOURCE"
 
+  # Get source size before compression
+  if [ -d "$SOURCE" ]; then
+    SOURCE_SIZE=$(du -sh "$SOURCE" | cut -f1)
+    format-echo "INFO" "Source directory size: $SOURCE_SIZE"
+  elif [ -f "$SOURCE" ]; then
+    SOURCE_SIZE=$(du -sh "$SOURCE" | cut -f1)
+    format-echo "INFO" "Source file size: $SOURCE_SIZE"
+  fi
+
+  # Create the zip archive
   if zip -r "$OUTPUT_ZIP" "$SOURCE"; then
-    log_message "SUCCESS" "Zip archive created: $OUTPUT_ZIP"
+    ZIP_SIZE=$(du -sh "$OUTPUT_ZIP" | cut -f1)
+    format-echo "SUCCESS" "Zip archive created: $OUTPUT_ZIP"
+    format-echo "INFO" "Archive size: $ZIP_SIZE"
   else
-    log_message "ERROR" "Failed to create zip archive."
+    format-echo "ERROR" "Failed to create zip archive."
     print_with_separator "End of Create Zip Archive Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Zip creation operation completed."
   print_with_separator "End of Create Zip Archive Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

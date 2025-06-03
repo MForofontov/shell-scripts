@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -56,7 +56,7 @@ parse_args() {
     case "$1" in
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "Log file name is required after --log."
+          format-echo "ERROR" "Log file name is required after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         ;;
       --start)
         if ! [[ "${2:-}" =~ ^[0-9]+$ ]] || [ "$2" -lt 1 ] || [ "$2" -gt 65535 ]; then
-          log_message "ERROR" "Invalid start port: $2"
+          format-echo "ERROR" "Invalid start port: $2"
           usage
         fi
         START_PORT="$2"
@@ -75,7 +75,7 @@ parse_args() {
         ;;
       --end)
         if ! [[ "${2:-}" =~ ^[0-9]+$ ]] || [ "$2" -lt 1 ] || [ "$2" -gt 65535 ]; then
-          log_message "ERROR" "Invalid end port: $2"
+          format-echo "ERROR" "Invalid end port: $2"
           usage
         fi
         END_PORT="$2"
@@ -83,7 +83,7 @@ parse_args() {
         ;;
       --output)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "Output file name is required after --output."
+          format-echo "ERROR" "Output file name is required after --output."
           usage
         fi
         OUTPUT_FILE="$2"
@@ -94,7 +94,7 @@ parse_args() {
           SERVER="$1"
           shift
         else
-          log_message "ERROR" "Unknown option: $1"
+          format-echo "ERROR" "Unknown option: $1"
           usage
         fi
         ;;
@@ -106,7 +106,7 @@ scan_ports() {
   for PORT in $(seq "$START_PORT" "$END_PORT"); do
     if timeout 1 bash -c "echo > /dev/tcp/$SERVER/$PORT" &> /dev/null; then
       RESULT="Port $PORT is open."
-      log_message "SUCCESS" "$RESULT"
+      format-echo "SUCCESS" "$RESULT"
       if [ -n "$OUTPUT_FILE" ]; then
         echo "$RESULT" >> "$OUTPUT_FILE"
       fi
@@ -127,24 +127,24 @@ main() {
   fi
 
   print_with_separator "Port Scanner Script"
-  log_message "INFO" "Starting Port Scanner Script..."
+  format-echo "INFO" "Starting Port Scanner Script..."
 
   # Validate server
   if [ -z "$SERVER" ]; then
-    log_message "ERROR" "Server is required."
+    format-echo "ERROR" "Server is required."
     print_with_separator "End of Port Scanner Script"
     usage
   fi
 
   if ! ping -c 1 -W 1 "$SERVER" &> /dev/null; then
-    log_message "ERROR" "Cannot reach server $SERVER."
+    format-echo "ERROR" "Cannot reach server $SERVER."
     print_with_separator "End of Port Scanner Script"
     exit 1
   fi
 
   # Validate port range
   if [ "$START_PORT" -gt "$END_PORT" ]; then
-    log_message "ERROR" "Start port ($START_PORT) is greater than end port ($END_PORT)."
+    format-echo "ERROR" "Start port ($START_PORT) is greater than end port ($END_PORT)."
     print_with_separator "End of Port Scanner Script"
     usage
   fi
@@ -152,22 +152,22 @@ main() {
   # Validate output file if provided
   if [ -n "$OUTPUT_FILE" ]; then
     if ! touch "$OUTPUT_FILE" 2>/dev/null; then
-      log_message "ERROR" "Cannot write to output file $OUTPUT_FILE."
+      format-echo "ERROR" "Cannot write to output file $OUTPUT_FILE."
       print_with_separator "End of Port Scanner Script"
       exit 1
     fi
   fi
 
-  log_message "INFO" "Scanning ports on $SERVER from $START_PORT to $END_PORT..."
+  format-echo "INFO" "Scanning ports on $SERVER from $START_PORT to $END_PORT..."
 
   if scan_ports; then
     if [ -n "$OUTPUT_FILE" ]; then
-      log_message "SUCCESS" "Port scan results have been written to $OUTPUT_FILE."
+      format-echo "SUCCESS" "Port scan results have been written to $OUTPUT_FILE."
     else
-      log_message "SUCCESS" "Port scan results displayed on the console."
+      format-echo "SUCCESS" "Port scan results displayed on the console."
     fi
   else
-    log_message "ERROR" "Failed to scan ports on $SERVER."
+    format-echo "ERROR" "Failed to scan ports on $SERVER."
     print_with_separator "End of Port Scanner Script"
     exit 1
   fi

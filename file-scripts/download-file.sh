@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 URL=""
 DEST_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Download File Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -56,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -71,7 +83,7 @@ parse_args() {
           DEST_FILE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -92,32 +110,66 @@ main() {
   fi
 
   print_with_separator "Download File Script"
-  log_message "INFO" "Starting Download File Script..."
+  format-echo "INFO" "Starting Download File Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$URL" ] || [ -z "$DEST_FILE" ]; then
-    log_message "ERROR" "<url> and <destination_file> are required."
+    format-echo "ERROR" "<url> and <destination_file> are required."
     print_with_separator "End of Download File Script"
     exit 1
   fi
 
   if ! [[ "$URL" =~ ^https?:// ]]; then
-    log_message "ERROR" "Invalid URL: $URL"
+    format-echo "ERROR" "Invalid URL: $URL"
     print_with_separator "End of Download File Script"
     exit 1
   fi
 
-  log_message "INFO" "Downloading file from $URL to $DEST_FILE..."
+  # Create destination directory if it doesn't exist
+  DEST_DIR=$(dirname "$DEST_FILE")
+  if [ ! -d "$DEST_DIR" ]; then
+    format-echo "INFO" "Creating destination directory: $DEST_DIR"
+    if ! mkdir -p "$DEST_DIR"; then
+      format-echo "ERROR" "Failed to create destination directory: $DEST_DIR"
+      print_with_separator "End of Download File Script"
+      exit 1
+    fi
+  fi
 
-  if curl -fLo "$DEST_FILE" "$URL"; then
-    log_message "SUCCESS" "File downloaded to $DEST_FILE."
+  #---------------------------------------------------------------------
+  # DOWNLOAD OPERATION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Downloading file from $URL to $DEST_FILE..."
+
+  # Check if curl is available
+  if ! command -v curl &> /dev/null; then
+    format-echo "ERROR" "curl is not installed or not available in the PATH."
+    print_with_separator "End of Download File Script"
+    exit 1
+  fi
+
+  # Download the file with progress
+  if curl -#fLo "$DEST_FILE" "$URL"; then
+    # Get file size
+    FILE_SIZE=$(du -h "$DEST_FILE" | cut -f1)
+    format-echo "SUCCESS" "File downloaded to $DEST_FILE (Size: $FILE_SIZE)."
   else
-    log_message "ERROR" "Failed to download file from $URL."
+    format-echo "ERROR" "Failed to download file from $URL."
     print_with_separator "End of Download File Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Download operation completed."
   print_with_separator "End of Download File Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

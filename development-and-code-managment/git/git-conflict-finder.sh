@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,8 +25,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Git Conflict Finder Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -43,6 +52,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -51,7 +63,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -59,14 +71,20 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -79,25 +97,60 @@ main() {
   fi
 
   print_with_separator "Git Conflict Finder Script"
-  log_message "INFO" "Starting Git Conflict Finder Script..."
+  format-echo "INFO" "Starting Git Conflict Finder Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate git is available
   if ! command -v git &> /dev/null; then
-    log_message "ERROR" "git is not installed or not available in the PATH."
+    format-echo "ERROR" "git is not installed or not available in the PATH."
     print_with_separator "End of Git Conflict Finder Script"
     exit 1
   fi
 
-  # Search for merge conflict markers
-  log_message "INFO" "Searching for merge conflicts in the repository..."
-  if git grep -n '<<<<<<< HEAD' 2>/dev/null; then
-    log_message "INFO" "Conflict(s) found in the repository."
-  else
-    log_message "SUCCESS" "No merge conflicts found."
+  # Validate that we're in a git repository
+  if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+    format-echo "ERROR" "Not in a git repository. Please run this script inside a git repository."
+    print_with_separator "End of Git Conflict Finder Script"
+    exit 1
   fi
 
-  log_message "INFO" "Conflict search process completed."
+  #---------------------------------------------------------------------
+  # CONFLICT DETECTION
+  #---------------------------------------------------------------------
+  # Search for merge conflict markers
+  format-echo "INFO" "Searching for merge conflicts in the repository..."
+  
+  # Look for common conflict markers
+  CONFLICT_MARKERS=("<<<<<<< HEAD" "=======" ">>>>>>> ")
+  CONFLICTS_FOUND=false
+  
+  for marker in "${CONFLICT_MARKERS[@]}"; do
+    if git grep -l "$marker" &>/dev/null; then
+      CONFLICTS_FOUND=true
+      format-echo "WARNING" "Files with conflict marker '$marker':"
+      git grep -n "$marker" | while read -r line; do
+        format-echo "INFO" "$line"
+      done
+      echo
+    fi
+  done
+  
+  if [[ "$CONFLICTS_FOUND" == true ]]; then
+    format-echo "WARNING" "Conflict(s) found in the repository."
+  else
+    format-echo "SUCCESS" "No merge conflicts found."
+  fi
+
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Conflict search process completed."
   print_with_separator "End of Git Conflict Finder Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

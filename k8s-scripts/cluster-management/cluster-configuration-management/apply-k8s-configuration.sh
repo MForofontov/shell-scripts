@@ -14,14 +14,14 @@ set -euo pipefail
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -82,7 +82,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -94,24 +94,24 @@ parse_args() {
 #=====================================================================
 # Wait for resources to become ready
 wait_for_resources_ready() {
-  log_message "INFO" "Waiting for resources to be ready..."
+  format-echo "INFO" "Waiting for resources to be ready..."
   
   local ns
   for ns in $(kubectl get ns --no-headers -o custom-columns=":metadata.name"); do
     # Wait for deployments to be ready
     for deploy in $(kubectl get deploy -n "$ns" --no-headers -o custom-columns=":metadata.name" 2>/dev/null || true); do
-      log_message "INFO" "Waiting for deployment/$deploy in namespace $ns to be ready..."
+      format-echo "INFO" "Waiting for deployment/$deploy in namespace $ns to be ready..."
       kubectl wait --for=condition=available --timeout=180s deployment/"$deploy" -n "$ns" || true
     done
     
     # Wait for statefulsets to be ready
     for sts in $(kubectl get statefulset -n "$ns" --no-headers -o custom-columns=":metadata.name" 2>/dev/null || true); do
-      log_message "INFO" "Waiting for statefulset/$sts in namespace $ns to be ready..."
+      format-echo "INFO" "Waiting for statefulset/$sts in namespace $ns to be ready..."
       kubectl wait --for=condition=ready --timeout=180s statefulset/"$sts" -n "$ns" || true
     done
   done
   
-  log_message "SUCCESS" "Resource readiness check completed."
+  format-echo "SUCCESS" "Resource readiness check completed."
 }
 
 #=====================================================================
@@ -153,7 +153,7 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply namespace resources first
   if [ -d "$ns_dir" ]; then
-    log_message "INFO" "Applying Namespaces..."
+    format-echo "INFO" "Applying Namespaces..."
     kubectl apply -f "$ns_dir"
   fi
 
@@ -162,17 +162,17 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply CRDs and cluster-level RBAC
   if [ -d "$crd_dir" ]; then
-    log_message "INFO" "Applying CustomResourceDefinitions..."
+    format-echo "INFO" "Applying CustomResourceDefinitions..."
     kubectl apply -f "$crd_dir"
   fi
   
   if [ -d "$clusterrole_dir" ]; then
-    log_message "INFO" "Applying ClusterRoles..."
+    format-echo "INFO" "Applying ClusterRoles..."
     kubectl apply -f "$clusterrole_dir"
   fi
   
   if [ -d "$clusterrolebinding_dir" ]; then
-    log_message "INFO" "Applying ClusterRoleBindings..."
+    format-echo "INFO" "Applying ClusterRoleBindings..."
     kubectl apply -f "$clusterrolebinding_dir"
   fi
 
@@ -181,17 +181,17 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply namespace-level configuration resources
   if [ -d "$quota_dir" ]; then
-    log_message "INFO" "Applying ResourceQuotas..."
+    format-echo "INFO" "Applying ResourceQuotas..."
     kubectl apply -f "$quota_dir"
   fi
   
   if [ -d "$limitrange_dir" ]; then
-    log_message "INFO" "Applying LimitRanges..."
+    format-echo "INFO" "Applying LimitRanges..."
     kubectl apply -f "$limitrange_dir"
   fi
   
   if [ -d "$netpol_dir" ]; then
-    log_message "INFO" "Applying NetworkPolicies..."
+    format-echo "INFO" "Applying NetworkPolicies..."
     kubectl apply -f "$netpol_dir"
   fi
 
@@ -200,17 +200,17 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply RBAC resources
   if [ -d "$sa_dir" ]; then
-    log_message "INFO" "Applying ServiceAccounts..."
+    format-echo "INFO" "Applying ServiceAccounts..."
     kubectl apply -f "$sa_dir"
   fi
   
   if [ -d "$role_dir" ]; then
-    log_message "INFO" "Applying Roles..."
+    format-echo "INFO" "Applying Roles..."
     kubectl apply -f "$role_dir"
   fi
   
   if [ -d "$rolebinding_dir" ]; then
-    log_message "INFO" "Applying RoleBindings..."
+    format-echo "INFO" "Applying RoleBindings..."
     kubectl apply -f "$rolebinding_dir"
   fi
 
@@ -219,17 +219,17 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply configuration resources
   if [ -d "$cm_dir" ]; then
-    log_message "INFO" "Applying ConfigMaps..."
+    format-echo "INFO" "Applying ConfigMaps..."
     kubectl apply -f "$cm_dir"
   fi
   
   if [ -d "$secret_dir" ]; then
-    log_message "INFO" "Applying Secrets..."
+    format-echo "INFO" "Applying Secrets..."
     kubectl apply -f "$secret_dir"
   fi
   
   if [ -d "$pvc_dir" ]; then
-    log_message "INFO" "Applying PersistentVolumeClaims..."
+    format-echo "INFO" "Applying PersistentVolumeClaims..."
     kubectl apply -f "$pvc_dir"
   fi
 
@@ -238,7 +238,7 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply service resources
   if [ -d "$svc_dir" ]; then
-    log_message "INFO" "Applying Services..."
+    format-echo "INFO" "Applying Services..."
     kubectl apply -f "$svc_dir"
   fi
 
@@ -247,27 +247,27 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply workload resources
   if [ -d "$deploy_dir" ]; then
-    log_message "INFO" "Applying Deployments..."
+    format-echo "INFO" "Applying Deployments..."
     kubectl apply -f "$deploy_dir"
   fi
   
   if [ -d "$sts_dir" ]; then
-    log_message "INFO" "Applying StatefulSets..."
+    format-echo "INFO" "Applying StatefulSets..."
     kubectl apply -f "$sts_dir"
   fi
   
   if [ -d "$daemonset_dir" ]; then
-    log_message "INFO" "Applying DaemonSets..."
+    format-echo "INFO" "Applying DaemonSets..."
     kubectl apply -f "$daemonset_dir"
   fi
   
   if [ -d "$job_dir" ]; then
-    log_message "INFO" "Applying Jobs..."
+    format-echo "INFO" "Applying Jobs..."
     kubectl apply -f "$job_dir"
   fi
   
   if [ -d "$cronjob_dir" ]; then
-    log_message "INFO" "Applying CronJobs..."
+    format-echo "INFO" "Applying CronJobs..."
     kubectl apply -f "$cronjob_dir"
   fi
 
@@ -276,12 +276,12 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply scaling and availability resources
   if [ -d "$hpa_dir" ]; then
-    log_message "INFO" "Applying HorizontalPodAutoscalers..."
+    format-echo "INFO" "Applying HorizontalPodAutoscalers..."
     kubectl apply -f "$hpa_dir"
   fi
   
   if [ -d "$pdb_dir" ]; then
-    log_message "INFO" "Applying PodDisruptionBudgets..."
+    format-echo "INFO" "Applying PodDisruptionBudgets..."
     kubectl apply -f "$pdb_dir"
   fi
 
@@ -290,7 +290,7 @@ apply_manifests() {
   #---------------------------------------------------------------------
   # Apply networking resources last
   if [ -d "$ingress_dir" ]; then
-    log_message "INFO" "Applying Ingress..."
+    format-echo "INFO" "Applying Ingress..."
     kubectl apply -f "$ingress_dir"
   fi
 
@@ -321,13 +321,13 @@ main() {
 
   print_with_separator "Apply Kubernetes Configuration Script"
   
-  log_message "INFO" "Starting to apply Kubernetes manifests from $MANIFEST_ROOT"
+  format-echo "INFO" "Starting to apply Kubernetes manifests from $MANIFEST_ROOT"
   
   # Apply manifests in order
   apply_manifests
   
   print_with_separator "Application Deployment Complete"
-  log_message "SUCCESS" "All manifests applied successfully."
+  format-echo "SUCCESS" "All manifests applied successfully."
   
   # Show deployment status summary
   echo

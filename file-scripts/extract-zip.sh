@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,10 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 ZIP_FILE=""
 DEST_DIR=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Extract Zip Archive Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -48,6 +57,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -56,7 +68,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -71,7 +83,7 @@ parse_args() {
           DEST_DIR="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -79,7 +91,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -92,38 +110,74 @@ main() {
   fi
 
   print_with_separator "Extract Zip Archive Script"
-  log_message "INFO" "Starting Extract Zip Archive Script..."
+  format-echo "INFO" "Starting Extract Zip Archive Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate arguments
   if [ -z "$ZIP_FILE" ] || [ -z "$DEST_DIR" ]; then
-    log_message "ERROR" "<zip_file> and <destination_directory> are required."
+    format-echo "ERROR" "<zip_file> and <destination_directory> are required."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
 
   if [ ! -f "$ZIP_FILE" ]; then
-    log_message "ERROR" "Zip file $ZIP_FILE does not exist."
+    format-echo "ERROR" "Zip file $ZIP_FILE does not exist."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
 
+  # Check if destination directory exists, create if it doesn't
   if [ ! -d "$DEST_DIR" ]; then
-    log_message "ERROR" "Destination directory $DEST_DIR does not exist."
+    format-echo "INFO" "Destination directory $DEST_DIR does not exist. Creating it..."
+    if ! mkdir -p "$DEST_DIR"; then
+      format-echo "ERROR" "Failed to create destination directory $DEST_DIR."
+      print_with_separator "End of Extract Zip Archive Script"
+      exit 1
+    fi
+    format-echo "SUCCESS" "Created destination directory $DEST_DIR."
+  fi
+
+  #---------------------------------------------------------------------
+  # EXTRACTION OPERATION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Extracting zip archive $ZIP_FILE to $DEST_DIR..."
+  
+  # Check if unzip is available
+  if ! command -v unzip &> /dev/null; then
+    format-echo "ERROR" "unzip is not installed or not available in the PATH."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
-
-  log_message "INFO" "Extracting zip archive $ZIP_FILE to $DEST_DIR..."
-
-  if unzip "$ZIP_FILE" -d "$DEST_DIR"; then
-    log_message "SUCCESS" "Zip archive extracted to $DEST_DIR."
+  
+  # Get archive size
+  ARCHIVE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+  format-echo "INFO" "Archive size: $ARCHIVE_SIZE"
+  
+  # List content of the archive
+  format-echo "INFO" "Archive contents (first 10 entries):"
+  unzip -l "$ZIP_FILE" | head -n 12
+  
+  # Extract the archive with verbose output
+  if unzip -o "$ZIP_FILE" -d "$DEST_DIR"; then
+    # Count extracted files
+    FILE_COUNT=$(find "$DEST_DIR" -type f | wc -l | tr -d ' ')
+    format-echo "SUCCESS" "Zip archive extracted to $DEST_DIR (Files: $FILE_COUNT)."
   else
-    log_message "ERROR" "Failed to extract zip archive."
+    format-echo "ERROR" "Failed to extract zip archive."
     print_with_separator "End of Extract Zip Archive Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Extraction operation completed."
   print_with_separator "End of Extract Zip Archive Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -92,14 +92,14 @@ command_exists() {
 detect_provider() {
   local cluster="$1"
   
-  log_message "INFO" "Auto-detecting provider for cluster: $cluster"
+  format-echo "INFO" "Auto-detecting provider for cluster: $cluster"
   
   # Check for minikube clusters
   if [[ "$cluster" == "minikube" || "$cluster" == minikube-* ]]; then
     if command_exists minikube; then
       # Verify cluster exists in minikube
       if minikube profile list 2>/dev/null | grep -q "$cluster"; then
-        log_message "INFO" "Detected provider: minikube"
+        format-echo "INFO" "Detected provider: minikube"
         echo "minikube"
         return 0
       fi
@@ -111,7 +111,7 @@ detect_provider() {
     if command_exists kind; then
       # Verify cluster exists in kind
       if kind get clusters 2>/dev/null | grep -q "$cluster"; then
-        log_message "INFO" "Detected provider: kind"
+        format-echo "INFO" "Detected provider: kind"
         echo "kind"
         return 0
       fi
@@ -123,7 +123,7 @@ detect_provider() {
     if command_exists k3d; then
       # Verify cluster exists in k3d
       if k3d cluster list 2>/dev/null | grep -q "$cluster"; then
-        log_message "INFO" "Detected provider: k3d"
+        format-echo "INFO" "Detected provider: k3d"
         echo "k3d"
         return 0
       fi
@@ -133,7 +133,7 @@ detect_provider() {
   # Try to find the cluster in each provider
   if command_exists minikube; then
     if minikube profile list 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: minikube"
+      format-echo "INFO" "Detected provider: minikube"
       echo "minikube"
       return 0
     fi
@@ -141,7 +141,7 @@ detect_provider() {
   
   if command_exists kind; then
     if kind get clusters 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: kind"
+      format-echo "INFO" "Detected provider: kind"
       echo "kind"
       return 0
     fi
@@ -149,13 +149,13 @@ detect_provider() {
   
   if command_exists k3d; then
     if k3d cluster list 2>/dev/null | grep -q "$cluster"; then
-      log_message "INFO" "Detected provider: k3d"
+      format-echo "INFO" "Detected provider: k3d"
       echo "k3d"
       return 0
     fi
   fi
   
-  log_message "ERROR" "Could not detect provider for cluster: $cluster"
+  format-echo "ERROR" "Could not detect provider for cluster: $cluster"
   return 1
 }
 
@@ -167,12 +167,12 @@ check_cluster_exists() {
   local cluster="$1"
   local provider="$2"
   
-  log_message "INFO" "Checking if cluster '$cluster' exists for provider '$provider'"
+  format-echo "INFO" "Checking if cluster '$cluster' exists for provider '$provider'"
   
   case "$provider" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube command not found"
+        format-echo "ERROR" "minikube command not found"
         return 1
       fi
       if minikube profile list 2>/dev/null | grep -q "$cluster"; then
@@ -182,7 +182,7 @@ check_cluster_exists() {
       
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind command not found"
+        format-echo "ERROR" "kind command not found"
         return 1
       fi
       if kind get clusters 2>/dev/null | grep -q "$cluster"; then
@@ -192,7 +192,7 @@ check_cluster_exists() {
       
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d command not found"
+        format-echo "ERROR" "k3d command not found"
         return 1
       fi
       if k3d cluster list 2>/dev/null | grep -q "$cluster"; then
@@ -201,12 +201,12 @@ check_cluster_exists() {
       ;;
       
     *)
-      log_message "ERROR" "Unsupported provider: $provider"
+      format-echo "ERROR" "Unsupported provider: $provider"
       return 1
       ;;
   esac
   
-  log_message "ERROR" "Cluster '$cluster' not found for provider '$provider'"
+  format-echo "ERROR" "Cluster '$cluster' not found for provider '$provider'"
   return 1
 }
 
@@ -215,7 +215,7 @@ check_cluster_running() {
   local cluster="$1"
   local provider="$2"
   
-  log_message "INFO" "Checking if cluster '$cluster' is running"
+  format-echo "INFO" "Checking if cluster '$cluster' is running"
   
   case "$provider" in
     minikube)
@@ -243,7 +243,7 @@ check_cluster_running() {
       ;;
   esac
   
-  log_message "WARNING" "Cluster '$cluster' is not running"
+  format-echo "WARNING" "Cluster '$cluster' is not running"
   return 1
 }
 
@@ -255,7 +255,7 @@ save_cluster_state() {
   local cluster="$1"
   local provider="$2"
   
-  log_message "INFO" "Saving cluster state for '$cluster'"
+  format-echo "INFO" "Saving cluster state for '$cluster'"
   
   # Create state directory if it doesn't exist
   mkdir -p "$STATE_DIR"
@@ -263,7 +263,7 @@ save_cluster_state() {
   # Create a state file with information about the cluster
   local state_file="$STATE_DIR/${cluster}-${provider}.state"
   
-  log_message "INFO" "Creating state file: $state_file"
+  format-echo "INFO" "Creating state file: $state_file"
   
   # Get current timestamp
   local timestamp
@@ -299,7 +299,7 @@ EOF
   
   # Save current workloads if backup is enabled
   if [[ "$BACKUP_WORKLOADS" == true ]]; then
-    log_message "INFO" "Backing up workloads for future resume"
+    format-echo "INFO" "Backing up workloads for future resume"
     
     # Create a backup directory for this cluster
     local backup_dir="$STATE_DIR/$cluster-backup"
@@ -325,22 +325,22 @@ EOF
     fi
     
     # Backup key resources
-    log_message "INFO" "Backing up deployments..."
+    format-echo "INFO" "Backing up deployments..."
     kubectl get deployments --all-namespaces -o yaml > "$backup_dir/deployments.yaml" 2>/dev/null
     
-    log_message "INFO" "Backing up services..."
+    format-echo "INFO" "Backing up services..."
     kubectl get services --all-namespaces -o yaml > "$backup_dir/services.yaml" 2>/dev/null
     
-    log_message "INFO" "Backing up configmaps..."
+    format-echo "INFO" "Backing up configmaps..."
     kubectl get configmaps --all-namespaces -o yaml > "$backup_dir/configmaps.yaml" 2>/dev/null
     
-    log_message "INFO" "Backing up secrets..."
+    format-echo "INFO" "Backing up secrets..."
     kubectl get secrets --all-namespaces -o yaml > "$backup_dir/secrets.yaml" 2>/dev/null
     
-    log_message "INFO" "Backing up persistent volumes..."
+    format-echo "INFO" "Backing up persistent volumes..."
     kubectl get pv -o yaml > "$backup_dir/persistent-volumes.yaml" 2>/dev/null
     
-    log_message "INFO" "Backing up persistent volume claims..."
+    format-echo "INFO" "Backing up persistent volume claims..."
     kubectl get pvc --all-namespaces -o yaml > "$backup_dir/persistent-volume-claims.yaml" 2>/dev/null
     
     # Switch back to the original context
@@ -348,13 +348,13 @@ EOF
       kubectl config use-context "$current_context" &>/dev/null
     fi
     
-    log_message "SUCCESS" "Workloads backed up to $backup_dir"
+    format-echo "SUCCESS" "Workloads backed up to $backup_dir"
     echo "WORKLOADS_BACKUP_DIR=$backup_dir" >> "$state_file"
   fi
   
   # Save kubeconfig if needed
   if [[ "$PRESERVE_KUBECONFIG" == true ]]; then
-    log_message "INFO" "Preserving kubeconfig context"
+    format-echo "INFO" "Preserving kubeconfig context"
     
     # Save the kubeconfig for this cluster only
     case "$provider" in
@@ -371,15 +371,15 @@ EOF
     esac
     
     if [[ -f "$STATE_DIR/${cluster}-kubeconfig.yaml" ]]; then
-      log_message "SUCCESS" "Kubeconfig preserved at $STATE_DIR/${cluster}-kubeconfig.yaml"
+      format-echo "SUCCESS" "Kubeconfig preserved at $STATE_DIR/${cluster}-kubeconfig.yaml"
       echo "KUBECONFIG_SAVED=true" >> "$state_file"
       echo "KUBECONFIG_PATH=$STATE_DIR/${cluster}-kubeconfig.yaml" >> "$state_file"
     else
-      log_message "WARNING" "Failed to preserve kubeconfig"
+      format-echo "WARNING" "Failed to preserve kubeconfig"
     fi
   fi
   
-  log_message "SUCCESS" "Cluster state saved to $state_file"
+  format-echo "SUCCESS" "Cluster state saved to $state_file"
   return 0
 }
 
@@ -392,11 +392,11 @@ drain_cluster_nodes() {
   local provider="$2"
   
   if [[ "$DRAIN_NODES" != true ]]; then
-    log_message "INFO" "Node draining skipped as requested"
+    format-echo "INFO" "Node draining skipped as requested"
     return 0
   fi
   
-  log_message "INFO" "Draining nodes for cluster '$cluster'"
+  format-echo "INFO" "Draining nodes for cluster '$cluster'"
   
   # Temporary switch kubectl context to this cluster
   local current_context
@@ -427,7 +427,7 @@ drain_cluster_nodes() {
   fi
   
   if [[ "$context_set" != true ]]; then
-    log_message "WARNING" "Could not set kubectl context for draining nodes"
+    format-echo "WARNING" "Could not set kubectl context for draining nodes"
     return 1
   fi
   
@@ -436,7 +436,7 @@ drain_cluster_nodes() {
   nodes=$(kubectl get nodes -o name 2>/dev/null)
   
   if [[ -z "$nodes" ]]; then
-    log_message "WARNING" "No nodes found to drain"
+    format-echo "WARNING" "No nodes found to drain"
     
     # Switch back to the original context
     if [[ -n "$current_context" ]]; then
@@ -451,16 +451,16 @@ drain_cluster_nodes() {
     local node_name
     node_name=$(echo "$node" | cut -d/ -f2)
     
-    log_message "INFO" "Cordoning node $node_name"
+    format-echo "INFO" "Cordoning node $node_name"
     kubectl cordon "$node_name" --timeout="${WAIT_TIMEOUT}s" &>/dev/null
     
-    log_message "INFO" "Draining node $node_name"
+    format-echo "INFO" "Draining node $node_name"
     kubectl drain "$node_name" --ignore-daemonsets --delete-emptydir-data --force --timeout="${WAIT_TIMEOUT}s" &>/dev/null
     
     if [[ $? -eq 0 ]]; then
-      log_message "SUCCESS" "Node $node_name drained successfully"
+      format-echo "SUCCESS" "Node $node_name drained successfully"
     else
-      log_message "WARNING" "Failed to drain node $node_name completely, continuing anyway"
+      format-echo "WARNING" "Failed to drain node $node_name completely, continuing anyway"
     fi
   done
   
@@ -469,7 +469,7 @@ drain_cluster_nodes() {
     kubectl config use-context "$current_context" &>/dev/null
   fi
   
-  log_message "SUCCESS" "All nodes drained for cluster '$cluster'"
+  format-echo "SUCCESS" "All nodes drained for cluster '$cluster'"
   return 0
 }
 
@@ -482,17 +482,17 @@ create_cluster_snapshot() {
   local provider="$2"
   
   if [[ "$SNAPSHOTS" != true ]]; then
-    log_message "INFO" "Snapshot creation skipped as not requested"
+    format-echo "INFO" "Snapshot creation skipped as not requested"
     return 0
   fi
   
-  log_message "INFO" "Creating snapshot for cluster '$cluster'"
+  format-echo "INFO" "Creating snapshot for cluster '$cluster'"
   
   case "$provider" in
     minikube)
       # Minikube doesn't have built-in snapshot capability, so we'll save the VM state
       local snapshot_name="${cluster}_$(date +%Y%m%d%H%M%S)"
-      log_message "INFO" "Creating minikube snapshot: $snapshot_name"
+      format-echo "INFO" "Creating minikube snapshot: $snapshot_name"
       
       # Check the VM driver in use
       local driver
@@ -509,34 +509,34 @@ create_cluster_snapshot() {
           
           VBoxManage snapshot "$vm_name" take "$snapshot_name" &>/dev/null
           if [[ $? -eq 0 ]]; then
-            log_message "SUCCESS" "Created VirtualBox snapshot: $snapshot_name"
+            format-echo "SUCCESS" "Created VirtualBox snapshot: $snapshot_name"
             echo "SNAPSHOT_CREATED=true" >> "$STATE_DIR/${cluster}-${provider}.state"
             echo "SNAPSHOT_NAME=$snapshot_name" >> "$STATE_DIR/${cluster}-${provider}.state"
             echo "SNAPSHOT_DRIVER=virtualbox" >> "$STATE_DIR/${cluster}-${provider}.state"
             return 0
           else
-            log_message "WARNING" "Failed to create VirtualBox snapshot"
+            format-echo "WARNING" "Failed to create VirtualBox snapshot"
           fi
         else
-          log_message "WARNING" "VBoxManage command not found, cannot create snapshot"
+          format-echo "WARNING" "VBoxManage command not found, cannot create snapshot"
         fi
       elif [[ "$driver" == "hyperkit" || "$driver" == "hyperv" || "$driver" == "kvm" || "$driver" == "kvm2" ]]; then
-        log_message "WARNING" "Snapshot not supported for $driver driver"
+        format-echo "WARNING" "Snapshot not supported for $driver driver"
       else
-        log_message "WARNING" "Snapshot not supported for $driver driver"
+        format-echo "WARNING" "Snapshot not supported for $driver driver"
       fi
       ;;
       
     kind)
       # Kind doesn't have built-in snapshot capability, but we can save container snapshots
-      log_message "INFO" "Creating Docker container snapshots for kind cluster"
+      format-echo "INFO" "Creating Docker container snapshots for kind cluster"
       
       # Get the Docker container IDs for this cluster
       local containers
       containers=$(docker ps --filter "name=kind-${cluster}" --format "{{.ID}}")
       
       if [[ -z "$containers" ]]; then
-        log_message "WARNING" "No Docker containers found for kind cluster: $cluster"
+        format-echo "WARNING" "No Docker containers found for kind cluster: $cluster"
         return 1
       fi
       
@@ -549,15 +549,15 @@ create_cluster_snapshot() {
         local container_name
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
-        log_message "INFO" "Creating snapshot for container: $container_name"
+        format-echo "INFO" "Creating snapshot for container: $container_name"
         
         # Save container details
         docker inspect "$container_id" > "$snapshot_dir/$container_name.json"
         
-        log_message "SUCCESS" "Saved container information for $container_name"
+        format-echo "SUCCESS" "Saved container information for $container_name"
       done
       
-      log_message "SUCCESS" "Container information saved to $snapshot_dir"
+      format-echo "SUCCESS" "Container information saved to $snapshot_dir"
       echo "SNAPSHOT_CREATED=true" >> "$STATE_DIR/${cluster}-${provider}.state"
       echo "SNAPSHOT_DIR=$snapshot_dir" >> "$STATE_DIR/${cluster}-${provider}.state"
       ;;
@@ -565,14 +565,14 @@ create_cluster_snapshot() {
     k3d)
       # K3d doesn't have built-in snapshot capability, but we can save container snapshots
       # similar to kind approach
-      log_message "INFO" "Creating Docker container snapshots for k3d cluster"
+      format-echo "INFO" "Creating Docker container snapshots for k3d cluster"
       
       # Get the Docker container IDs for this cluster
       local containers
       containers=$(docker ps --filter "name=k3d-${cluster}" --format "{{.ID}}")
       
       if [[ -z "$containers" ]]; then
-        log_message "WARNING" "No Docker containers found for k3d cluster: $cluster"
+        format-echo "WARNING" "No Docker containers found for k3d cluster: $cluster"
         return 1
       fi
       
@@ -585,21 +585,21 @@ create_cluster_snapshot() {
         local container_name
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
-        log_message "INFO" "Creating snapshot for container: $container_name"
+        format-echo "INFO" "Creating snapshot for container: $container_name"
         
         # Save container details
         docker inspect "$container_id" > "$snapshot_dir/$container_name.json"
         
-        log_message "SUCCESS" "Saved container information for $container_name"
+        format-echo "SUCCESS" "Saved container information for $container_name"
       done
       
-      log_message "SUCCESS" "Container information saved to $snapshot_dir"
+      format-echo "SUCCESS" "Container information saved to $snapshot_dir"
       echo "SNAPSHOT_CREATED=true" >> "$STATE_DIR/${cluster}-${provider}.state"
       echo "SNAPSHOT_DIR=$snapshot_dir" >> "$STATE_DIR/${cluster}-${provider}.state"
       ;;
   esac
   
-  log_message "INFO" "Snapshot process complete"
+  format-echo "INFO" "Snapshot process complete"
   return 0
 }
 
@@ -611,44 +611,44 @@ pause_cluster() {
   local cluster="$1"
   local provider="$2"
   
-  log_message "INFO" "Pausing cluster '$cluster' using provider '$provider'"
+  format-echo "INFO" "Pausing cluster '$cluster' using provider '$provider'"
   
   case "$provider" in
     minikube)
       # First try the pause feature (for newer minikube versions)
       if minikube help | grep -q "pause"; then
-        log_message "INFO" "Using minikube pause feature"
+        format-echo "INFO" "Using minikube pause feature"
         minikube pause -p "$cluster"
         if [[ $? -eq 0 ]]; then
-          log_message "SUCCESS" "Minikube cluster '$cluster' paused successfully"
+          format-echo "SUCCESS" "Minikube cluster '$cluster' paused successfully"
           return 0
         else
-          log_message "WARNING" "Failed to pause cluster using minikube pause, falling back to stop"
+          format-echo "WARNING" "Failed to pause cluster using minikube pause, falling back to stop"
         fi
       fi
       
       # Fall back to stopping the cluster
-      log_message "INFO" "Stopping minikube cluster '$cluster'"
+      format-echo "INFO" "Stopping minikube cluster '$cluster'"
       minikube stop -p "$cluster"
       if [[ $? -eq 0 ]]; then
-        log_message "SUCCESS" "Minikube cluster '$cluster' stopped successfully"
+        format-echo "SUCCESS" "Minikube cluster '$cluster' stopped successfully"
         return 0
       else
-        log_message "ERROR" "Failed to stop minikube cluster '$cluster'"
+        format-echo "ERROR" "Failed to stop minikube cluster '$cluster'"
         return 1
       fi
       ;;
       
     kind)
       # kind doesn't have a built-in pause feature, so we'll stop the Docker containers
-      log_message "INFO" "Stopping Docker containers for kind cluster '$cluster'"
+      format-echo "INFO" "Stopping Docker containers for kind cluster '$cluster'"
       
       # Get the Docker containers for this cluster
       local containers
       containers=$(docker ps --filter "name=kind-${cluster}" --format "{{.ID}}")
       
       if [[ -z "$containers" ]]; then
-        log_message "ERROR" "No running Docker containers found for kind cluster: $cluster"
+        format-echo "ERROR" "No running Docker containers found for kind cluster: $cluster"
         return 1
       fi
       
@@ -657,37 +657,37 @@ pause_cluster() {
         local container_name
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
-        log_message "INFO" "Stopping container: $container_name"
+        format-echo "INFO" "Stopping container: $container_name"
         docker stop "$container_id" > /dev/null
         
         if [[ $? -eq 0 ]]; then
-          log_message "SUCCESS" "Container $container_name stopped successfully"
+          format-echo "SUCCESS" "Container $container_name stopped successfully"
         else
-          log_message "ERROR" "Failed to stop container $container_name"
+          format-echo "ERROR" "Failed to stop container $container_name"
           return 1
         fi
       done
       
-      log_message "SUCCESS" "Kind cluster '$cluster' paused successfully"
+      format-echo "SUCCESS" "Kind cluster '$cluster' paused successfully"
       return 0
       ;;
       
     k3d)
       # k3d has a stop feature
-      log_message "INFO" "Stopping k3d cluster '$cluster'"
+      format-echo "INFO" "Stopping k3d cluster '$cluster'"
       k3d cluster stop "$cluster"
       
       if [[ $? -eq 0 ]]; then
-        log_message "SUCCESS" "K3d cluster '$cluster' stopped successfully"
+        format-echo "SUCCESS" "K3d cluster '$cluster' stopped successfully"
         return 0
       else
-        log_message "ERROR" "Failed to stop k3d cluster '$cluster'"
+        format-echo "ERROR" "Failed to stop k3d cluster '$cluster'"
         return 1
       fi
       ;;
       
     *)
-      log_message "ERROR" "Unsupported provider: $provider"
+      format-echo "ERROR" "Unsupported provider: $provider"
       return 1
       ;;
   esac
@@ -705,13 +705,13 @@ write_resume_instructions() {
   local state_file="$STATE_DIR/${cluster}-${provider}.state"
   
   if [[ ! -f "$state_file" ]]; then
-    log_message "WARNING" "State file not found, cannot provide resume instructions"
+    format-echo "WARNING" "State file not found, cannot provide resume instructions"
     return 1
   fi
   
   local resume_script="$STATE_DIR/resume-${cluster}.sh"
   
-  log_message "INFO" "Creating resume script: $resume_script"
+  format-echo "INFO" "Creating resume script: $resume_script"
   
   # Create the resume script with appropriate commands
   cat > "$resume_script" << 'EOF'
@@ -805,9 +805,9 @@ EOF
   mv "${resume_script}.tmp" "$resume_script"
   chmod +x "$resume_script"
   
-  log_message "SUCCESS" "Resume script created: $resume_script"
+  format-echo "SUCCESS" "Resume script created: $resume_script"
   echo
-  log_message "INFO" "To resume this cluster later, run:"
+  format-echo "INFO" "To resume this cluster later, run:"
   echo "  $resume_script"
   
   return 0
@@ -864,7 +864,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -872,7 +872,7 @@ parse_args() {
   
   # Validate required arguments
   if [[ -z "$CLUSTER_NAME" ]]; then
-    log_message "ERROR" "Cluster name (-n, --name) is required"
+    format-echo "ERROR" "Cluster name (-n, --name) is required"
     usage
   fi
 }
@@ -897,44 +897,44 @@ main() {
 
   print_with_separator "Kubernetes Cluster Pause Script"
   
-  log_message "INFO" "Starting cluster pause process..."
+  format-echo "INFO" "Starting cluster pause process..."
   
   # Auto-detect provider if not specified
   if [[ "$PROVIDER" == "auto" ]]; then
     PROVIDER=$(detect_provider "$CLUSTER_NAME")
     if [[ $? -ne 0 ]]; then
-      log_message "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
+      format-echo "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
       exit 1
     fi
   fi
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name:        $CLUSTER_NAME"
-  log_message "INFO" "  Provider:            $PROVIDER"
-  log_message "INFO" "  Force:               $FORCE"
-  log_message "INFO" "  Wait Timeout:        $WAIT_TIMEOUT seconds"
-  log_message "INFO" "  Drain Nodes:         $DRAIN_NODES"
-  log_message "INFO" "  Backup Workloads:    $BACKUP_WORKLOADS"
-  log_message "INFO" "  Create Snapshots:    $SNAPSHOTS"
-  log_message "INFO" "  Preserve Kubeconfig: $PRESERVE_KUBECONFIG"
-  log_message "INFO" "  State Directory:     $STATE_DIR"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name:        $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:            $PROVIDER"
+  format-echo "INFO" "  Force:               $FORCE"
+  format-echo "INFO" "  Wait Timeout:        $WAIT_TIMEOUT seconds"
+  format-echo "INFO" "  Drain Nodes:         $DRAIN_NODES"
+  format-echo "INFO" "  Backup Workloads:    $BACKUP_WORKLOADS"
+  format-echo "INFO" "  Create Snapshots:    $SNAPSHOTS"
+  format-echo "INFO" "  Preserve Kubeconfig: $PRESERVE_KUBECONFIG"
+  format-echo "INFO" "  State Directory:     $STATE_DIR"
   
   # Check if the cluster exists
   if ! check_cluster_exists "$CLUSTER_NAME" "$PROVIDER"; then
-    log_message "ERROR" "Cluster '$CLUSTER_NAME' does not exist for provider '$PROVIDER'"
+    format-echo "ERROR" "Cluster '$CLUSTER_NAME' does not exist for provider '$PROVIDER'"
     exit 1
   fi
   
   # Check if the cluster is running
   if ! check_cluster_running "$CLUSTER_NAME" "$PROVIDER"; then
-    log_message "WARNING" "Cluster '$CLUSTER_NAME' is not running, cannot pause"
+    format-echo "WARNING" "Cluster '$CLUSTER_NAME' is not running, cannot pause"
     
     # If not forcing, ask for confirmation to continue
     if [[ "$FORCE" != true ]]; then
       read -p "Would you like to continue with saving the state? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 0
       fi
     fi
@@ -942,7 +942,7 @@ main() {
   
   # Save cluster state
   if ! save_cluster_state "$CLUSTER_NAME" "$PROVIDER"; then
-    log_message "ERROR" "Failed to save cluster state"
+    format-echo "ERROR" "Failed to save cluster state"
     exit 1
   fi
   
@@ -962,14 +962,14 @@ main() {
     if [[ "$FORCE" != true ]]; then
       read -p "Are you sure you want to pause cluster '$CLUSTER_NAME'? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 0
       fi
     fi
     
     # Pause the cluster
     if ! pause_cluster "$CLUSTER_NAME" "$PROVIDER"; then
-      log_message "ERROR" "Failed to pause cluster"
+      format-echo "ERROR" "Failed to pause cluster"
       exit 1
     fi
   fi

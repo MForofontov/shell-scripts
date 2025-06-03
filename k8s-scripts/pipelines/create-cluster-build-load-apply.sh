@@ -8,15 +8,15 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images.sh"
 APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -117,7 +117,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -132,7 +132,7 @@ parse_args() {
 #---------------------------------------------------------------------
 create_cluster() {
   print_with_separator "Creating Kubernetes Cluster"
-  log_message "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
+  format-echo "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
 
   #---------------------------------------------------------------------
   # PROVIDER-SPECIFIC CLUSTER CREATION
@@ -156,11 +156,11 @@ create_cluster() {
       fi
       ;;
     *)
-      log_message "ERROR" "Unsupported provider: $PROVIDER"
+      format-echo "ERROR" "Unsupported provider: $PROVIDER"
       exit 1
       ;;
   esac
-  log_message "SUCCESS" "Cluster $CLUSTER_NAME created."
+  format-echo "SUCCESS" "Cluster $CLUSTER_NAME created."
 }
 
 #=====================================================================
@@ -185,7 +185,7 @@ main() {
   fi
 
   print_with_separator "Create Cluster, Build/Load Images, and Apply Manifests Script"
-  log_message "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
+  format-echo "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
 
   #---------------------------------------------------------------------
   # CLUSTER CREATION
@@ -198,16 +198,16 @@ main() {
   # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
   if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
     if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
-      log_message "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
+      format-echo "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
       print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
       exit 1
     fi
     BUILD_CMD=("$BUILD_LOAD_SCRIPT" -f "$IMAGE_LIST" --provider "$PROVIDER" --name "$CLUSTER_NAME")
     [ -n "$LOG_FILE" ] && BUILD_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Building and loading images from $IMAGE_LIST (single-node cluster)"
+    format-echo "INFO" "Building and loading images from $IMAGE_LIST (single-node cluster)"
     "${BUILD_CMD[@]}"
   elif [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -ne 1 ]]; then
-    log_message "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
+    format-echo "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
   fi
 
   #---------------------------------------------------------------------
@@ -216,20 +216,20 @@ main() {
   # If manifests directory is provided, apply manifests
   if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
-      log_message "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
+      format-echo "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
       print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
       exit 1
     fi
     APPLY_CMD=("$APPLY_MANIFESTS_SCRIPT" --manifests "$MANIFEST_ROOT")
     [ -n "$LOG_FILE" ] && APPLY_CMD+=(--log "$LOG_FILE")
-    log_message "INFO" "Applying manifests from $MANIFEST_ROOT"
+    format-echo "INFO" "Applying manifests from $MANIFEST_ROOT"
     "${APPLY_CMD[@]}"
   fi
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
+  format-echo "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
 }
 

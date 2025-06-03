@@ -2,7 +2,7 @@
 # Utility script to log messages with log levels, timestamps, and optional file logging.
 
 # Function to log messages with log levels and timestamps
-log_message() {
+format-echo() {
   local LEVEL=$1
   local MESSAGE=$2
   local TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")

@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -51,14 +51,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -78,7 +78,7 @@ main() {
   fi
 
   print_with_separator "Secure File Permissions Script"
-  log_message "INFO" "Starting Secure File Permissions Script..."
+  format-echo "INFO" "Starting Secure File Permissions Script..."
 
   FILES=(
     "/etc/passwd"
@@ -88,17 +88,17 @@ main() {
 
   for file in "${FILES[@]}"; do
     if [ -f "$file" ]; then
-      log_message "INFO" "Securing permissions for $file..."
+      format-echo "INFO" "Securing permissions for $file..."
       chmod 600 "$file"
       chown root:root "$file"
-      log_message "SUCCESS" "Permissions secured for $file."
+      format-echo "SUCCESS" "Permissions secured for $file."
     else
-      log_message "WARNING" "File $file does not exist. Skipping."
+      format-echo "WARNING" "File $file does not exist. Skipping."
     fi
   done
 
   print_with_separator "End of Secure File Permissions Script"
-  log_message "SUCCESS" "Secure file permissions enforced."
+  format-echo "SUCCESS" "Secure file permissions enforced."
 }
 
 main "$@"

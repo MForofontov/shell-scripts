@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -53,7 +53,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -64,7 +64,7 @@ parse_args() {
           REPORT_FILE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -121,11 +121,11 @@ main() {
   fi
 
   print_with_separator "System Report Script"
-  log_message "INFO" "Starting System Report Script..."
+  format-echo "INFO" "Starting System Report Script..."
 
   # Validate required arguments
   if [ -z "$REPORT_FILE" ]; then
-    log_message "ERROR" "The <report_file> argument is required."
+    format-echo "ERROR" "The <report_file> argument is required."
     print_with_separator "End of System Report Script"
     usage
   fi
@@ -133,7 +133,7 @@ main() {
   generate_report
 
   print_with_separator "End of System Report Script"
-  log_message "SUCCESS" "System report generated at $REPORT_FILE."
+  format-echo "SUCCESS" "System report generated at $REPORT_FILE."
 }
 
 main "$@"

@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -81,15 +81,15 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -97,13 +97,13 @@ check_requirements() {
 #=====================================================================
 # List available contexts
 list_contexts() {
-  log_message "INFO" "Listing available Kubernetes contexts..."
+  format-echo "INFO" "Listing available Kubernetes contexts..."
   
   local contexts=($(kubectl config get-contexts -o name))
   local current_context=$(kubectl config current-context 2>/dev/null || echo "none")
   
   if [[ ${#contexts[@]} -eq 0 ]]; then
-    log_message "ERROR" "No Kubernetes contexts found."
+    format-echo "ERROR" "No Kubernetes contexts found."
     exit 1
   fi
   
@@ -178,7 +178,7 @@ list_contexts() {
   #---------------------------------------------------------------------
   # Display filtered contexts
   if [[ ${#filtered_contexts[@]} -eq 0 ]]; then
-    log_message "ERROR" "No contexts match the specified filters."
+    format-echo "ERROR" "No contexts match the specified filters."
     exit 1
   fi
   
@@ -207,14 +207,14 @@ list_contexts() {
 switch_context() {
   local target_context="$1"
   
-  log_message "INFO" "Switching to context: $target_context"
+  format-echo "INFO" "Switching to context: $target_context"
   
   #---------------------------------------------------------------------
   # CONTEXT VALIDATION
   #---------------------------------------------------------------------
   # Check if context exists
   if ! kubectl config get-contexts -o name | grep -q "^${target_context}$"; then
-    log_message "ERROR" "Context '$target_context' does not exist."
+    format-echo "ERROR" "Context '$target_context' does not exist."
     exit 1
   fi
   
@@ -223,7 +223,7 @@ switch_context() {
   
   # Don't switch if already on the target context
   if [[ "$current_context" == "$target_context" ]]; then
-    log_message "INFO" "Already using context '$target_context'."
+    format-echo "INFO" "Already using context '$target_context'."
     return 0
   fi
   
@@ -232,7 +232,7 @@ switch_context() {
   #---------------------------------------------------------------------
   # Switch context
   if kubectl config use-context "$target_context" &>/dev/null; then
-    log_message "SUCCESS" "Switched to context: $target_context"
+    format-echo "SUCCESS" "Switched to context: $target_context"
     
     #---------------------------------------------------------------------
     # CONTEXT INFORMATION DISPLAY
@@ -253,16 +253,16 @@ switch_context() {
     echo
     echo -e "\033[1;34mConnection Test:\033[0m"
     if kubectl cluster-info &>/dev/null; then
-      log_message "SUCCESS" "Connected to Kubernetes cluster."
+      format-echo "SUCCESS" "Connected to Kubernetes cluster."
       # Show minimal cluster info
       kubectl version --short
     else
-      log_message "WARNING" "Could not connect to Kubernetes cluster. The context may be valid but the cluster is not accessible."
+      format-echo "WARNING" "Could not connect to Kubernetes cluster. The context may be valid but the cluster is not accessible."
     fi
     
     return 0
   else
-    log_message "ERROR" "Failed to switch to context: $target_context"
+    format-echo "ERROR" "Failed to switch to context: $target_context"
     exit 1
   fi
 }
@@ -282,7 +282,7 @@ interactive_selection() {
   # SINGLE CONTEXT HANDLING
   #---------------------------------------------------------------------
   if [[ ${#AVAILABLE_CONTEXTS[@]} -eq 1 ]]; then
-    log_message "INFO" "Only one context available. Switching automatically."
+    format-echo "INFO" "Only one context available. Switching automatically."
     switch_context "${AVAILABLE_CONTEXTS[0]}"
     return
   fi
@@ -299,12 +299,12 @@ interactive_selection() {
   #---------------------------------------------------------------------
   # Validate input
   if [[ "$selection" == "q" || "$selection" == "Q" ]]; then
-    log_message "INFO" "Operation cancelled by user."
+    format-echo "INFO" "Operation cancelled by user."
     exit 0
   fi
   
   if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt ${#AVAILABLE_CONTEXTS[@]} ]; then
-    log_message "ERROR" "Invalid selection. Please enter a number between 1 and ${#AVAILABLE_CONTEXTS[@]}."
+    format-echo "ERROR" "Invalid selection. Please enter a number between 1 and ${#AVAILABLE_CONTEXTS[@]}."
     exit 1
   fi
   
@@ -335,8 +335,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -359,7 +359,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -400,7 +400,7 @@ main() {
   
   print_with_separator "Kubernetes Context Switcher Script"
 
-  log_message "INFO" "Starting Kubernetes context switching..."
+  format-echo "INFO" "Starting Kubernetes context switching..."
   
   #---------------------------------------------------------------------
   # PREREQUISITES CHECKING

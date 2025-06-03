@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -67,7 +67,7 @@ parse_args() {
         elif [ -z "$REMOTE_SERVER" ]; then
           REMOTE_SERVER="$1"
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         shift
@@ -89,20 +89,20 @@ main() {
   fi
 
   print_with_separator "SSH Key Manager Script"
-  log_message "INFO" "Starting SSH Key Manager Script..."
+  format-echo "INFO" "Starting SSH Key Manager Script..."
 
   # Validate required arguments
   if [ -z "$USERNAME" ] || [ -z "$REMOTE_SERVER" ]; then
-    log_message "ERROR" "Both <username> and <remote_server> are required."
+    format-echo "ERROR" "Both <username> and <remote_server> are required."
     print_with_separator "End of SSH Key Manager Script"
     usage
   fi
 
   # Validate the username
   if id "$USERNAME" &>/dev/null; then
-    log_message "INFO" "User $USERNAME exists."
+    format-echo "INFO" "User $USERNAME exists."
   else
-    log_message "ERROR" "User $USERNAME does not exist."
+    format-echo "ERROR" "User $USERNAME does not exist."
     print_with_separator "End of SSH Key Manager Script"
     exit 1
   fi
@@ -110,36 +110,36 @@ main() {
   # Create the .ssh directory if it does not exist
   SSH_DIR="/home/$USERNAME/.ssh"
   if [ ! -d "$SSH_DIR" ]; then
-    log_message "INFO" "Creating .ssh directory for $USERNAME."
+    format-echo "INFO" "Creating .ssh directory for $USERNAME."
     mkdir -p "$SSH_DIR"
     chown "$USERNAME:$USERNAME" "$SSH_DIR"
   else
-    log_message "INFO" ".ssh directory already exists for $USERNAME."
+    format-echo "INFO" ".ssh directory already exists for $USERNAME."
   fi
 
   # Generate the SSH key
   KEY_FILE="$SSH_DIR/id_rsa"
   if [ ! -f "$KEY_FILE" ]; then
-    log_message "INFO" "Generating SSH key for $USERNAME."
+    format-echo "INFO" "Generating SSH key for $USERNAME."
     ssh-keygen -t rsa -b 4096 -f "$KEY_FILE" -N ""
     chown "$USERNAME:$USERNAME" "$KEY_FILE" "$KEY_FILE.pub"
-    log_message "SUCCESS" "SSH key generated for $USERNAME."
+    format-echo "SUCCESS" "SSH key generated for $USERNAME."
   else
-    log_message "INFO" "SSH key already exists for $USERNAME."
+    format-echo "INFO" "SSH key already exists for $USERNAME."
   fi
 
   # Distribute the SSH key to the remote server
-  log_message "INFO" "Distributing SSH key to $REMOTE_SERVER."
+  format-echo "INFO" "Distributing SSH key to $REMOTE_SERVER."
   if ssh-copy-id -i "$KEY_FILE.pub" "$REMOTE_SERVER"; then
-    log_message "SUCCESS" "SSH key successfully distributed to $REMOTE_SERVER."
+    format-echo "SUCCESS" "SSH key successfully distributed to $REMOTE_SERVER."
   else
-    log_message "ERROR" "Failed to distribute SSH key to $REMOTE_SERVER."
+    format-echo "ERROR" "Failed to distribute SSH key to $REMOTE_SERVER."
     print_with_separator "End of SSH Key Manager Script"
     exit 1
   fi
 
   print_with_separator "End of SSH Key Manager Script"
-  log_message "SUCCESS" "SSH key management completed."
+  format-echo "SUCCESS" "SSH key management completed."
 }
 
 main "$@"

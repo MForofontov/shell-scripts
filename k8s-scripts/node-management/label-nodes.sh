@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -124,13 +124,13 @@ command_exists() {
 # CHECK REQUIREMENTS
 #---------------------------------------------------------------------
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   #---------------------------------------------------------------------
   # KUBECTL AVAILABILITY
   #---------------------------------------------------------------------
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
@@ -140,7 +140,7 @@ check_requirements() {
   #---------------------------------------------------------------------
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
-    log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
+    format-echo "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
@@ -152,7 +152,7 @@ check_requirements() {
     mkdir -p "$TEMPLATES_DIR"
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -206,7 +206,7 @@ save_template() {
   # VALIDATION
   #---------------------------------------------------------------------
   if [[ -z "$template_name" ]]; then
-    log_message "ERROR" "Template name is required"
+    format-echo "ERROR" "Template name is required"
     return 1
   fi
   
@@ -223,7 +223,7 @@ save_template() {
   done
   
   if [[ -z "$template_content" ]]; then
-    log_message "ERROR" "No labels specified to save as template"
+    format-echo "ERROR" "No labels specified to save as template"
     return 1
   fi
   
@@ -233,7 +233,7 @@ save_template() {
   # Save to template file
   echo "$template_content" > "$TEMPLATES_DIR/$template_name"
   
-  log_message "SUCCESS" "Template '$template_name' saved to $TEMPLATES_DIR/$template_name"
+  format-echo "SUCCESS" "Template '$template_name' saved to $TEMPLATES_DIR/$template_name"
   return 0
 }
 
@@ -242,7 +242,7 @@ save_template() {
 #---------------------------------------------------------------------
 process_template() {
   local template="$1"
-  log_message "INFO" "Processing template: $template"
+  format-echo "INFO" "Processing template: $template"
   
   #---------------------------------------------------------------------
   # BUILT-IN TEMPLATE HANDLING
@@ -250,7 +250,7 @@ process_template() {
   # Check if it's a built-in template
   if [[ -n "${LABEL_TEMPLATES[$template]}" ]]; then
     local template_labels="${LABEL_TEMPLATES[$template]}"
-    log_message "INFO" "Using built-in template: $template_labels"
+    format-echo "INFO" "Using built-in template: $template_labels"
     
     # Split comma-separated labels
     IFS=',' read -ra TEMPLATE_LABELS <<< "$template_labels"
@@ -268,7 +268,7 @@ process_template() {
   if [[ -f "$TEMPLATES_DIR/$template" ]]; then
     local template_content
     template_content=$(cat "$TEMPLATES_DIR/$template")
-    log_message "INFO" "Using custom template: $template_content"
+    format-echo "INFO" "Using custom template: $template_content"
     
     # Split comma-separated labels
     IFS=',' read -ra TEMPLATE_LABELS <<< "$template_content"
@@ -279,8 +279,8 @@ process_template() {
     return 0
   fi
   
-  log_message "ERROR" "Template not found: $template"
-  log_message "INFO" "Use --list-templates to see available templates"
+  format-echo "ERROR" "Template not found: $template"
+  format-echo "INFO" "Use --list-templates to see available templates"
   return 1
 }
 
@@ -292,17 +292,17 @@ process_template() {
 #---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
-  log_message "INFO" "Getting nodes with selector: $selector"
+  format-echo "INFO" "Getting nodes with selector: $selector"
   
   local selected_nodes
   selected_nodes=$(kubectl get nodes -l "$selector" -o name | cut -d'/' -f2)
   
   if [[ -z "$selected_nodes" ]]; then
-    log_message "ERROR" "No nodes found matching selector: $selector"
+    format-echo "ERROR" "No nodes found matching selector: $selector"
     exit 1
   fi
   
-  log_message "INFO" "Selected nodes: $selected_nodes"
+  format-echo "INFO" "Selected nodes: $selected_nodes"
   echo "$selected_nodes"
 }
 
@@ -310,13 +310,13 @@ get_nodes_by_selector() {
 # VALIDATE NODE NAMES
 #---------------------------------------------------------------------
 validate_nodes() {
-  log_message "INFO" "Validating node names..."
+  format-echo "INFO" "Validating node names..."
   
   #---------------------------------------------------------------------
   # EMPTY NODES CHECK
   #---------------------------------------------------------------------
   if [[ ${#NODES[@]} -eq 0 ]]; then
-    log_message "ERROR" "No nodes specified."
+    format-echo "ERROR" "No nodes specified."
     usage
   fi
   
@@ -329,7 +329,7 @@ validate_nodes() {
   
   for node in "${NODES[@]}"; do
     if ! echo "$available_nodes" | grep -q "^$node$"; then
-      log_message "ERROR" "Node not found: $node"
+      format-echo "ERROR" "Node not found: $node"
       continue
     fi
     
@@ -337,11 +337,11 @@ validate_nodes() {
   done
   
   if [[ $valid_count -eq 0 ]]; then
-    log_message "ERROR" "No valid nodes found."
+    format-echo "ERROR" "No valid nodes found."
     exit 1
   fi
   
-  log_message "SUCCESS" "Found $valid_count valid nodes."
+  format-echo "SUCCESS" "Found $valid_count valid nodes."
 }
 
 #=====================================================================
@@ -358,10 +358,10 @@ validate_label_format() {
   #---------------------------------------------------------------------
   # Check basic format: key=value
   if ! echo "$label" | grep -q "^[a-zA-Z0-9][-a-zA-Z0-9_.]*\/\?[a-zA-Z0-9][-a-zA-Z0-9_.]*="; then
-    log_message "ERROR" "Invalid label format: $label"
-    log_message "INFO" "Labels must follow the format: key=value"
-    log_message "INFO" "Keys can contain alphanumeric characters, '-', '_', and '.'"
-    log_message "INFO" "Keys can optionally have a prefix with a '/'"
+    format-echo "ERROR" "Invalid label format: $label"
+    format-echo "INFO" "Labels must follow the format: key=value"
+    format-echo "INFO" "Keys can contain alphanumeric characters, '-', '_', and '.'"
+    format-echo "INFO" "Keys can optionally have a prefix with a '/'"
     return 1
   fi
   
@@ -372,8 +372,8 @@ validate_label_format() {
   local key
   key=$(echo "$label" | cut -d= -f1)
   if [[ ${#key} -gt 253 ]]; then
-    log_message "ERROR" "Label key too long: $key"
-    log_message "INFO" "Label keys must be 253 characters or less"
+    format-echo "ERROR" "Label key too long: $key"
+    format-echo "INFO" "Label keys must be 253 characters or less"
     return 1
   fi
   
@@ -384,9 +384,9 @@ validate_label_format() {
   local value
   value=$(echo "$label" | cut -d= -f2-)
   if [[ -n "$value" && ! "$value" =~ ^[a-zA-Z0-9][-a-zA-Z0-9_.]*$ && "$value" != "true" && "$value" != "false" ]]; then
-    log_message "WARNING" "Label value may be invalid: $value"
-    log_message "INFO" "Label values should contain alphanumeric characters, '-', '_', and '.'"
-    log_message "INFO" "Some special characters may be rejected by the API server"
+    format-echo "WARNING" "Label value may be invalid: $value"
+    format-echo "INFO" "Label values should contain alphanumeric characters, '-', '_', and '.'"
+    format-echo "INFO" "Some special characters may be rejected by the API server"
   fi
   
   return 0
@@ -396,7 +396,7 @@ validate_label_format() {
 # VALIDATE ALL LABELS
 #---------------------------------------------------------------------
 validate_labels() {
-  log_message "INFO" "Validating label formats..."
+  format-echo "INFO" "Validating label formats..."
   
   local valid_count=0
   
@@ -407,16 +407,16 @@ validate_labels() {
   done
   
   if [[ $valid_count -lt ${#LABELS[@]} ]]; then
-    log_message "WARNING" "Some labels have invalid format"
+    format-echo "WARNING" "Some labels have invalid format"
     if [[ "$FORCE" != true ]]; then
       read -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 1
       fi
     fi
   else
-    log_message "SUCCESS" "All labels have valid format."
+    format-echo "SUCCESS" "All labels have valid format."
   fi
 }
 
@@ -425,11 +425,11 @@ validate_labels() {
 #---------------------------------------------------------------------
 check_label_consistency() {
   if [[ "$CHECK_CONSISTENCY" != true ]]; then
-    log_message "INFO" "Skipping consistency check as requested"
+    format-echo "INFO" "Skipping consistency check as requested"
     return 0
   fi
   
-  log_message "INFO" "Checking label consistency across nodes..."
+  format-echo "INFO" "Checking label consistency across nodes..."
   
   #---------------------------------------------------------------------
   # CURRENT LABELS COLLECTION
@@ -463,7 +463,7 @@ check_label_consistency() {
   done
   
   if [[ ${#found_env_labels[@]} -gt 1 ]]; then
-    log_message "WARNING" "Conflicting environment labels detected: ${found_env_labels[*]}"
+    format-echo "WARNING" "Conflicting environment labels detected: ${found_env_labels[*]}"
     has_conflicts=true
   fi
   
@@ -480,7 +480,7 @@ check_label_consistency() {
   done
   
   if [[ ${#found_role_labels[@]} -gt 1 ]]; then
-    log_message "WARNING" "Potentially conflicting role labels detected: ${found_role_labels[*]}"
+    format-echo "WARNING" "Potentially conflicting role labels detected: ${found_role_labels[*]}"
     has_conflicts=true
   fi
   
@@ -489,17 +489,17 @@ check_label_consistency() {
   #---------------------------------------------------------------------
   # Report conflicts
   if [[ "$has_conflicts" == true ]]; then
-    log_message "WARNING" "Label conflicts detected"
+    format-echo "WARNING" "Label conflicts detected"
     if [[ "$FORCE" != true ]]; then
       read -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         rm -f "$temp_file"
         exit 1
       fi
     fi
   else
-    log_message "SUCCESS" "No label conflicts detected."
+    format-echo "SUCCESS" "No label conflicts detected."
   fi
   
   rm -f "$temp_file"
@@ -514,13 +514,13 @@ check_label_consistency() {
 #---------------------------------------------------------------------
 apply_labels() {
   local node="$1"
-  log_message "INFO" "Applying labels to node: $node"
+  format-echo "INFO" "Applying labels to node: $node"
   
   #---------------------------------------------------------------------
   # VALIDATION
   #---------------------------------------------------------------------
   if [[ ${#LABELS[@]} -eq 0 && ${#REMOVE_LABELS[@]} -eq 0 ]]; then
-    log_message "WARNING" "No labels to apply or remove"
+    format-echo "WARNING" "No labels to apply or remove"
     return 0
   fi
   
@@ -543,7 +543,7 @@ apply_labels() {
   local all_args="$label_args $remove_args"
   
   if [[ -z "$all_args" ]]; then
-    log_message "WARNING" "No labels to apply or remove after validation"
+    format-echo "WARNING" "No labels to apply or remove after validation"
     return 0
   fi
   
@@ -552,15 +552,15 @@ apply_labels() {
   #---------------------------------------------------------------------
   # Apply labels
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would run: kubectl label node $node $all_args --overwrite=$OVERWRITE"
+    format-echo "DRY-RUN" "Would run: kubectl label node $node $all_args --overwrite=$OVERWRITE"
     return 0
   fi
   
   if kubectl label node "$node" $all_args --overwrite="$OVERWRITE"; then
-    log_message "SUCCESS" "Labels applied to node $node successfully."
+    format-echo "SUCCESS" "Labels applied to node $node successfully."
     return 0
   else
-    log_message "ERROR" "Failed to apply labels to node $node."
+    format-echo "ERROR" "Failed to apply labels to node $node."
     return 1
   fi
 }
@@ -570,13 +570,13 @@ apply_labels() {
 #---------------------------------------------------------------------
 import_labels_from_file() {
   local file="$1"
-  log_message "INFO" "Importing labels from file: $file"
+  format-echo "INFO" "Importing labels from file: $file"
   
   #---------------------------------------------------------------------
   # FILE VALIDATION
   #---------------------------------------------------------------------
   if [[ ! -f "$file" ]]; then
-    log_message "ERROR" "Import file not found: $file"
+    format-echo "ERROR" "Import file not found: $file"
     return 1
   fi
   
@@ -591,7 +591,7 @@ import_labels_from_file() {
     json)
       # Import from JSON
       if ! command_exists jq; then
-        log_message "ERROR" "jq is required for JSON import but not found"
+        format-echo "ERROR" "jq is required for JSON import but not found"
         return 1
       fi
       
@@ -601,7 +601,7 @@ import_labels_from_file() {
     yaml|yml)
       # Import from YAML
       if ! command_exists yq; then
-        log_message "ERROR" "yq is required for YAML import but not found"
+        format-echo "ERROR" "yq is required for YAML import but not found"
         return 1
       fi
       
@@ -615,7 +615,7 @@ import_labels_from_file() {
   esac
   
   if [[ -z "$imported_labels" ]]; then
-    log_message "ERROR" "No labels found in import file"
+    format-echo "ERROR" "No labels found in import file"
     return 1
   fi
   
@@ -627,7 +627,7 @@ import_labels_from_file() {
     LABELS+=("$label")
   done
   
-  log_message "SUCCESS" "Imported ${#imported_labels} labels from $file"
+  format-echo "SUCCESS" "Imported ${#imported_labels} labels from $file"
   return 0
 }
 
@@ -637,7 +637,7 @@ import_labels_from_file() {
 export_labels_to_file() {
   local file="$1"
   local nodes="${NODES[*]}"
-  log_message "INFO" "Exporting labels for nodes: $nodes to file: $file"
+  format-echo "INFO" "Exporting labels for nodes: $nodes to file: $file"
   
   #---------------------------------------------------------------------
   # FORMAT SELECTION
@@ -687,7 +687,7 @@ export_labels_to_file() {
       ;;
   esac
   
-  log_message "SUCCESS" "Exported labels to $file"
+  format-echo "SUCCESS" "Exported labels to $file"
   return 0
 }
 
@@ -752,7 +752,7 @@ parse_args() {
         shift 2
         ;;
       -*)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
       *)
@@ -796,7 +796,7 @@ main() {
   
   print_with_separator "Kubernetes Node Label Management Script"
   
-  log_message "INFO" "Starting node label management..."
+  format-echo "INFO" "Starting node label management..."
   
   #---------------------------------------------------------------------
   # REQUIREMENT VERIFICATION
@@ -852,23 +852,23 @@ main() {
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Nodes:             ${NODES[*]}"
-  log_message "INFO" "  Labels to Apply:   ${LABELS[*]}"
-  log_message "INFO" "  Labels to Remove:  ${REMOVE_LABELS[*]}"
-  log_message "INFO" "  Overwrite:         $OVERWRITE"
-  log_message "INFO" "  Check Consistency: $CHECK_CONSISTENCY"
-  log_message "INFO" "  Dry Run:           $DRY_RUN"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Nodes:             ${NODES[*]}"
+  format-echo "INFO" "  Labels to Apply:   ${LABELS[*]}"
+  format-echo "INFO" "  Labels to Remove:  ${REMOVE_LABELS[*]}"
+  format-echo "INFO" "  Overwrite:         $OVERWRITE"
+  format-echo "INFO" "  Check Consistency: $CHECK_CONSISTENCY"
+  format-echo "INFO" "  Dry Run:           $DRY_RUN"
   
   #---------------------------------------------------------------------
   # USER CONFIRMATION
   #---------------------------------------------------------------------
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
-    log_message "WARNING" "You are about to modify labels on the following nodes: ${NODES[*]}"
+    format-echo "WARNING" "You are about to modify labels on the following nodes: ${NODES[*]}"
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -881,7 +881,7 @@ main() {
   local failed_count=0
   
   for node in "${NODES[@]}"; do
-    log_message "INFO" "Processing node: $node"
+    format-echo "INFO" "Processing node: $node"
     
     if apply_labels "$node"; then
       success_count=$((success_count + 1))

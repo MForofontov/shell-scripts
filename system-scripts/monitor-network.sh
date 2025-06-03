@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -53,7 +53,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -64,7 +64,7 @@ parse_args() {
           INTERFACE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -73,8 +73,8 @@ parse_args() {
 }
 
 monitor_network() {
-  log_message "INFO" "Starting network traffic monitoring on interface $INTERFACE..."
-  log_message "INFO" "Press Ctrl+C to stop monitoring."
+  format-echo "INFO" "Starting network traffic monitoring on interface $INTERFACE..."
+  format-echo "INFO" "Press Ctrl+C to stop monitoring."
   tcpdump -i "$INTERFACE"
 }
 
@@ -91,23 +91,23 @@ main() {
   fi
 
   print_with_separator "Network Monitor Script"
-  log_message "INFO" "Starting Network Monitor Script..."
+  format-echo "INFO" "Starting Network Monitor Script..."
 
   # Validate required arguments
   if [ -z "$INTERFACE" ]; then
-    log_message "ERROR" "Network interface is required."
+    format-echo "ERROR" "Network interface is required."
     print_with_separator "End of Network Monitor Script"
     usage
   fi
 
   if ! command -v tcpdump &> /dev/null; then
-    log_message "ERROR" "tcpdump is not installed. Please install it and try again."
+    format-echo "ERROR" "tcpdump is not installed. Please install it and try again."
     print_with_separator "End of Network Monitor Script"
     exit 1
   fi
 
   if ! ip link show "$INTERFACE" &> /dev/null; then
-    log_message "ERROR" "Network interface $INTERFACE does not exist."
+    format-echo "ERROR" "Network interface $INTERFACE does not exist."
     print_with_separator "End of Network Monitor Script"
     exit 1
   fi
@@ -115,7 +115,7 @@ main() {
   monitor_network
 
   print_with_separator "End of Network Monitor Script"
-  log_message "INFO" "Network traffic monitoring completed."
+  format-echo "INFO" "Network traffic monitoring completed."
 }
 
 main "$@"

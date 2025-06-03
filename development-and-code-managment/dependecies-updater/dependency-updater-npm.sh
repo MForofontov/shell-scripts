@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,8 +25,14 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "NPM Dependency Updater Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,6 +54,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -53,7 +65,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -61,14 +73,20 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -81,49 +99,64 @@ main() {
   fi
 
   print_with_separator "NPM Dependency Updater Script"
-  log_message "INFO" "Starting NPM Dependency Updater Script..."
+  format-echo "INFO" "Starting NPM Dependency Updater Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate if npm is installed
   if ! command -v npm &> /dev/null; then
-    log_message "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
+    format-echo "ERROR" "npm is not installed or not available in the PATH. Please install npm and try again."
     print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
   # Validate if the script is run in a directory with a package.json file
   if [ ! -f "package.json" ]; then
-    log_message "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
+    format-echo "ERROR" "No package.json file found in the current directory. Please run this script in a Node.js project directory."
     print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
-  log_message "INFO" "Updating npm dependencies..."
+  #---------------------------------------------------------------------
+  # DEPENDENCY UPDATES
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Updating npm dependencies..."
 
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "$TIMESTAMP: Running npm update..."
+  format-echo "INFO" "$TIMESTAMP: Running npm update..."
 
   # Update npm dependencies
   if npm update; then
-    log_message "SUCCESS" "Dependencies updated successfully!"
+    format-echo "SUCCESS" "Dependencies updated successfully!"
   else
-    log_message "ERROR" "Failed to update dependencies!"
+    format-echo "ERROR" "Failed to update dependencies!"
     print_with_separator "End of NPM Dependency Updater Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # SUMMARY GENERATION
+  #---------------------------------------------------------------------
   # Generate a summary of updated packages
-  log_message "INFO" "Generating summary of updated packages..."
+  format-echo "INFO" "Generating summary of updated packages..."
   UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
 
   if [ -n "$UPDATED_PACKAGES" ] && [ "$UPDATED_PACKAGES" != "null" ]; then
-    log_message "INFO" "Summary of updated packages:"
+    format-echo "INFO" "Summary of updated packages:"
     echo "$UPDATED_PACKAGES" | jq -r 'to_entries[] | "\(.key) updated from \(.value.current) to \(.value.latest)"'
   else
-    log_message "INFO" "No packages were updated."
+    format-echo "INFO" "No packages were updated."
   fi
 
-  log_message "INFO" "$TIMESTAMP: npm dependency update process completed."
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "$TIMESTAMP: npm dependency update process completed."
   print_with_separator "End of NPM Dependency Updater Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

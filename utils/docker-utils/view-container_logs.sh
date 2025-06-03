@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -63,7 +63,7 @@ parse_args() {
         ;;
       --since)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No time provided after --since."
+          format-echo "ERROR" "No time provided after --since."
           usage
         fi
         SINCE="--since $2"
@@ -71,7 +71,7 @@ parse_args() {
         ;;
       --until)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No time provided after --until."
+          format-echo "ERROR" "No time provided after --until."
           usage
         fi
         UNTIL="--until $2"
@@ -79,7 +79,7 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
@@ -90,7 +90,7 @@ parse_args() {
           CONTAINER_NAME="$1"
           shift
         else
-          log_message "ERROR" "Unknown option or too many arguments: $1"
+          format-echo "ERROR" "Unknown option or too many arguments: $1"
           usage
         fi
         ;;
@@ -111,38 +111,38 @@ main() {
   fi
 
   print_with_separator "View Docker Container Logs Script"
-  log_message "INFO" "Starting View Docker Container Logs Script..."
+  format-echo "INFO" "Starting View Docker Container Logs Script..."
 
   # Validate required arguments
   if [ -z "$CONTAINER_NAME" ]; then
-    log_message "ERROR" "The <container_name> argument is required."
+    format-echo "ERROR" "The <container_name> argument is required."
     print_with_separator "End of View Docker Container Logs Script"
     usage
   fi
 
   # Check if Docker is installed
   if ! command -v docker &> /dev/null; then
-    log_message "ERROR" "Docker is not installed. Please install Docker first."
+    format-echo "ERROR" "Docker is not installed. Please install Docker first."
     print_with_separator "End of View Docker Container Logs Script"
     exit 1
   fi
 
   # Check if the container exists
   if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    log_message "ERROR" "Container '$CONTAINER_NAME' does not exist."
+    format-echo "ERROR" "Container '$CONTAINER_NAME' does not exist."
     print_with_separator "End of View Docker Container Logs Script"
     exit 1
   fi
 
-  log_message "INFO" "Viewing logs for container: $CONTAINER_NAME"
-  log_message "INFO" "Executing: docker logs $FOLLOW $SINCE $UNTIL $CONTAINER_NAME"
+  format-echo "INFO" "Viewing logs for container: $CONTAINER_NAME"
+  format-echo "INFO" "Executing: docker logs $FOLLOW $SINCE $UNTIL $CONTAINER_NAME"
   docker logs $FOLLOW $SINCE $UNTIL "$CONTAINER_NAME"
 
   print_with_separator "End of View Docker Container Logs Script"
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    log_message "SUCCESS" "Logs for container '$CONTAINER_NAME' have been written to $LOG_FILE."
+    format-echo "SUCCESS" "Logs for container '$CONTAINER_NAME' have been written to $LOG_FILE."
   else
-    log_message "INFO" "Logs for container '$CONTAINER_NAME' displayed on the console."
+    format-echo "INFO" "Logs for container '$CONTAINER_NAME' displayed on the console."
   fi
 }
 

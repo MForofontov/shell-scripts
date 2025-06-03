@@ -4,14 +4,17 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -22,9 +25,15 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 COMMIT_MESSAGE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Git Add, Commit, and Push Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -45,6 +54,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -53,7 +65,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -65,7 +77,7 @@ parse_args() {
           COMMIT_MESSAGE="$1"
           shift
         else
-          log_message "ERROR" "Unknown option: $1"
+          format-echo "ERROR" "Unknown option: $1"
           usage
         fi
         ;;
@@ -73,7 +85,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -86,54 +104,66 @@ main() {
   fi
 
   print_with_separator "Git Add, Commit, and Push Script"
-  log_message "INFO" "Starting Git Add, Commit, and Push Script..."
+  format-echo "INFO" "Starting Git Add, Commit, and Push Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate required arguments
   if [ -z "$COMMIT_MESSAGE" ]; then
-    log_message "ERROR" "<commit_message> is required."
+    format-echo "ERROR" "<commit_message> is required."
     print_with_separator "End of Git Add, Commit, and Push Script"
     usage
   fi
 
   # Validate git is available
   if ! command -v git &> /dev/null; then
-    log_message "ERROR" "git is not installed or not available in the PATH."
+    format-echo "ERROR" "git is not installed or not available in the PATH."
     print_with_separator "End of Git Add, Commit, and Push Script"
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # GIT OPERATIONS
+  #---------------------------------------------------------------------
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "$TIMESTAMP: Starting Git operations..."
+  format-echo "INFO" "$TIMESTAMP: Starting Git operations..."
 
   # Add all changes
   if git add .; then
-    log_message "INFO" "Changes added successfully."
+    format-echo "INFO" "Changes added successfully."
   else
-    log_message "ERROR" "Failed to add changes."
+    format-echo "ERROR" "Failed to add changes."
     print_with_separator "End of Git Add, Commit, and Push Script"
     exit 1
   fi
 
   # Commit changes
   if git commit -m "$COMMIT_MESSAGE"; then
-    log_message "INFO" "Changes committed successfully."
+    format-echo "INFO" "Changes committed successfully."
   else
-    log_message "ERROR" "Failed to commit changes."
+    format-echo "ERROR" "Failed to commit changes."
     print_with_separator "End of Git Add, Commit, and Push Script"
     exit 1
   fi
 
   # Push changes
   if git push; then
-    log_message "INFO" "Changes pushed successfully."
+    format-echo "INFO" "Changes pushed successfully."
   else
-    log_message "ERROR" "Failed to push changes."
+    format-echo "ERROR" "Failed to push changes."
     print_with_separator "End of Git Add, Commit, and Push Script"
     exit 1
   fi
 
-  log_message "SUCCESS" "$TIMESTAMP: Git operations completed successfully."
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
+  format-echo "SUCCESS" "$TIMESTAMP: Git operations completed successfully."
   print_with_separator "End of Git Add, Commit, and Push Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"

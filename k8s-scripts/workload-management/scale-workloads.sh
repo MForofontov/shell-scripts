@@ -8,13 +8,13 @@ set -euo pipefail
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -133,23 +133,23 @@ command_exists() {
 # CHECK FOR REQUIRED TOOLS
 #---------------------------------------------------------------------
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   # Check for kubectl
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first."
+    format-echo "ERROR" "kubectl not found. Please install it first."
     exit 1
   fi
   
   # Check for jq
   if ! command_exists jq; then
-    log_message "ERROR" "jq not found. Please install it first."
+    format-echo "ERROR" "jq not found. Please install it first."
     exit 1
   fi
   
   # Check for yq if available (not required but helpful)
   if ! command_exists yq; then
-    log_message "WARNING" "yq not found. Some YAML processing capabilities may be limited."
+    format-echo "WARNING" "yq not found. Some YAML processing capabilities may be limited."
   fi
   
   # If metrics-based scaling, check for metrics-server or prometheus
@@ -157,29 +157,29 @@ check_requirements() {
     if [[ "$METRIC_SOURCE" == "metrics-server" ]]; then
       # Check if metrics-server is available
       if ! kubectl $CONTEXT_FLAG get apiservice v1beta1.metrics.k8s.io &>/dev/null; then
-        log_message "ERROR" "metrics-server not found in the cluster. Please install it first or use a different metric source."
+        format-echo "ERROR" "metrics-server not found in the cluster. Please install it first or use a different metric source."
         exit 1
       fi
     elif [[ "$METRIC_SOURCE" == "prometheus" ]]; then
       # Check if prometheus URL is provided
       if [[ -z "$PROMETHEUS_URL" ]]; then
-        log_message "ERROR" "Prometheus URL not provided. Please specify with --prometheus-url."
+        format-echo "ERROR" "Prometheus URL not provided. Please specify with --prometheus-url."
         exit 1
       fi
       
       # Check if curl is available
       if ! command_exists curl; then
-        log_message "ERROR" "curl not found. Please install it to use Prometheus as a metric source."
+        format-echo "ERROR" "curl not found. Please install it to use Prometheus as a metric source."
         exit 1
       fi
       
       # Check if we can connect to Prometheus
       if ! curl -s "$PROMETHEUS_URL/api/v1/status/config" &>/dev/null; then
-        log_message "ERROR" "Cannot connect to Prometheus at $PROMETHEUS_URL."
+        format-echo "ERROR" "Cannot connect to Prometheus at $PROMETHEUS_URL."
         exit 1
       fi
     else
-      log_message "ERROR" "Unsupported metric source: $METRIC_SOURCE"
+      format-echo "ERROR" "Unsupported metric source: $METRIC_SOURCE"
       exit 1
     fi
   fi
@@ -187,18 +187,18 @@ check_requirements() {
   # For schedule-based scaling with cron format, check for Python dependencies
   if [[ "$SCALE_MODE" == "schedule" && -n "$SCHEDULE" && "$SCHEDULE" =~ ^[0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+$ ]]; then
     if ! command_exists python3; then
-      log_message "ERROR" "Python3 is required to parse cron schedules."
+      format-echo "ERROR" "Python3 is required to parse cron schedules."
       exit 1
     fi
     
     # Check if croniter module is installed
     if ! python3 -c "import croniter" &>/dev/null; then
-      log_message "ERROR" "Python module 'croniter' is required. Install it with: pip3 install croniter"
+      format-echo "ERROR" "Python module 'croniter' is required. Install it with: pip3 install croniter"
       exit 1
     fi
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -212,18 +212,18 @@ validate_workload() {
   local workload_name="$2"
   local namespace="$3"
   
-  log_message "INFO" "Validating $workload_type '$workload_name' in namespace '$namespace'..."
+  format-echo "INFO" "Validating $workload_type '$workload_name' in namespace '$namespace'..."
   
   # Check if workload exists
   if ! kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace &>/dev/null; then
-    log_message "ERROR" "$workload_type '$workload_name' not found in namespace '$namespace'."
+    format-echo "ERROR" "$workload_type '$workload_name' not found in namespace '$namespace'."
     return 1
   fi
   
   # Get current replica count
   local current_replicas=$(kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace -o jsonpath='{.spec.replicas}')
   
-  log_message "SUCCESS" "Found $workload_type '$workload_name' in namespace '$namespace' with $current_replicas replicas."
+  format-echo "SUCCESS" "Found $workload_type '$workload_name' in namespace '$namespace' with $current_replicas replicas."
   echo "$current_replicas"
   return 0
 }
@@ -237,20 +237,20 @@ scale_workload() {
   local namespace="$3"
   local replicas="$4"
   
-  log_message "INFO" "Scaling $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas..."
+  format-echo "INFO" "Scaling $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would scale $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas."
+    format-echo "DRY-RUN" "Would scale $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas."
     return 0
   fi
   
   # Scale the workload
   if ! kubectl $CONTEXT_FLAG scale $workload_type $workload_name -n $namespace --replicas=$replicas; then
-    log_message "ERROR" "Failed to scale $workload_type '$workload_name' in namespace '$namespace'."
+    format-echo "ERROR" "Failed to scale $workload_type '$workload_name' in namespace '$namespace'."
     return 1
   fi
   
-  log_message "SUCCESS" "Scaled $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas."
+  format-echo "SUCCESS" "Scaled $workload_type '$workload_name' in namespace '$namespace' to $replicas replicas."
   return 0
 }
 
@@ -263,10 +263,10 @@ verify_workload_health() {
   local namespace="$3"
   local target_replicas="$4"
   
-  log_message "INFO" "Verifying $workload_type '$workload_name' health after scaling..."
+  format-echo "INFO" "Verifying $workload_type '$workload_name' health after scaling..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would verify $workload_type '$workload_name' health after scaling."
+    format-echo "DRY-RUN" "Would verify $workload_type '$workload_name' health after scaling."
     return 0
   fi
   
@@ -277,7 +277,7 @@ verify_workload_health() {
   while [[ $(date +%s) -lt $end_time ]]; do
     # Check if the workload exists
     if ! kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace &>/dev/null; then
-      log_message "ERROR" "$workload_type '$workload_name' not found during verification."
+      format-echo "ERROR" "$workload_type '$workload_name' not found during verification."
       return 1
     fi
     
@@ -299,16 +299,16 @@ verify_workload_health() {
       ready_replicas=0
     fi
     
-    log_message "INFO" "$workload_type has $ready_replicas ready replicas of $target_replicas target replicas."
+    format-echo "INFO" "$workload_type has $ready_replicas ready replicas of $target_replicas target replicas."
     
     # If we have the desired number of ready replicas, we're done
     if [[ "$ready_replicas" -eq "$target_replicas" ]]; then
-      log_message "SUCCESS" "$workload_type '$workload_name' is healthy with $ready_replicas ready replicas."
+      format-echo "SUCCESS" "$workload_type '$workload_name' is healthy with $ready_replicas ready replicas."
       
       # Check for pod status issues
       local pod_issues=$(kubectl $CONTEXT_FLAG get pods -n $namespace -l "app=$workload_name" --no-headers | grep -v "Running" || true)
       if [[ -n "$pod_issues" ]]; then
-        log_message "WARNING" "Some pods may have issues:"
+        format-echo "WARNING" "Some pods may have issues:"
         echo "$pod_issues"
       fi
       
@@ -319,11 +319,11 @@ verify_workload_health() {
     sleep 5
   done
   
-  log_message "ERROR" "Timeout waiting for $workload_type '$workload_name' to become healthy."
-  log_message "ERROR" "Expected $target_replicas replicas, but only $ready_replicas are ready."
+  format-echo "ERROR" "Timeout waiting for $workload_type '$workload_name' to become healthy."
+  format-echo "ERROR" "Expected $target_replicas replicas, but only $ready_replicas are ready."
   
   # Show pod status for debugging
-  log_message "INFO" "Current pod status:"
+  format-echo "INFO" "Current pod status:"
   kubectl $CONTEXT_FLAG get pods -n $namespace -l "app=$workload_name" --no-headers
   
   return 1
@@ -340,7 +340,7 @@ get_workload_metrics() {
   local workload_name="$2"
   local namespace="$3"
   
-  log_message "INFO" "Getting metrics for $workload_type '$workload_name' in namespace '$namespace'..."
+  format-echo "INFO" "Getting metrics for $workload_type '$workload_name' in namespace '$namespace'..."
   
   local cpu_usage=0
   local memory_usage=0
@@ -366,13 +366,13 @@ get_workload_metrics() {
     # If we couldn't get a selector, try a common pattern
     if [[ -z "$pod_selector" ]]; then
       pod_selector="app=$workload_name"
-      log_message "WARNING" "Could not determine pod selector, using default: $pod_selector"
+      format-echo "WARNING" "Could not determine pod selector, using default: $pod_selector"
     fi
     
     # Get metrics for all pods matching the selector
     local pod_metrics=$(kubectl $CONTEXT_FLAG top pods -n $namespace -l "$pod_selector" --no-headers 2>/dev/null)
     if [[ -z "$pod_metrics" ]]; then
-      log_message "WARNING" "No metrics available for pods with selector '$pod_selector'."
+      format-echo "WARNING" "No metrics available for pods with selector '$pod_selector'."
       echo "0 0" # Return zero metrics
       return 0
     fi
@@ -401,14 +401,14 @@ get_workload_metrics() {
     
     if [[ -n "$PROMETHEUS_QUERY" ]]; then
       # Use custom query
-      log_message "INFO" "Using custom Prometheus query: $PROMETHEUS_QUERY"
+      format-echo "INFO" "Using custom Prometheus query: $PROMETHEUS_QUERY"
       local query_result=$(curl -s --data-urlencode "query=$PROMETHEUS_QUERY" "$PROMETHEUS_URL/api/v1/query" | jq -r '.data.result[0].value[1]')
       
       if [[ -n "$query_result" && "$query_result" != "null" ]]; then
         # Assuming the query returns CPU usage as a percentage
         cpu_usage=$(echo "$query_result * 100" | bc | cut -d. -f1)
       else
-        log_message "WARNING" "No results from custom Prometheus query."
+        format-echo "WARNING" "No results from custom Prometheus query."
       fi
     else
       # Use default queries for CPU and memory
@@ -420,7 +420,7 @@ get_workload_metrics() {
       if [[ -n "$cpu_result" && "$cpu_result" != "null" ]]; then
         cpu_usage=$(echo "$cpu_result" | bc | cut -d. -f1)
       else
-        log_message "WARNING" "No CPU metrics available from Prometheus."
+        format-echo "WARNING" "No CPU metrics available from Prometheus."
       fi
       
       # Memory query - avg memory usage for pods in the deployment in MB
@@ -430,12 +430,12 @@ get_workload_metrics() {
       if [[ -n "$memory_result" && "$memory_result" != "null" ]]; then
         memory_usage=$(echo "$memory_result" | bc | cut -d. -f1)
       else
-        log_message "WARNING" "No memory metrics available from Prometheus."
+        format-echo "WARNING" "No memory metrics available from Prometheus."
       fi
     fi
   fi
   
-  log_message "INFO" "Current metrics - CPU: ${cpu_usage}%, Memory: ${memory_usage}MB"
+  format-echo "INFO" "Current metrics - CPU: ${cpu_usage}%, Memory: ${memory_usage}MB"
   echo "$cpu_usage $memory_usage"
   return 0
 }
@@ -448,14 +448,14 @@ calculate_target_replicas() {
   local cpu_usage="$2"
   local memory_usage="$3"
   
-  log_message "INFO" "Calculating target replicas based on metrics..."
-  log_message "INFO" "Current replicas: $current_replicas, CPU usage: ${cpu_usage}%, Memory usage: ${memory_usage}MB"
+  format-echo "INFO" "Calculating target replicas based on metrics..."
+  format-echo "INFO" "Current replicas: $current_replicas, CPU usage: ${cpu_usage}%, Memory usage: ${memory_usage}MB"
   
   local target_replicas=$current_replicas
   
   # Scale up if CPU or memory usage is above threshold
   if [[ "$cpu_usage" -gt "$CPU_THRESHOLD" || "$memory_usage" -gt "$MEMORY_THRESHOLD" ]]; then
-    log_message "INFO" "Resource usage above threshold, calculating scale up..."
+    format-echo "INFO" "Resource usage above threshold, calculating scale up..."
     
     # Calculate based on the resource with the highest relative usage
     local cpu_ratio=$(echo "scale=2; $cpu_usage / $CPU_THRESHOLD" | bc)
@@ -478,11 +478,11 @@ calculate_target_replicas() {
     fi
     
     target_replicas=$calculated_replicas
-    log_message "INFO" "Calculated target replicas for scale up: $target_replicas"
+    format-echo "INFO" "Calculated target replicas for scale up: $target_replicas"
     
   # Scale down if CPU and memory usage are below thresholds by a significant margin
   elif [[ "$cpu_usage" -lt $((CPU_THRESHOLD / 2)) && "$memory_usage" -lt $((MEMORY_THRESHOLD / 2)) ]]; then
-    log_message "INFO" "Resource usage well below threshold, calculating scale down..."
+    format-echo "INFO" "Resource usage well below threshold, calculating scale down..."
     
     # Calculate a reasonable scale-down target based on current usage
     local cpu_target_replicas=$(echo "scale=0; $current_replicas * $cpu_usage / $CPU_THRESHOLD / 1" | bc)
@@ -501,18 +501,18 @@ calculate_target_replicas() {
     fi
     
     target_replicas=$calculated_replicas
-    log_message "INFO" "Calculated target replicas for scale down: $target_replicas"
+    format-echo "INFO" "Calculated target replicas for scale down: $target_replicas"
   else
-    log_message "INFO" "Resource usage within acceptable range, no scaling needed."
+    format-echo "INFO" "Resource usage within acceptable range, no scaling needed."
   fi
   
   # Ensure we respect min and max replicas
   if [[ "$target_replicas" -lt "$MIN_REPLICAS" ]]; then
     target_replicas=$MIN_REPLICAS
-    log_message "INFO" "Adjusted target replicas to minimum: $target_replicas"
+    format-echo "INFO" "Adjusted target replicas to minimum: $target_replicas"
   elif [[ "$target_replicas" -gt "$MAX_REPLICAS" ]]; then
     target_replicas=$MAX_REPLICAS
-    log_message "INFO" "Adjusted target replicas to maximum: $target_replicas"
+    format-echo "INFO" "Adjusted target replicas to maximum: $target_replicas"
   fi
   
   # Return the target replicas
@@ -529,7 +529,7 @@ calculate_target_replicas() {
 check_schedule() {
   local schedule="$1"
   
-  log_message "INFO" "Checking if schedule '$schedule' matches current time..."
+  format-echo "INFO" "Checking if schedule '$schedule' matches current time..."
   
   # Get current time
   local current_time=$(date +%s)
@@ -545,11 +545,11 @@ check_schedule() {
   
   if [[ "$schedule" =~ ^[0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+[[:space:]][0-9*,-/]+$ ]]; then
     # Cron format
-    log_message "INFO" "Detected cron format schedule."
+    format-echo "INFO" "Detected cron format schedule."
     
     # Check if we have the necessary tools to parse cron
     if ! command_exists python3; then
-      log_message "ERROR" "Python3 is required to parse cron schedules."
+      format-echo "ERROR" "Python3 is required to parse cron schedules."
       return 1
     fi
     
@@ -576,19 +576,19 @@ except Exception as e:
 " 2>/dev/null)
     
     if [[ "$matches" == "true" ]]; then
-      log_message "INFO" "Schedule matches current time."
+      format-echo "INFO" "Schedule matches current time."
       return 0
     elif [[ "$matches" == "error:"* ]]; then
-      log_message "ERROR" "Failed to parse cron schedule: ${matches#error: }"
+      format-echo "ERROR" "Failed to parse cron schedule: ${matches#error: }"
       return 1
     else
-      log_message "INFO" "Schedule does not match current time."
+      format-echo "INFO" "Schedule does not match current time."
       return 1
     fi
     
   else
     # Simple format
-    log_message "INFO" "Detected simple format schedule."
+    format-echo "INFO" "Detected simple format schedule."
     
     # Parse the schedule
     local day_spec=""
@@ -599,8 +599,8 @@ except Exception as e:
       day_spec="${BASH_REMATCH[1]}"
       time_spec="${BASH_REMATCH[2]}"
     else
-      log_message "ERROR" "Invalid schedule format: $schedule"
-      log_message "ERROR" "Expected format: '[weekdays|weekends|daily|monday|...] HH:MM'"
+      format-echo "ERROR" "Invalid schedule format: $schedule"
+      format-echo "ERROR" "Expected format: '[weekdays|weekends|daily|monday|...] HH:MM'"
       return 1
     fi
     
@@ -612,8 +612,8 @@ except Exception as e:
       schedule_hour="${BASH_REMATCH[1]}"
       schedule_minute="${BASH_REMATCH[2]}"
     else
-      log_message "ERROR" "Invalid time format: $time_spec"
-      log_message "ERROR" "Expected format: 'HH:MM'"
+      format-echo "ERROR" "Invalid time format: $time_spec"
+      format-echo "ERROR" "Expected format: 'HH:MM'"
       return 1
     fi
     
@@ -623,74 +623,74 @@ except Exception as e:
       case "$day_spec" in
         daily)
           # Matches every day
-          log_message "INFO" "Schedule matches current time (daily at $time_spec)."
+          format-echo "INFO" "Schedule matches current time (daily at $time_spec)."
           return 0
           ;;
         weekdays)
           # Matches Monday to Friday (1-5)
           if [[ "$current_day" -ge 1 && "$current_day" -le 5 ]]; then
-            log_message "INFO" "Schedule matches current time (weekday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (weekday at $time_spec)."
             return 0
           fi
           ;;
         weekends)
           # Matches Saturday and Sunday (6-7)
           if [[ "$current_day" -ge 6 && "$current_day" -le 7 ]]; then
-            log_message "INFO" "Schedule matches current time (weekend at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (weekend at $time_spec)."
             return 0
           fi
           ;;
         monday|mon)
           if [[ "$current_day" -eq 1 ]]; then
-            log_message "INFO" "Schedule matches current time (Monday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Monday at $time_spec)."
             return 0
           fi
           ;;
         tuesday|tue)
           if [[ "$current_day" -eq 2 ]]; then
-            log_message "INFO" "Schedule matches current time (Tuesday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Tuesday at $time_spec)."
             return 0
           fi
           ;;
         wednesday|wed)
           if [[ "$current_day" -eq 3 ]]; then
-            log_message "INFO" "Schedule matches current time (Wednesday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Wednesday at $time_spec)."
             return 0
           fi
           ;;
         thursday|thu)
           if [[ "$current_day" -eq 4 ]]; then
-            log_message "INFO" "Schedule matches current time (Thursday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Thursday at $time_spec)."
             return 0
           fi
           ;;
         friday|fri)
           if [[ "$current_day" -eq 5 ]]; then
-            log_message "INFO" "Schedule matches current time (Friday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Friday at $time_spec)."
             return 0
           fi
           ;;
         saturday|sat)
           if [[ "$current_day" -eq 6 ]]; then
-            log_message "INFO" "Schedule matches current time (Saturday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Saturday at $time_spec)."
             return 0
           fi
           ;;
         sunday|sun)
           if [[ "$current_day" -eq 7 ]]; then
-            log_message "INFO" "Schedule matches current time (Sunday at $time_spec)."
+            format-echo "INFO" "Schedule matches current time (Sunday at $time_spec)."
             return 0
           fi
           ;;
         *)
-          log_message "ERROR" "Invalid day specification: $day_spec"
-          log_message "ERROR" "Expected one of: daily, weekdays, weekends, monday, tuesday, etc."
+          format-echo "ERROR" "Invalid day specification: $day_spec"
+          format-echo "ERROR" "Expected one of: daily, weekdays, weekends, monday, tuesday, etc."
           return 1
           ;;
       esac
     fi
     
-    log_message "INFO" "Schedule does not match current time."
+    format-echo "INFO" "Schedule does not match current time."
     return 1
   fi
 }
@@ -704,10 +704,10 @@ process_schedule_file() {
   local workload_name="$3"
   local namespace="$4"
   
-  log_message "INFO" "Processing schedules from file: $schedule_file..."
+  format-echo "INFO" "Processing schedules from file: $schedule_file..."
   
   if [[ ! -f "$schedule_file" ]]; then
-    log_message "ERROR" "Schedule file not found: $schedule_file"
+    format-echo "ERROR" "Schedule file not found: $schedule_file"
     return 1
   fi
   
@@ -723,11 +723,11 @@ process_schedule_file() {
       local schedule="${BASH_REMATCH[1]}"
       local replicas="${BASH_REMATCH[2]}"
       
-      log_message "INFO" "Checking schedule: $schedule with replicas: $replicas"
+      format-echo "INFO" "Checking schedule: $schedule with replicas: $replicas"
       
       # Check if the schedule matches current time
       if check_schedule "$schedule"; then
-        log_message "INFO" "Schedule matches! Scaling $workload_type '$workload_name' to $replicas replicas."
+        format-echo "INFO" "Schedule matches! Scaling $workload_type '$workload_name' to $replicas replicas."
         
         # Scale the workload
         if scale_workload "$workload_type" "$workload_name" "$namespace" "$replicas"; then
@@ -739,17 +739,17 @@ process_schedule_file() {
           # We found a matching schedule, no need to check others
           return 0
         else
-          log_message "ERROR" "Failed to scale workload for matching schedule."
+          format-echo "ERROR" "Failed to scale workload for matching schedule."
           return 1
         fi
       fi
     else
-      log_message "WARNING" "Invalid line format in schedule file: $line"
-      log_message "WARNING" "Expected format: 'schedule,replicas'"
+      format-echo "WARNING" "Invalid line format in schedule file: $line"
+      format-echo "WARNING" "Expected format: 'schedule,replicas'"
     fi
   done < "$schedule_file"
   
-  log_message "INFO" "No matching schedules found in file."
+  format-echo "INFO" "No matching schedules found in file."
   return 1
 }
 
@@ -762,10 +762,10 @@ process_schedule_file() {
 process_batch_file() {
   local batch_file="$1"
   
-  log_message "INFO" "Processing batch operations from file: $batch_file..."
+  format-echo "INFO" "Processing batch operations from file: $batch_file..."
   
   if [[ ! -f "$batch_file" ]]; then
-    log_message "ERROR" "Batch file not found: $batch_file"
+    format-echo "ERROR" "Batch file not found: $batch_file"
     return 1
   fi
   
@@ -790,11 +790,11 @@ process_batch_file() {
       
       # Check if we've reached the maximum number of operations
       if [[ "$operation_count" -gt "$MAX_SCALING_OPERATIONS" ]]; then
-        log_message "WARNING" "Reached maximum number of scaling operations ($MAX_SCALING_OPERATIONS)."
+        format-echo "WARNING" "Reached maximum number of scaling operations ($MAX_SCALING_OPERATIONS)."
         break
       fi
       
-      log_message "INFO" "Processing batch operation: $type '$name' in namespace '$ns' to $replicas replicas"
+      format-echo "INFO" "Processing batch operation: $type '$name' in namespace '$ns' to $replicas replicas"
       
       # Validate the workload
       if validate_workload "$type" "$name" "$ns" &>/dev/null; then
@@ -808,15 +808,15 @@ process_batch_file() {
           fi
         fi
       else
-        log_message "WARNING" "Skipping invalid workload: $type '$name' in namespace '$ns'"
+        format-echo "WARNING" "Skipping invalid workload: $type '$name' in namespace '$ns'"
       fi
     else
-      log_message "WARNING" "Invalid line format in batch file: $line"
-      log_message "WARNING" "Expected format: 'type,name,namespace,replicas'"
+      format-echo "WARNING" "Invalid line format in batch file: $line"
+      format-echo "WARNING" "Expected format: 'type,name,namespace,replicas'"
     fi
   done < "$batch_file"
   
-  log_message "INFO" "Batch processing completed. $success_count of $operation_count operations succeeded."
+  format-echo "INFO" "Batch processing completed. $success_count of $operation_count operations succeeded."
   return 0
 }
 
@@ -828,7 +828,7 @@ process_selector() {
   local replicas="$2"
   local type="$3"
   
-  log_message "INFO" "Processing workloads matching selector: $selector..."
+  format-echo "INFO" "Processing workloads matching selector: $selector..."
   
   # Default to deployments if type is not specified
   if [[ -z "$type" ]]; then
@@ -839,7 +839,7 @@ process_selector() {
   local workloads=$(kubectl $CONTEXT_FLAG get $type -A -l "$selector" --no-headers 2>/dev/null)
   
   if [[ -z "$workloads" ]]; then
-    log_message "ERROR" "No $type found matching selector: $selector"
+    format-echo "ERROR" "No $type found matching selector: $selector"
     return 1
   fi
   
@@ -855,11 +855,11 @@ process_selector() {
     
     # Check if we've reached the maximum number of operations
     if [[ "$operation_count" -gt "$MAX_SCALING_OPERATIONS" ]]; then
-      log_message "WARNING" "Reached maximum number of scaling operations ($MAX_SCALING_OPERATIONS)."
+      format-echo "WARNING" "Reached maximum number of scaling operations ($MAX_SCALING_OPERATIONS)."
       break
     fi
     
-    log_message "INFO" "Processing $type '$name' in namespace '$ns'"
+    format-echo "INFO" "Processing $type '$name' in namespace '$ns'"
     
     # Scale the workload
     if scale_workload "$type" "$name" "$ns" "$replicas"; then
@@ -872,7 +872,7 @@ process_selector() {
     fi
   done <<< "$workloads"
   
-  log_message "INFO" "Selector processing completed. $success_count of $operation_count operations succeeded."
+  format-echo "INFO" "Selector processing completed. $success_count of $operation_count operations succeeded."
   return 0
 }
 
@@ -892,8 +892,8 @@ parse_args() {
         case "$WORKLOAD_TYPE" in
           deployment|statefulset|replicaset) ;;
           *)
-            log_message "ERROR" "Unsupported workload type '${WORKLOAD_TYPE}'."
-            log_message "ERROR" "Supported types: deployment, statefulset, replicaset"
+            format-echo "ERROR" "Unsupported workload type '${WORKLOAD_TYPE}'."
+            format-echo "ERROR" "Supported types: deployment, statefulset, replicaset"
             exit 1
             ;;
         esac
@@ -958,8 +958,8 @@ parse_args() {
         case "$METRIC_SOURCE" in
           metrics-server|prometheus) ;;
           *)
-            log_message "ERROR" "Unsupported metric source '${METRIC_SOURCE}'."
-            log_message "ERROR" "Supported sources: metrics-server, prometheus"
+            format-echo "ERROR" "Unsupported metric source '${METRIC_SOURCE}'."
+            format-echo "ERROR" "Supported sources: metrics-server, prometheus"
             exit 1
             ;;
         esac
@@ -1022,7 +1022,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -1040,51 +1040,51 @@ parse_args() {
   case "$SCALE_MODE" in
     fixed)
       if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" ]]; then
-        log_message "ERROR" "Workload name or selector is required for fixed scaling."
+        format-echo "ERROR" "Workload name or selector is required for fixed scaling."
         exit 1
       fi
       
       if [[ "$REPLICA_COUNT" -lt 0 ]]; then
-        log_message "ERROR" "Replica count must be a non-negative integer."
+        format-echo "ERROR" "Replica count must be a non-negative integer."
         exit 1
       fi
       ;;
     metrics)
       if [[ -z "$WORKLOAD_NAME" ]]; then
-        log_message "ERROR" "Workload name is required for metrics-based scaling."
+        format-echo "ERROR" "Workload name is required for metrics-based scaling."
         exit 1
       fi
       ;;
     schedule)
       if [[ -z "$WORKLOAD_NAME" && -z "$LABEL_SELECTOR" && -z "$BATCH_FILE" ]]; then
-        log_message "ERROR" "Workload name, selector, or batch file is required for schedule-based scaling."
+        format-echo "ERROR" "Workload name, selector, or batch file is required for schedule-based scaling."
         exit 1
       fi
       
       if [[ -z "$SCHEDULE" && -z "$SCHEDULE_FILE" ]]; then
-        log_message "ERROR" "Schedule or schedule file is required for schedule-based scaling."
+        format-echo "ERROR" "Schedule or schedule file is required for schedule-based scaling."
         exit 1
       fi
       
       if [[ -n "$SCHEDULE" && -z "$REPLICA_COUNT" ]]; then
-        log_message "ERROR" "Replica count is required when using a schedule."
+        format-echo "ERROR" "Replica count is required when using a schedule."
         exit 1
       fi
       ;;
     batch)
       if [[ -z "$BATCH_FILE" ]]; then
-        log_message "ERROR" "Batch file is required for batch scaling."
+        format-echo "ERROR" "Batch file is required for batch scaling."
         exit 1
       fi
       ;;
     selector)
       if [[ -z "$LABEL_SELECTOR" ]]; then
-        log_message "ERROR" "Label selector is required for selector-based scaling."
+        format-echo "ERROR" "Label selector is required for selector-based scaling."
         exit 1
       fi
       
       if [[ "$REPLICA_COUNT" -lt 0 ]]; then
-        log_message "ERROR" "Replica count must be a non-negative integer."
+        format-echo "ERROR" "Replica count must be a non-negative integer."
         exit 1
       fi
       ;;
@@ -1112,81 +1112,81 @@ main() {
   
   print_with_separator "Kubernetes Workload Scaling Script"
   
-  log_message "INFO" "Starting workload scaling in ${SCALE_MODE} mode..."
+  format-echo "INFO" "Starting workload scaling in ${SCALE_MODE} mode..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
+  format-echo "INFO" "Configuration:"
   
   case "$SCALE_MODE" in
     fixed)
-      log_message "INFO" "  Mode:             Fixed replica count"
+      format-echo "INFO" "  Mode:             Fixed replica count"
       if [[ -n "$WORKLOAD_NAME" ]]; then
-        log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
-        log_message "INFO" "  Workload Name:     $WORKLOAD_NAME"
-        log_message "INFO" "  Namespace:         $NAMESPACE"
+        format-echo "INFO" "  Workload Type:     $WORKLOAD_TYPE"
+        format-echo "INFO" "  Workload Name:     $WORKLOAD_NAME"
+        format-echo "INFO" "  Namespace:         $NAMESPACE"
       fi
       if [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
+        format-echo "INFO" "  Label Selector:    $LABEL_SELECTOR"
       fi
-      log_message "INFO" "  Target Replicas:   $REPLICA_COUNT"
+      format-echo "INFO" "  Target Replicas:   $REPLICA_COUNT"
       ;;
     metrics)
-      log_message "INFO" "  Mode:             Metrics-based scaling"
-      log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
-      log_message "INFO" "  Workload Name:     $WORKLOAD_NAME"
-      log_message "INFO" "  Namespace:         $NAMESPACE"
-      log_message "INFO" "  Min Replicas:      $MIN_REPLICAS"
-      log_message "INFO" "  Max Replicas:      $MAX_REPLICAS"
-      log_message "INFO" "  CPU Threshold:     ${CPU_THRESHOLD}%"
-      log_message "INFO" "  Memory Threshold:  ${MEMORY_THRESHOLD}%"
-      log_message "INFO" "  Scaling Factor:    $SCALING_FACTOR"
-      log_message "INFO" "  Scaling Interval:  ${SCALING_INTERVAL}s"
-      log_message "INFO" "  Scaling Step:      $SCALING_STEP"
-      log_message "INFO" "  Metric Source:     $METRIC_SOURCE"
+      format-echo "INFO" "  Mode:             Metrics-based scaling"
+      format-echo "INFO" "  Workload Type:     $WORKLOAD_TYPE"
+      format-echo "INFO" "  Workload Name:     $WORKLOAD_NAME"
+      format-echo "INFO" "  Namespace:         $NAMESPACE"
+      format-echo "INFO" "  Min Replicas:      $MIN_REPLICAS"
+      format-echo "INFO" "  Max Replicas:      $MAX_REPLICAS"
+      format-echo "INFO" "  CPU Threshold:     ${CPU_THRESHOLD}%"
+      format-echo "INFO" "  Memory Threshold:  ${MEMORY_THRESHOLD}%"
+      format-echo "INFO" "  Scaling Factor:    $SCALING_FACTOR"
+      format-echo "INFO" "  Scaling Interval:  ${SCALING_INTERVAL}s"
+      format-echo "INFO" "  Scaling Step:      $SCALING_STEP"
+      format-echo "INFO" "  Metric Source:     $METRIC_SOURCE"
       if [[ "$METRIC_SOURCE" == "prometheus" ]]; then
-        log_message "INFO" "  Prometheus URL:    $PROMETHEUS_URL"
+        format-echo "INFO" "  Prometheus URL:    $PROMETHEUS_URL"
         if [[ -n "$PROMETHEUS_QUERY" ]]; then
-          log_message "INFO" "  Prometheus Query:  $PROMETHEUS_QUERY"
+          format-echo "INFO" "  Prometheus Query:  $PROMETHEUS_QUERY"
         fi
       fi
       ;;
     schedule)
-      log_message "INFO" "  Mode:             Schedule-based scaling"
+      format-echo "INFO" "  Mode:             Schedule-based scaling"
       if [[ -n "$WORKLOAD_NAME" ]]; then
-        log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
-        log_message "INFO" "  Workload Name:     $WORKLOAD_NAME"
-        log_message "INFO" "  Namespace:         $NAMESPACE"
+        format-echo "INFO" "  Workload Type:     $WORKLOAD_TYPE"
+        format-echo "INFO" "  Workload Name:     $WORKLOAD_NAME"
+        format-echo "INFO" "  Namespace:         $NAMESPACE"
       fi
       if [[ -n "$SCHEDULE" ]]; then
-        log_message "INFO" "  Schedule:          $SCHEDULE"
-        log_message "INFO" "  Target Replicas:   $REPLICA_COUNT"
+        format-echo "INFO" "  Schedule:          $SCHEDULE"
+        format-echo "INFO" "  Target Replicas:   $REPLICA_COUNT"
       fi
       if [[ -n "$SCHEDULE_FILE" ]]; then
-        log_message "INFO" "  Schedule File:     $SCHEDULE_FILE"
+        format-echo "INFO" "  Schedule File:     $SCHEDULE_FILE"
       fi
       ;;
     batch)
-      log_message "INFO" "  Mode:             Batch scaling"
-      log_message "INFO" "  Batch File:        $BATCH_FILE"
-      log_message "INFO" "  Max Operations:    $MAX_SCALING_OPERATIONS"
+      format-echo "INFO" "  Mode:             Batch scaling"
+      format-echo "INFO" "  Batch File:        $BATCH_FILE"
+      format-echo "INFO" "  Max Operations:    $MAX_SCALING_OPERATIONS"
       ;;
     selector)
-      log_message "INFO" "  Mode:             Selector-based scaling"
-      log_message "INFO" "  Label Selector:    $LABEL_SELECTOR"
-      log_message "INFO" "  Target Replicas:   $REPLICA_COUNT"
-      log_message "INFO" "  Workload Type:     $WORKLOAD_TYPE"
+      format-echo "INFO" "  Mode:             Selector-based scaling"
+      format-echo "INFO" "  Label Selector:    $LABEL_SELECTOR"
+      format-echo "INFO" "  Target Replicas:   $REPLICA_COUNT"
+      format-echo "INFO" "  Workload Type:     $WORKLOAD_TYPE"
       ;;
   esac
   
-  log_message "INFO" "  Post-Scale Check:  $POST_SCALE_CHECK"
-  log_message "INFO" "  Dry Run:           $DRY_RUN"
-  log_message "INFO" "  Force:             $FORCE"
+  format-echo "INFO" "  Post-Scale Check:  $POST_SCALE_CHECK"
+  format-echo "INFO" "  Dry Run:           $DRY_RUN"
+  format-echo "INFO" "  Force:             $FORCE"
   
   if [[ -n "$CONTEXT" ]]; then
-    log_message "INFO" "  Context:           $CONTEXT"
+    format-echo "INFO" "  Context:           $CONTEXT"
   fi
   
   #---------------------------------------------------------------------
@@ -1197,10 +1197,10 @@ main() {
   
   # Confirm operation if not forced and not dry run
   if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
-    log_message "WARNING" "This operation will scale Kubernetes workloads."
+    format-echo "WARNING" "This operation will scale Kubernetes workloads."
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -1216,13 +1216,13 @@ main() {
       #---------------------------------------------------------------------
       # Single workload with fixed replicas
       if [[ -n "$WORKLOAD_NAME" ]]; then
-        log_message "INFO" "Scaling single workload with fixed replicas..."
+        format-echo "INFO" "Scaling single workload with fixed replicas..."
         
         # Validate the workload
         local current_replicas
         if current_replicas=$(validate_workload "$WORKLOAD_TYPE" "$WORKLOAD_NAME" "$NAMESPACE"); then
           if [[ "$current_replicas" -eq "$REPLICA_COUNT" ]]; then
-            log_message "INFO" "$WORKLOAD_TYPE '$WORKLOAD_NAME' already has $REPLICA_COUNT replicas."
+            format-echo "INFO" "$WORKLOAD_TYPE '$WORKLOAD_NAME' already has $REPLICA_COUNT replicas."
           else
             # Scale the workload
             if scale_workload "$WORKLOAD_TYPE" "$WORKLOAD_NAME" "$NAMESPACE" "$REPLICA_COUNT"; then
@@ -1235,7 +1235,7 @@ main() {
         fi
       # Selector-based scaling
       elif [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "INFO" "Scaling workloads matching selector with fixed replicas..."
+        format-echo "INFO" "Scaling workloads matching selector with fixed replicas..."
         process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
       fi
       ;;
@@ -1245,7 +1245,7 @@ main() {
       #---------------------------------------------------------------------
       # Metrics-based scaling
       if [[ -n "$WORKLOAD_NAME" ]]; then
-        log_message "INFO" "Scaling single workload based on metrics..."
+        format-echo "INFO" "Scaling single workload based on metrics..."
         
         # Validate the workload
         local current_replicas
@@ -1260,13 +1260,13 @@ main() {
             local target_replicas
             if target_replicas=$(calculate_target_replicas "$current_replicas" "$cpu_usage" "$memory_usage"); then
               if [[ "$target_replicas" -eq "$current_replicas" ]]; then
-                log_message "INFO" "No scaling needed, current replica count is optimal."
+                format-echo "INFO" "No scaling needed, current replica count is optimal."
               else
                 # Scale the workload
                 if scale_workload "$WORKLOAD_TYPE" "$WORKLOAD_NAME" "$NAMESPACE" "$target_replicas"; then
                   if [[ "$POST_SCALE_CHECK" == true ]]; then
                     # Wait for grace period before verifying
-                    log_message "INFO" "Waiting for ${GRACE_PERIOD}s grace period before verification..."
+                    format-echo "INFO" "Waiting for ${GRACE_PERIOD}s grace period before verification..."
                     sleep "$GRACE_PERIOD"
                     
                     # Verify the workload is healthy after scaling
@@ -1279,9 +1279,9 @@ main() {
         fi
       # Selector-based metrics scaling is not implemented
       elif [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "WARNING" "Metrics-based scaling with selectors is a complex operation."
-        log_message "WARNING" "Consider using Kubernetes Horizontal Pod Autoscaler (HPA) for this use case."
-        log_message "ERROR" "Selector-based metrics scaling is not implemented."
+        format-echo "WARNING" "Metrics-based scaling with selectors is a complex operation."
+        format-echo "WARNING" "Consider using Kubernetes Horizontal Pod Autoscaler (HPA) for this use case."
+        format-echo "ERROR" "Selector-based metrics scaling is not implemented."
         exit 1
       fi
       ;;
@@ -1291,19 +1291,19 @@ main() {
       #---------------------------------------------------------------------
       # Schedule-based scaling
       if [[ -n "$SCHEDULE_FILE" ]]; then
-        log_message "INFO" "Processing schedule file..."
+        format-echo "INFO" "Processing schedule file..."
         
         if [[ -n "$WORKLOAD_NAME" ]]; then
           process_schedule_file "$SCHEDULE_FILE" "$WORKLOAD_TYPE" "$WORKLOAD_NAME" "$NAMESPACE"
         elif [[ -n "$LABEL_SELECTOR" ]]; then
-          log_message "ERROR" "Schedule file with selector is not supported yet."
+          format-echo "ERROR" "Schedule file with selector is not supported yet."
           exit 1
         fi
       elif [[ -n "$SCHEDULE" ]]; then
-        log_message "INFO" "Checking schedule: $SCHEDULE"
+        format-echo "INFO" "Checking schedule: $SCHEDULE"
         
         if check_schedule "$SCHEDULE"; then
-          log_message "INFO" "Schedule matches! Proceeding with scaling."
+          format-echo "INFO" "Schedule matches! Proceeding with scaling."
           
           if [[ -n "$WORKLOAD_NAME" ]]; then
             # Validate the workload
@@ -1320,7 +1320,7 @@ main() {
             process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
           fi
         else
-          log_message "INFO" "Schedule does not match current time. No scaling needed."
+          format-echo "INFO" "Schedule does not match current time. No scaling needed."
         fi
       fi
       ;;
@@ -1330,7 +1330,7 @@ main() {
       #---------------------------------------------------------------------
       # Batch scaling
       if [[ -n "$BATCH_FILE" ]]; then
-        log_message "INFO" "Processing batch file for scaling..."
+        format-echo "INFO" "Processing batch file for scaling..."
         process_batch_file "$BATCH_FILE"
       fi
       ;;
@@ -1340,7 +1340,7 @@ main() {
       #---------------------------------------------------------------------
       # Selector-based scaling
       if [[ -n "$LABEL_SELECTOR" ]]; then
-        log_message "INFO" "Scaling workloads matching label selector..."
+        format-echo "INFO" "Scaling workloads matching label selector..."
         process_selector "$LABEL_SELECTOR" "$REPLICA_COUNT" "$WORKLOAD_TYPE"
       fi
       ;;
@@ -1349,6 +1349,6 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  log_message "SUCCESS" "Workload scaling completed."
+  format-echo "SUCCESS" "Workload scaling completed."
   print_with_separator
 }

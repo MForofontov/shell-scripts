@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -59,7 +59,7 @@ parse_args() {
         ;;
       --websites)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No websites provided after --websites."
+          format-echo "ERROR" "No websites provided after --websites."
           usage
         fi
         IFS=',' read -r -a WEBSITES <<< "$2"
@@ -67,7 +67,7 @@ parse_args() {
         ;;
       --count)
         if ! [[ "${2:-}" =~ ^[0-9]+$ ]]; then
-          log_message "ERROR" "Invalid count value: $2"
+          format-echo "ERROR" "Invalid count value: $2"
           usage
         fi
         PING_COUNT="$2"
@@ -75,7 +75,7 @@ parse_args() {
         ;;
       --timeout)
         if ! [[ "${2:-}" =~ ^[0-9]+$ ]]; then
-          log_message "ERROR" "Invalid timeout value: $2"
+          format-echo "ERROR" "Invalid timeout value: $2"
           usage
         fi
         TIMEOUT="$2"
@@ -83,14 +83,14 @@ parse_args() {
         ;;
       --log)
         if [ -z "${2:-}" ]; then
-          log_message "ERROR" "No log file provided after --log."
+          format-echo "ERROR" "No log file provided after --log."
           usage
         fi
         LOG_FILE="$2"
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -100,11 +100,11 @@ parse_args() {
 ping_websites() {
   for SITE in "${WEBSITES[@]}"; do
     TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-    log_message "INFO" "Pinging $SITE..."
+    format-echo "INFO" "Pinging $SITE..."
     if ping -c "$PING_COUNT" -W "$TIMEOUT" "$SITE" &> /dev/null; then
-      log_message "SUCCESS" "$TIMESTAMP: $SITE is reachable."
+      format-echo "SUCCESS" "$TIMESTAMP: $SITE is reachable."
     else
-      log_message "ERROR" "$TIMESTAMP: $SITE is unreachable."
+      format-echo "ERROR" "$TIMESTAMP: $SITE is unreachable."
     fi
   done
 }
@@ -122,19 +122,19 @@ main() {
   fi
 
   print_with_separator "Ping Script"
-  log_message "INFO" "Starting Ping Script..."
+  format-echo "INFO" "Starting Ping Script..."
 
   # Validate websites
   if [ "${#WEBSITES[@]}" -eq 0 ]; then
-    log_message "ERROR" "At least one website is required."
+    format-echo "ERROR" "At least one website is required."
     print_with_separator "End of Ping Script"
     exit 1
   fi
 
   if ping_websites; then
-    log_message "SUCCESS" "Ping test completed."
+    format-echo "SUCCESS" "Ping test completed."
   else
-    log_message "ERROR" "Failed to ping websites."
+    format-echo "ERROR" "Failed to ping websites."
     print_with_separator "End of Ping Script"
     exit 1
   fi

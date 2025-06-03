@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -119,23 +119,23 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   # Check for kubectl
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first."
+    format-echo "ERROR" "kubectl not found. Please install it first."
     exit 1
   fi
   
   # Check for jq
   if ! command_exists jq; then
-    log_message "ERROR" "jq not found. Please install it first."
+    format-echo "ERROR" "jq not found. Please install it first."
     exit 1
   fi
   
   # Check for yq
   if ! command_exists yq; then
-    log_message "WARNING" "yq not found. Some YAML processing capabilities may be limited."
+    format-echo "WARNING" "yq not found. Some YAML processing capabilities may be limited."
   fi
   
   #---------------------------------------------------------------------
@@ -145,37 +145,37 @@ check_requirements() {
   case "$SOURCE_PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube not found. Please install it to use minikube as source provider."
+        format-echo "ERROR" "minikube not found. Please install it to use minikube as source provider."
         exit 1
       fi
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind not found. Please install it to use kind as source provider."
+        format-echo "ERROR" "kind not found. Please install it to use kind as source provider."
         exit 1
       fi
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d not found. Please install it to use k3d as source provider."
+        format-echo "ERROR" "k3d not found. Please install it to use k3d as source provider."
         exit 1
       fi
       ;;
     eks)
       if ! command_exists aws; then
-        log_message "ERROR" "AWS CLI not found. Please install it to use EKS as source provider."
+        format-echo "ERROR" "AWS CLI not found. Please install it to use EKS as source provider."
         exit 1
       fi
       ;;
     gke)
       if ! command_exists gcloud; then
-        log_message "ERROR" "Google Cloud SDK not found. Please install it to use GKE as source provider."
+        format-echo "ERROR" "Google Cloud SDK not found. Please install it to use GKE as source provider."
         exit 1
       fi
       ;;
     aks)
       if ! command_exists az; then
-        log_message "ERROR" "Azure CLI not found. Please install it to use AKS as source provider."
+        format-echo "ERROR" "Azure CLI not found. Please install it to use AKS as source provider."
         exit 1
       fi
       ;;
@@ -187,43 +187,43 @@ check_requirements() {
   case "$TARGET_PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube not found. Please install it to use minikube as target provider."
+        format-echo "ERROR" "minikube not found. Please install it to use minikube as target provider."
         exit 1
       fi
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind not found. Please install it to use kind as target provider."
+        format-echo "ERROR" "kind not found. Please install it to use kind as target provider."
         exit 1
       fi
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d not found. Please install it to use k3d as target provider."
+        format-echo "ERROR" "k3d not found. Please install it to use k3d as target provider."
         exit 1
       fi
       ;;
     eks)
       if ! command_exists aws; then
-        log_message "ERROR" "AWS CLI not found. Please install it to use EKS as target provider."
+        format-echo "ERROR" "AWS CLI not found. Please install it to use EKS as target provider."
         exit 1
       fi
       ;;
     gke)
       if ! command_exists gcloud; then
-        log_message "ERROR" "Google Cloud SDK not found. Please install it to use GKE as target provider."
+        format-echo "ERROR" "Google Cloud SDK not found. Please install it to use GKE as target provider."
         exit 1
       fi
       ;;
     aks)
       if ! command_exists az; then
-        log_message "ERROR" "Azure CLI not found. Please install it to use AKS as target provider."
+        format-echo "ERROR" "Azure CLI not found. Please install it to use AKS as target provider."
         exit 1
       fi
       ;;
   esac
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -237,7 +237,7 @@ validate_cluster() {
   local kubeconfig="$4"
   local temp_env=""
   
-  log_message "INFO" "Validating $provider cluster '$cluster'..."
+  format-echo "INFO" "Validating $provider cluster '$cluster'..."
   
   # Set KUBECONFIG if provided
   if [[ -n "$kubeconfig" ]]; then
@@ -247,7 +247,7 @@ validate_cluster() {
   # Set context if provided
   if [[ -n "$context" ]]; then
     if ! eval "$temp_env kubectl config use-context '$context'" &>/dev/null; then
-      log_message "ERROR" "Cannot switch to context '$context'. Please check it exists."
+      format-echo "ERROR" "Cannot switch to context '$context'. Please check it exists."
       return 1
     fi
   else
@@ -264,7 +264,7 @@ validate_cluster() {
         ;;
       eks|gke|aks)
         # For cloud providers, we need to check if the cluster exists
-        log_message "INFO" "Auto-detecting context for $provider cluster '$cluster'..."
+        format-echo "INFO" "Auto-detecting context for $provider cluster '$cluster'..."
         local contexts
         contexts=$(eval "$temp_env kubectl config get-contexts -o name" 2>/dev/null)
         
@@ -282,29 +282,29 @@ validate_cluster() {
         esac
         
         if [[ -z "$context" ]]; then
-          log_message "ERROR" "Cannot auto-detect context for $provider cluster '$cluster'."
-          log_message "ERROR" "Please specify the context explicitly with --source-context or --target-context."
+          format-echo "ERROR" "Cannot auto-detect context for $provider cluster '$cluster'."
+          format-echo "ERROR" "Please specify the context explicitly with --source-context or --target-context."
           return 1
         else
-          log_message "INFO" "Auto-detected context: $context"
+          format-echo "INFO" "Auto-detected context: $context"
         fi
         ;;
     esac
     
     if ! eval "$temp_env kubectl config use-context '$context'" &>/dev/null; then
-      log_message "ERROR" "Cannot switch to auto-detected context '$context'. Please check it exists."
+      format-echo "ERROR" "Cannot switch to auto-detected context '$context'. Please check it exists."
       return 1
     fi
   fi
   
   # Verify we can access the cluster
   if ! eval "$temp_env kubectl get nodes" &>/dev/null; then
-    log_message "ERROR" "Cannot access cluster using context '$context'."
-    log_message "ERROR" "Please check your cluster is running and accessible."
+    format-echo "ERROR" "Cannot access cluster using context '$context'."
+    format-echo "ERROR" "Please check your cluster is running and accessible."
     return 1
   fi
   
-  log_message "SUCCESS" "Successfully validated $provider cluster '$cluster' using context '$context'."
+  format-echo "SUCCESS" "Successfully validated $provider cluster '$cluster' using context '$context'."
   
   # Return the context (this allows caller to capture auto-detected context)
   echo "$context"
@@ -320,20 +320,20 @@ create_target_cluster() {
     return 0
   fi
   
-  log_message "INFO" "Checking if target cluster '$TARGET_CLUSTER' needs to be created..."
+  format-echo "INFO" "Checking if target cluster '$TARGET_CLUSTER' needs to be created..."
   
   # Check if cluster already exists
   local existing_context
   if existing_context=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "$TARGET_CONTEXT" "$TARGET_KUBECONFIG" 2>/dev/null); then
-    log_message "INFO" "Target cluster already exists, skipping creation."
+    format-echo "INFO" "Target cluster already exists, skipping creation."
     TARGET_CONTEXT="$existing_context"
     return 0
   fi
   
-  log_message "INFO" "Creating target cluster '$TARGET_CLUSTER' with provider '$TARGET_PROVIDER'..."
+  format-echo "INFO" "Creating target cluster '$TARGET_CLUSTER' with provider '$TARGET_PROVIDER'..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would create $TARGET_PROVIDER cluster '$TARGET_CLUSTER' with $TARGET_NODES nodes"
+    format-echo "DRY-RUN" "Would create $TARGET_PROVIDER cluster '$TARGET_CLUSTER' with $TARGET_NODES nodes"
     return 0
   fi
   
@@ -349,7 +349,7 @@ create_target_cluster() {
         ;;
       kind)
         # kind uses its own node image versions, not direct k8s versions
-        log_message "WARNING" "kind doesn't support direct Kubernetes version selection. Using default version."
+        format-echo "WARNING" "kind doesn't support direct Kubernetes version selection. Using default version."
         version_flag=""
         ;;
       k3d)
@@ -370,47 +370,47 @@ create_target_cluster() {
   # Create cluster based on provider
   case "$TARGET_PROVIDER" in
     minikube)
-      log_message "INFO" "Creating minikube cluster '$TARGET_CLUSTER'..."
+      format-echo "INFO" "Creating minikube cluster '$TARGET_CLUSTER'..."
       if ! minikube start -p "$TARGET_CLUSTER" $version_flag --nodes="$TARGET_NODES"; then
-        log_message "ERROR" "Failed to create minikube cluster '$TARGET_CLUSTER'."
+        format-echo "ERROR" "Failed to create minikube cluster '$TARGET_CLUSTER'."
         exit 1
       fi
       TARGET_CONTEXT="$TARGET_CLUSTER"
       ;;
     kind)
-      log_message "INFO" "Creating kind cluster '$TARGET_CLUSTER'..."
+      format-echo "INFO" "Creating kind cluster '$TARGET_CLUSTER'..."
       if ! kind create cluster --name "$TARGET_CLUSTER"; then
-        log_message "ERROR" "Failed to create kind cluster '$TARGET_CLUSTER'."
+        format-echo "ERROR" "Failed to create kind cluster '$TARGET_CLUSTER'."
         exit 1
       fi
       TARGET_CONTEXT="kind-$TARGET_CLUSTER"
       ;;
     k3d)
-      log_message "INFO" "Creating k3d cluster '$TARGET_CLUSTER'..."
+      format-echo "INFO" "Creating k3d cluster '$TARGET_CLUSTER'..."
       if ! k3d cluster create "$TARGET_CLUSTER" $version_flag --agents "$TARGET_NODES"; then
-        log_message "ERROR" "Failed to create k3d cluster '$TARGET_CLUSTER'."
+        format-echo "ERROR" "Failed to create k3d cluster '$TARGET_CLUSTER'."
         exit 1
       fi
       TARGET_CONTEXT="k3d-$TARGET_CLUSTER"
       ;;
     eks)
-      log_message "ERROR" "Creating EKS clusters is not supported in this script due to complexity."
-      log_message "ERROR" "Please create the EKS cluster manually or use eksctl."
+      format-echo "ERROR" "Creating EKS clusters is not supported in this script due to complexity."
+      format-echo "ERROR" "Please create the EKS cluster manually or use eksctl."
       exit 1
       ;;
     gke)
-      log_message "ERROR" "Creating GKE clusters is not supported in this script due to complexity."
-      log_message "ERROR" "Please create the GKE cluster manually or use gcloud."
+      format-echo "ERROR" "Creating GKE clusters is not supported in this script due to complexity."
+      format-echo "ERROR" "Please create the GKE cluster manually or use gcloud."
       exit 1
       ;;
     aks)
-      log_message "ERROR" "Creating AKS clusters is not supported in this script due to complexity."
-      log_message "ERROR" "Please create the AKS cluster manually or use az aks create."
+      format-echo "ERROR" "Creating AKS clusters is not supported in this script due to complexity."
+      format-echo "ERROR" "Please create the AKS cluster manually or use az aks create."
       exit 1
       ;;
   esac
   
-  log_message "SUCCESS" "Successfully created target cluster '$TARGET_CLUSTER'."
+  format-echo "SUCCESS" "Successfully created target cluster '$TARGET_CLUSTER'."
   return 0
 }
 
@@ -419,7 +419,7 @@ create_target_cluster() {
 #=====================================================================
 # Get list of namespaces to migrate
 get_namespaces() {
-  log_message "INFO" "Determining namespaces to migrate..."
+  format-echo "INFO" "Determining namespaces to migrate..."
   
   local ns_list=()
   local kubeconfig_flag=""
@@ -430,18 +430,18 @@ get_namespaces() {
   
   # Switch to source context
   if ! kubectl config use-context "$SOURCE_CONTEXT" &>/dev/null; then
-    log_message "ERROR" "Cannot switch to source context '$SOURCE_CONTEXT'."
+    format-echo "ERROR" "Cannot switch to source context '$SOURCE_CONTEXT'."
     exit 1
   fi
   
   # Get all namespaces if requested
   if [[ "$INCLUDE_ALL_NAMESPACES" == true ]]; then
     ns_list=($(kubectl get namespaces $kubeconfig_flag -o jsonpath='{.items[*].metadata.name}'))
-    log_message "INFO" "Found ${#ns_list[@]} namespaces in total."
+    format-echo "INFO" "Found ${#ns_list[@]} namespaces in total."
   else
     # Use specified namespaces
     if [[ ${#NAMESPACES[@]} -eq 0 ]]; then
-      log_message "ERROR" "No namespaces specified. Use --namespace or --all-namespaces."
+      format-echo "ERROR" "No namespaces specified. Use --namespace or --all-namespaces."
       exit 1
     fi
     ns_list=("${NAMESPACES[@]}")
@@ -464,16 +464,16 @@ get_namespaces() {
     if [[ "$excluded" == false ]]; then
       filtered_ns+=("$ns")
     else
-      log_message "INFO" "Excluding namespace: $ns"
+      format-echo "INFO" "Excluding namespace: $ns"
     fi
   done
   
   if [[ ${#filtered_ns[@]} -eq 0 ]]; then
-    log_message "ERROR" "No namespaces left after filtering. Please check your namespace options."
+    format-echo "ERROR" "No namespaces left after filtering. Please check your namespace options."
     exit 1
   fi
   
-  log_message "INFO" "Will migrate ${#filtered_ns[@]} namespaces: ${filtered_ns[*]}"
+  format-echo "INFO" "Will migrate ${#filtered_ns[@]} namespaces: ${filtered_ns[*]}"
   echo "${filtered_ns[@]}"
 }
 
@@ -483,20 +483,20 @@ get_namespaces() {
 # Export resources from source cluster
 export_resources() {
   local namespaces=("$@")
-  log_message "INFO" "Exporting resources from source cluster..."
+  format-echo "INFO" "Exporting resources from source cluster..."
   
   # Create backup directory if not specified
   if [[ -z "$BACKUP_DIR" ]]; then
     BACKUP_DIR=$(mktemp -d "/tmp/k8s-conversion-XXXXX")
-    log_message "INFO" "Created temporary backup directory: $BACKUP_DIR"
+    format-echo "INFO" "Created temporary backup directory: $BACKUP_DIR"
   else
     mkdir -p "$BACKUP_DIR"
-    log_message "INFO" "Using backup directory: $BACKUP_DIR"
+    format-echo "INFO" "Using backup directory: $BACKUP_DIR"
   fi
   
   # Switch to source context
   if ! kubectl config use-context "$SOURCE_CONTEXT" &>/dev/null; then
-    log_message "ERROR" "Cannot switch to source context '$SOURCE_CONTEXT'."
+    format-echo "ERROR" "Cannot switch to source context '$SOURCE_CONTEXT'."
     exit 1
   fi
   
@@ -510,15 +510,15 @@ export_resources() {
   #---------------------------------------------------------------------
   # Export CRDs if requested
   if [[ "$CUSTOM_RESOURCES" == true ]]; then
-    log_message "INFO" "Exporting Custom Resource Definitions..."
+    format-echo "INFO" "Exporting Custom Resource Definitions..."
     
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would export Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
+      format-echo "DRY-RUN" "Would export Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
     else
       if ! kubectl get crds $kubeconfig_flag -o yaml > "$BACKUP_DIR/crds.yaml"; then
-        log_message "WARNING" "Failed to export Custom Resource Definitions."
+        format-echo "WARNING" "Failed to export Custom Resource Definitions."
       else
-        log_message "SUCCESS" "Exported Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
+        format-echo "SUCCESS" "Exported Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
       fi
     fi
   fi
@@ -528,38 +528,38 @@ export_resources() {
   #---------------------------------------------------------------------
   # Export resources for each namespace
   for ns in "${namespaces[@]}"; do
-    log_message "INFO" "Exporting resources from namespace: $ns"
+    format-echo "INFO" "Exporting resources from namespace: $ns"
     
     # Create namespace directory
     mkdir -p "$BACKUP_DIR/$ns"
     
     # Export namespace definition
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would export namespace $ns to $BACKUP_DIR/$ns/namespace.yaml"
+      format-echo "DRY-RUN" "Would export namespace $ns to $BACKUP_DIR/$ns/namespace.yaml"
     else
       if ! kubectl get namespace $ns $kubeconfig_flag -o yaml > "$BACKUP_DIR/$ns/namespace.yaml"; then
-        log_message "WARNING" "Failed to export namespace definition for $ns."
+        format-echo "WARNING" "Failed to export namespace definition for $ns."
       else
-        log_message "SUCCESS" "Exported namespace definition to $BACKUP_DIR/$ns/namespace.yaml"
+        format-echo "SUCCESS" "Exported namespace definition to $BACKUP_DIR/$ns/namespace.yaml"
       fi
     fi
     
     # Export each resource type
     for resource in "${RESOURCES[@]}"; do
-      log_message "INFO" "Exporting $resource from namespace $ns..."
+      format-echo "INFO" "Exporting $resource from namespace $ns..."
       
       if [[ "$DRY_RUN" == true ]]; then
-        log_message "DRY-RUN" "Would export $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
+        format-echo "DRY-RUN" "Would export $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
       else
         # Check if resource exists in this namespace
         if kubectl get "$resource" $kubeconfig_flag -n "$ns" &>/dev/null; then
           if ! kubectl get "$resource" $kubeconfig_flag -n "$ns" -o yaml > "$BACKUP_DIR/$ns/$resource.yaml"; then
-            log_message "WARNING" "Failed to export $resource from namespace $ns."
+            format-echo "WARNING" "Failed to export $resource from namespace $ns."
           else
-            log_message "SUCCESS" "Exported $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
+            format-echo "SUCCESS" "Exported $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
           fi
         else
-          log_message "INFO" "No $resource found in namespace $ns, skipping."
+          format-echo "INFO" "No $resource found in namespace $ns, skipping."
         fi
       fi
     done
@@ -569,7 +569,7 @@ export_resources() {
     #---------------------------------------------------------------------
     # Export custom resources if requested
     if [[ "$CUSTOM_RESOURCES" == true ]]; then
-      log_message "INFO" "Exporting custom resources from namespace $ns..."
+      format-echo "INFO" "Exporting custom resources from namespace $ns..."
       
       # Create custom resources directory
       mkdir -p "$BACKUP_DIR/$ns/custom-resources"
@@ -586,12 +586,12 @@ export_resources() {
         # Check if this CRD has resources in this namespace
         if kubectl get "$crd" $kubeconfig_flag -n "$ns" &>/dev/null; then
           if [[ "$DRY_RUN" == true ]]; then
-            log_message "DRY-RUN" "Would export custom resource $crd from namespace $ns"
+            format-echo "DRY-RUN" "Would export custom resource $crd from namespace $ns"
           else
             if ! kubectl get "$crd" $kubeconfig_flag -n "$ns" -o yaml > "$BACKUP_DIR/$ns/custom-resources/$crd.yaml"; then
-              log_message "WARNING" "Failed to export custom resource $crd from namespace $ns."
+              format-echo "WARNING" "Failed to export custom resource $crd from namespace $ns."
             else
-              log_message "SUCCESS" "Exported custom resource $crd from namespace $ns"
+              format-echo "SUCCESS" "Exported custom resource $crd from namespace $ns"
             fi
           fi
         fi
@@ -599,7 +599,7 @@ export_resources() {
     fi
   done
   
-  log_message "SUCCESS" "Export completed. Resources stored in $BACKUP_DIR"
+  format-echo "SUCCESS" "Export completed. Resources stored in $BACKUP_DIR"
 }
 
 #=====================================================================
@@ -607,10 +607,10 @@ export_resources() {
 #=====================================================================
 # Clean up exported resources to make them suitable for import
 clean_resources() {
-  log_message "INFO" "Cleaning exported resources for import..."
+  format-echo "INFO" "Cleaning exported resources for import..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would clean up exported resources for import"
+    format-echo "DRY-RUN" "Would clean up exported resources for import"
     return 0
   fi
   
@@ -619,7 +619,7 @@ clean_resources() {
   #---------------------------------------------------------------------
   # Process CRDs first if they exist
   if [[ -f "$BACKUP_DIR/crds.yaml" ]]; then
-    log_message "INFO" "Cleaning Custom Resource Definitions..."
+    format-echo "INFO" "Cleaning Custom Resource Definitions..."
     
     # Clean CRDs using yq if available, otherwise use sed and grep
     if command_exists yq; then
@@ -650,7 +650,7 @@ clean_resources() {
       rm -f "$BACKUP_DIR/crds.yaml.tmp"
     fi
     
-    log_message "SUCCESS" "Cleaned Custom Resource Definitions."
+    format-echo "SUCCESS" "Cleaned Custom Resource Definitions."
   fi
   
   #---------------------------------------------------------------------
@@ -663,11 +663,11 @@ clean_resources() {
     fi
     
     local ns=$(basename "$ns_dir")
-    log_message "INFO" "Cleaning resources for namespace: $ns"
+    format-echo "INFO" "Cleaning resources for namespace: $ns"
     
     # Process namespace definition
     if [[ -f "$ns_dir/namespace.yaml" ]]; then
-      log_message "INFO" "Cleaning namespace definition..."
+      format-echo "INFO" "Cleaning namespace definition..."
       
       if command_exists yq; then
         yq e '
@@ -703,7 +703,7 @@ clean_resources() {
       fi
       
       local resource=$(basename "$resource_file" .yaml)
-      log_message "INFO" "Cleaning $resource resources..."
+      format-echo "INFO" "Cleaning $resource resources..."
       
       if command_exists yq; then
         yq e '
@@ -749,7 +749,7 @@ clean_resources() {
         fi
         
         local cr=$(basename "$cr_file" .yaml)
-        log_message "INFO" "Cleaning custom resource $cr..."
+        format-echo "INFO" "Cleaning custom resource $cr..."
         
         if command_exists yq; then
           yq e '
@@ -782,7 +782,7 @@ clean_resources() {
     fi
   done
   
-  log_message "SUCCESS" "Resources cleaned and prepared for import."
+  format-echo "SUCCESS" "Resources cleaned and prepared for import."
 }
 
 #=====================================================================
@@ -791,11 +791,11 @@ clean_resources() {
 # Import resources to target cluster
 import_resources() {
   local namespaces=("$@")
-  log_message "INFO" "Importing resources to target cluster..."
+  format-echo "INFO" "Importing resources to target cluster..."
   
   # Switch to target context
   if ! kubectl config use-context "$TARGET_CONTEXT" &>/dev/null; then
-    log_message "ERROR" "Cannot switch to target context '$TARGET_CONTEXT'."
+    format-echo "ERROR" "Cannot switch to target context '$TARGET_CONTEXT'."
     exit 1
   fi
   
@@ -809,19 +809,19 @@ import_resources() {
   #---------------------------------------------------------------------
   # Import CRDs first if they exist
   if [[ -f "$BACKUP_DIR/crds.yaml" && "$CUSTOM_RESOURCES" == true ]]; then
-    log_message "INFO" "Importing Custom Resource Definitions..."
+    format-echo "INFO" "Importing Custom Resource Definitions..."
     
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would import Custom Resource Definitions from $BACKUP_DIR/crds.yaml"
+      format-echo "DRY-RUN" "Would import Custom Resource Definitions from $BACKUP_DIR/crds.yaml"
     else
       if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/crds.yaml"; then
-        log_message "WARNING" "Failed to import some Custom Resource Definitions."
+        format-echo "WARNING" "Failed to import some Custom Resource Definitions."
       else
-        log_message "SUCCESS" "Imported Custom Resource Definitions."
+        format-echo "SUCCESS" "Imported Custom Resource Definitions."
       fi
       
       # Wait for CRDs to be established
-      log_message "INFO" "Waiting for CRDs to be established..."
+      format-echo "INFO" "Waiting for CRDs to be established..."
       sleep 10
     fi
   fi
@@ -831,37 +831,37 @@ import_resources() {
   #---------------------------------------------------------------------
   # Import resources for each namespace
   for ns in "${namespaces[@]}"; do
-    log_message "INFO" "Importing resources for namespace: $ns"
+    format-echo "INFO" "Importing resources for namespace: $ns"
     
     # Check if namespace directory exists
     if [[ ! -d "$BACKUP_DIR/$ns" ]]; then
-      log_message "WARNING" "No resources found for namespace $ns, skipping."
+      format-echo "WARNING" "No resources found for namespace $ns, skipping."
       continue
     fi
     
     # Create namespace first
     if [[ -f "$BACKUP_DIR/$ns/namespace.yaml" ]]; then
-      log_message "INFO" "Creating namespace: $ns"
+      format-echo "INFO" "Creating namespace: $ns"
       
       if [[ "$DRY_RUN" == true ]]; then
-        log_message "DRY-RUN" "Would create namespace $ns from $BACKUP_DIR/$ns/namespace.yaml"
+        format-echo "DRY-RUN" "Would create namespace $ns from $BACKUP_DIR/$ns/namespace.yaml"
       else
         if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/$ns/namespace.yaml"; then
-          log_message "WARNING" "Failed to create namespace $ns. Trying to create it directly."
+          format-echo "WARNING" "Failed to create namespace $ns. Trying to create it directly."
           kubectl create namespace $kubeconfig_flag "$ns" || {
-            log_message "ERROR" "Failed to create namespace $ns. Skipping this namespace."
+            format-echo "ERROR" "Failed to create namespace $ns. Skipping this namespace."
             continue
           }
         fi
       fi
     else
-      log_message "INFO" "Namespace definition not found, creating namespace $ns directly."
+      format-echo "INFO" "Namespace definition not found, creating namespace $ns directly."
       
       if [[ "$DRY_RUN" == true ]]; then
-        log_message "DRY-RUN" "Would create namespace $ns"
+        format-echo "DRY-RUN" "Would create namespace $ns"
       else
         kubectl create namespace $kubeconfig_flag "$ns" || {
-          log_message "ERROR" "Failed to create namespace $ns. Skipping this namespace."
+          format-echo "ERROR" "Failed to create namespace $ns. Skipping this namespace."
           continue
         }
       fi
@@ -875,21 +875,21 @@ import_resources() {
     
     for resource in "${resource_order[@]}"; do
       if [[ -f "$BACKUP_DIR/$ns/$resource.yaml" ]]; then
-        log_message "INFO" "Importing $resource for namespace $ns..."
+        format-echo "INFO" "Importing $resource for namespace $ns..."
         
         if [[ "$DRY_RUN" == true ]]; then
-          log_message "DRY-RUN" "Would import $resource from $BACKUP_DIR/$ns/$resource.yaml"
+          format-echo "DRY-RUN" "Would import $resource from $BACKUP_DIR/$ns/$resource.yaml"
         else
           # Special handling for PVCs
           if [[ "$resource" == "pvc" && "$RECREATE_PVCS" != true && "$TRANSFER_STORAGE" != true ]]; then
-            log_message "INFO" "Skipping PVCs as requested."
+            format-echo "INFO" "Skipping PVCs as requested."
             continue
           fi
           
           if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/$ns/$resource.yaml"; then
-            log_message "WARNING" "Failed to import some $resource in namespace $ns."
+            format-echo "WARNING" "Failed to import some $resource in namespace $ns."
           else
-            log_message "SUCCESS" "Imported $resource in namespace $ns."
+            format-echo "SUCCESS" "Imported $resource in namespace $ns."
           fi
         fi
       fi
@@ -900,7 +900,7 @@ import_resources() {
     #---------------------------------------------------------------------
     # Import custom resources if they exist
     if [[ -d "$BACKUP_DIR/$ns/custom-resources" && "$CUSTOM_RESOURCES" == true ]]; then
-      log_message "INFO" "Importing custom resources for namespace $ns..."
+      format-echo "INFO" "Importing custom resources for namespace $ns..."
       
       for cr_file in "$BACKUP_DIR/$ns/custom-resources"/*.yaml; do
         if [[ ! -f "$cr_file" ]]; then
@@ -908,22 +908,22 @@ import_resources() {
         fi
         
         local cr=$(basename "$cr_file" .yaml)
-        log_message "INFO" "Importing custom resource $cr for namespace $ns..."
+        format-echo "INFO" "Importing custom resource $cr for namespace $ns..."
         
         if [[ "$DRY_RUN" == true ]]; then
-          log_message "DRY-RUN" "Would import custom resource $cr from $cr_file"
+          format-echo "DRY-RUN" "Would import custom resource $cr from $cr_file"
         else
           if ! kubectl apply $kubeconfig_flag -f "$cr_file"; then
-            log_message "WARNING" "Failed to import custom resource $cr in namespace $ns."
+            format-echo "WARNING" "Failed to import custom resource $cr in namespace $ns."
           else
-            log_message "SUCCESS" "Imported custom resource $cr in namespace $ns."
+            format-echo "SUCCESS" "Imported custom resource $cr in namespace $ns."
           fi
         fi
       done
     fi
   done
   
-  log_message "SUCCESS" "Import completed. Resources imported to target cluster."
+  format-echo "SUCCESS" "Import completed. Resources imported to target cluster."
 }
 
 #=====================================================================
@@ -932,11 +932,11 @@ import_resources() {
 # Verify import by checking resources in target cluster
 verify_import() {
   local namespaces=("$@")
-  log_message "INFO" "Verifying resource import in target cluster..."
+  format-echo "INFO" "Verifying resource import in target cluster..."
   
   # Switch to target context
   if ! kubectl config use-context "$TARGET_CONTEXT" &>/dev/null; then
-    log_message "ERROR" "Cannot switch to target context '$TARGET_CONTEXT'."
+    format-echo "ERROR" "Cannot switch to target context '$TARGET_CONTEXT'."
     exit 1
   fi
   
@@ -950,11 +950,11 @@ verify_import() {
   #---------------------------------------------------------------------
   # Check each namespace
   for ns in "${namespaces[@]}"; do
-    log_message "INFO" "Verifying resources in namespace: $ns"
+    format-echo "INFO" "Verifying resources in namespace: $ns"
     
     # Check if namespace exists
     if ! kubectl get namespace $kubeconfig_flag "$ns" &>/dev/null; then
-      log_message "ERROR" "Namespace $ns does not exist in target cluster."
+      format-echo "ERROR" "Namespace $ns does not exist in target cluster."
       continue
     fi
     
@@ -965,7 +965,7 @@ verify_import() {
         continue
       fi
       
-      log_message "INFO" "Checking $resource in namespace $ns..."
+      format-echo "INFO" "Checking $resource in namespace $ns..."
       
       # Get resource count in source
       local source_count=0
@@ -978,12 +978,12 @@ verify_import() {
       target_count=$(kubectl get $resource $kubeconfig_flag -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
       target_count=$(echo $target_count) # Trim whitespace
       
-      log_message "INFO" "Found $target_count of $source_count $resource resources in namespace $ns."
+      format-echo "INFO" "Found $target_count of $source_count $resource resources in namespace $ns."
       
       if [[ "$source_count" -gt 0 && "$target_count" -eq 0 ]]; then
-        log_message "WARNING" "No $resource resources found in namespace $ns in target cluster."
+        format-echo "WARNING" "No $resource resources found in namespace $ns in target cluster."
       elif [[ "$target_count" -lt "$source_count" ]]; then
-        log_message "WARNING" "Only $target_count of $source_count $resource resources found in namespace $ns."
+        format-echo "WARNING" "Only $target_count of $source_count $resource resources found in namespace $ns."
       fi
     done
     
@@ -991,7 +991,7 @@ verify_import() {
     # POD STATUS VERIFICATION
     #---------------------------------------------------------------------
     # Check pod status
-    log_message "INFO" "Checking pod status in namespace $ns..."
+    format-echo "INFO" "Checking pod status in namespace $ns..."
     local pods_total=0
     local pods_running=0
     
@@ -1000,17 +1000,17 @@ verify_import() {
     
     if [[ "$pods_total" -gt 0 ]]; then
       pods_running=$(kubectl get pods $kubeconfig_flag -n "$ns" --no-headers 2>/dev/null | grep -c "Running" || echo 0)
-      log_message "INFO" "$pods_running of $pods_total pods are running in namespace $ns."
+      format-echo "INFO" "$pods_running of $pods_total pods are running in namespace $ns."
       
       if [[ "$pods_running" -lt "$pods_total" ]]; then
-        log_message "WARNING" "Some pods are not running in namespace $ns. Check with 'kubectl get pods -n $ns'."
+        format-echo "WARNING" "Some pods are not running in namespace $ns. Check with 'kubectl get pods -n $ns'."
       fi
     else
-      log_message "INFO" "No pods found in namespace $ns."
+      format-echo "INFO" "No pods found in namespace $ns."
     fi
   done
   
-  log_message "SUCCESS" "Verification completed."
+  format-echo "SUCCESS" "Verification completed."
 }
 
 #=====================================================================
@@ -1022,15 +1022,15 @@ transfer_storage() {
     return 0
   fi
   
-  log_message "INFO" "Starting storage data transfer between clusters..."
+  format-echo "INFO" "Starting storage data transfer between clusters..."
   
   if [[ "$DRY_RUN" == true ]]; then
-    log_message "DRY-RUN" "Would transfer persistent volume data between clusters"
+    format-echo "DRY-RUN" "Would transfer persistent volume data between clusters"
     return 0
   fi
   
-  log_message "WARNING" "Storage transfer is a complex operation that depends on many factors."
-  log_message "WARNING" "This script provides basic guidance but may not be suitable for all environments."
+  format-echo "WARNING" "Storage transfer is a complex operation that depends on many factors."
+  format-echo "WARNING" "This script provides basic guidance but may not be suitable for all environments."
   
   #---------------------------------------------------------------------
   # ENVIRONMENT DETECTION
@@ -1051,49 +1051,49 @@ transfer_storage() {
   # LOCAL-TO-LOCAL TRANSFER
   #---------------------------------------------------------------------
   if [[ "$source_is_local" == true && "$target_is_local" == true ]]; then
-    log_message "INFO" "Both clusters are local. Using local data transfer approach."
+    format-echo "INFO" "Both clusters are local. Using local data transfer approach."
     
     # This is a simplified approach for local clusters
-    log_message "INFO" "For local clusters, consider the following approaches:"
-    log_message "INFO" "1. For minikube: Use hostPath volumes and ensure they point to the same host directory."
-    log_message "INFO" "2. For kind/k3d: Use Docker volumes and bind them to the same host directory."
-    log_message "INFO" "3. For any local cluster: Set up a local NFS or MinIO server for storage."
+    format-echo "INFO" "For local clusters, consider the following approaches:"
+    format-echo "INFO" "1. For minikube: Use hostPath volumes and ensure they point to the same host directory."
+    format-echo "INFO" "2. For kind/k3d: Use Docker volumes and bind them to the same host directory."
+    format-echo "INFO" "3. For any local cluster: Set up a local NFS or MinIO server for storage."
     
-    log_message "WARNING" "Automated data transfer between local clusters is not implemented."
-    log_message "WARNING" "Please see the documentation for manual steps."
+    format-echo "WARNING" "Automated data transfer between local clusters is not implemented."
+    format-echo "WARNING" "Please see the documentation for manual steps."
     
   #---------------------------------------------------------------------
   # CLOUD-TO-CLOUD TRANSFER
   #---------------------------------------------------------------------
   elif [[ "$source_is_local" == false && "$target_is_local" == false ]]; then
-    log_message "INFO" "Both clusters are cloud-based. Using cloud data transfer approach."
+    format-echo "INFO" "Both clusters are cloud-based. Using cloud data transfer approach."
     
     # This would be provider-specific and complex
-    log_message "INFO" "For cloud clusters, consider the following approaches:"
-    log_message "INFO" "1. Use cloud-native storage options (EBS, Persistent Disk, Azure Disk)."
-    log_message "INFO" "2. Set up storage replication at the cloud provider level."
-    log_message "INFO" "3. Use a backup/restore solution like Velero."
+    format-echo "INFO" "For cloud clusters, consider the following approaches:"
+    format-echo "INFO" "1. Use cloud-native storage options (EBS, Persistent Disk, Azure Disk)."
+    format-echo "INFO" "2. Set up storage replication at the cloud provider level."
+    format-echo "INFO" "3. Use a backup/restore solution like Velero."
     
-    log_message "WARNING" "Automated data transfer between cloud clusters is not implemented."
-    log_message "WARNING" "Please see the documentation for manual steps."
+    format-echo "WARNING" "Automated data transfer between cloud clusters is not implemented."
+    format-echo "WARNING" "Please see the documentation for manual steps."
     
   #---------------------------------------------------------------------
   # MIXED ENVIRONMENT TRANSFER
   #---------------------------------------------------------------------
   else
-    log_message "INFO" "Transferring between local and cloud clusters."
+    format-echo "INFO" "Transferring between local and cloud clusters."
     
     # This is even more complex
-    log_message "INFO" "For mixed local/cloud environments, consider:"
-    log_message "INFO" "1. Use S3-compatible storage that both clusters can access."
-    log_message "INFO" "2. Set up temporary replication through an intermediary service."
-    log_message "INFO" "3. Use a backup/restore solution like Velero."
+    format-echo "INFO" "For mixed local/cloud environments, consider:"
+    format-echo "INFO" "1. Use S3-compatible storage that both clusters can access."
+    format-echo "INFO" "2. Set up temporary replication through an intermediary service."
+    format-echo "INFO" "3. Use a backup/restore solution like Velero."
     
-    log_message "WARNING" "Automated data transfer between local and cloud clusters is not implemented."
-    log_message "WARNING" "Please see the documentation for manual steps."
+    format-echo "WARNING" "Automated data transfer between local and cloud clusters is not implemented."
+    format-echo "WARNING" "Please see the documentation for manual steps."
   fi
   
-  log_message "INFO" "For production workloads, consider using a dedicated migration tool like Velero."
+  format-echo "INFO" "For production workloads, consider using a dedicated migration tool like Velero."
   return 0
 }
 
@@ -1112,8 +1112,8 @@ parse_args() {
         case "$SOURCE_PROVIDER" in
           minikube|kind|k3d|eks|gke|aks) ;;
           *)
-            log_message "ERROR" "Unsupported source provider '${SOURCE_PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d, eks, gke, aks"
+            format-echo "ERROR" "Unsupported source provider '${SOURCE_PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d, eks, gke, aks"
             exit 1
             ;;
         esac
@@ -1124,8 +1124,8 @@ parse_args() {
         case "$TARGET_PROVIDER" in
           minikube|kind|k3d|eks|gke|aks) ;;
           *)
-            log_message "ERROR" "Unsupported target provider '${TARGET_PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d, eks, gke, aks"
+            format-echo "ERROR" "Unsupported target provider '${TARGET_PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d, eks, gke, aks"
             exit 1
             ;;
         esac
@@ -1220,7 +1220,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -1231,22 +1231,22 @@ parse_args() {
   #---------------------------------------------------------------------
   # Validate required parameters
   if [[ -z "$SOURCE_PROVIDER" ]]; then
-    log_message "ERROR" "Source provider is required. Use --source-provider."
+    format-echo "ERROR" "Source provider is required. Use --source-provider."
     exit 1
   fi
   
   if [[ -z "$TARGET_PROVIDER" ]]; then
-    log_message "ERROR" "Target provider is required. Use --target-provider."
+    format-echo "ERROR" "Target provider is required. Use --target-provider."
     exit 1
   fi
   
   if [[ -z "$SOURCE_CLUSTER" ]]; then
-    log_message "ERROR" "Source cluster name is required. Use --source-cluster."
+    format-echo "ERROR" "Source cluster name is required. Use --source-cluster."
     exit 1
   fi
   
   if [[ -z "$TARGET_CLUSTER" ]]; then
-    log_message "ERROR" "Target cluster name is required. Use --target-cluster."
+    format-echo "ERROR" "Target cluster name is required. Use --target-cluster."
     exit 1
   fi
 }
@@ -1271,51 +1271,51 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
   
-  log_message "INFO" "Starting cluster conversion from $SOURCE_PROVIDER to $TARGET_PROVIDER..."
+  format-echo "INFO" "Starting cluster conversion from $SOURCE_PROVIDER to $TARGET_PROVIDER..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Source Provider:    $SOURCE_PROVIDER"
-  log_message "INFO" "  Target Provider:    $TARGET_PROVIDER"
-  log_message "INFO" "  Source Cluster:     $SOURCE_CLUSTER"
-  log_message "INFO" "  Target Cluster:     $TARGET_CLUSTER"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Source Provider:    $SOURCE_PROVIDER"
+  format-echo "INFO" "  Target Provider:    $TARGET_PROVIDER"
+  format-echo "INFO" "  Source Cluster:     $SOURCE_CLUSTER"
+  format-echo "INFO" "  Target Cluster:     $TARGET_CLUSTER"
   if [[ -n "$SOURCE_CONTEXT" ]]; then
-    log_message "INFO" "  Source Context:     $SOURCE_CONTEXT"
+    format-echo "INFO" "  Source Context:     $SOURCE_CONTEXT"
   fi
   if [[ -n "$TARGET_CONTEXT" ]]; then
-    log_message "INFO" "  Target Context:     $TARGET_CONTEXT"
+    format-echo "INFO" "  Target Context:     $TARGET_CONTEXT"
   fi
   if [[ -n "$SOURCE_KUBECONFIG" ]]; then
-    log_message "INFO" "  Source Kubeconfig:  $SOURCE_KUBECONFIG"
+    format-echo "INFO" "  Source Kubeconfig:  $SOURCE_KUBECONFIG"
   fi
   if [[ -n "$TARGET_KUBECONFIG" ]]; then
-    log_message "INFO" "  Target Kubeconfig:  $TARGET_KUBECONFIG"
+    format-echo "INFO" "  Target Kubeconfig:  $TARGET_KUBECONFIG"
   fi
   if [[ ${#NAMESPACES[@]} -gt 0 ]]; then
-    log_message "INFO" "  Namespaces:         ${NAMESPACES[*]}"
+    format-echo "INFO" "  Namespaces:         ${NAMESPACES[*]}"
   fi
   if [[ "$INCLUDE_ALL_NAMESPACES" == true ]]; then
-    log_message "INFO" "  All Namespaces:     true (excluding ${EXCLUDE_NAMESPACES[*]})"
+    format-echo "INFO" "  All Namespaces:     true (excluding ${EXCLUDE_NAMESPACES[*]})"
   fi
-  log_message "INFO" "  Custom Resources:   $CUSTOM_RESOURCES"
-  log_message "INFO" "  Transfer Storage:   $TRANSFER_STORAGE"
-  log_message "INFO" "  Recreate PVCs:      $RECREATE_PVCS"
-  log_message "INFO" "  Create Target:      $CREATE_TARGET"
+  format-echo "INFO" "  Custom Resources:   $CUSTOM_RESOURCES"
+  format-echo "INFO" "  Transfer Storage:   $TRANSFER_STORAGE"
+  format-echo "INFO" "  Recreate PVCs:      $RECREATE_PVCS"
+  format-echo "INFO" "  Create Target:      $CREATE_TARGET"
   if [[ "$CREATE_TARGET" == true ]]; then
-    log_message "INFO" "  Target Nodes:       $TARGET_NODES"
+    format-echo "INFO" "  Target Nodes:       $TARGET_NODES"
     if [[ -n "$TARGET_K8S_VERSION" ]]; then
-      log_message "INFO" "  Target K8s Version: $TARGET_K8S_VERSION"
+      format-echo "INFO" "  Target K8s Version: $TARGET_K8S_VERSION"
     fi
   fi
-  log_message "INFO" "  Dry Run:            $DRY_RUN"
-  log_message "INFO" "  Interactive:        $INTERACTIVE"
-  log_message "INFO" "  Force:              $FORCE"
-  log_message "INFO" "  Timeout:            ${TIMEOUT}s"
+  format-echo "INFO" "  Dry Run:            $DRY_RUN"
+  format-echo "INFO" "  Interactive:        $INTERACTIVE"
+  format-echo "INFO" "  Force:              $FORCE"
+  format-echo "INFO" "  Timeout:            ${TIMEOUT}s"
   if [[ -n "$BACKUP_DIR" ]]; then
-    log_message "INFO" "  Backup Directory:   $BACKUP_DIR"
+    format-echo "INFO" "  Backup Directory:   $BACKUP_DIR"
   fi
   
   #---------------------------------------------------------------------
@@ -1323,11 +1323,11 @@ main() {
   #---------------------------------------------------------------------
   # Confirm operation if interactive mode is enabled
   if [[ "$INTERACTIVE" == true && "$FORCE" != true && "$DRY_RUN" != true ]]; then
-    log_message "WARNING" "This operation will export resources from the source cluster and import them to the target cluster."
-    log_message "WARNING" "It may affect running workloads and services."
+    format-echo "WARNING" "This operation will export resources from the source cluster and import them to the target cluster."
+    format-echo "WARNING" "It may affect running workloads and services."
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -1339,16 +1339,16 @@ main() {
   check_requirements
   
   # Validate source cluster and get context if not provided
-  log_message "INFO" "Validating source cluster..."
+  format-echo "INFO" "Validating source cluster..."
   if [[ -z "$SOURCE_CONTEXT" ]]; then
     SOURCE_CONTEXT=$(validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "" "$SOURCE_KUBECONFIG")
     if [[ $? -ne 0 ]]; then
-      log_message "ERROR" "Failed to validate source cluster."
+      format-echo "ERROR" "Failed to validate source cluster."
       exit 1
     fi
   else
     if ! validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "$SOURCE_CONTEXT" "$SOURCE_KUBECONFIG" &>/dev/null; then
-      log_message "ERROR" "Failed to validate source cluster with provided context."
+      format-echo "ERROR" "Failed to validate source cluster with provided context."
       exit 1
     fi
   fi
@@ -1358,16 +1358,16 @@ main() {
     create_target_cluster
   else
     # Validate target cluster and get context if not provided
-    log_message "INFO" "Validating target cluster..."
+    format-echo "INFO" "Validating target cluster..."
     if [[ -z "$TARGET_CONTEXT" ]]; then
       TARGET_CONTEXT=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "" "$TARGET_KUBECONFIG")
       if [[ $? -ne 0 ]]; then
-        log_message "ERROR" "Failed to validate target cluster."
+        format-echo "ERROR" "Failed to validate target cluster."
         exit 1
       fi
     else
       if ! validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "$TARGET_CONTEXT" "$TARGET_KUBECONFIG" &>/dev/null; then
-        log_message "ERROR" "Failed to validate target cluster with provided context."
+        format-echo "ERROR" "Failed to validate target cluster with provided context."
         exit 1
       fi
     fi
@@ -1391,11 +1391,11 @@ main() {
   # Verify import
   verify_import "${MIGRATE_NAMESPACES[@]}"
   
-  log_message "SUCCESS" "Cluster conversion completed successfully."
+  format-echo "SUCCESS" "Cluster conversion completed successfully."
   
   if [[ -n "$BACKUP_DIR" && "$BACKUP_DIR" == /tmp/* ]]; then
-    log_message "INFO" "Temporary backup directory at $BACKUP_DIR"
-    log_message "INFO" "You may want to save these files before they are automatically cleaned up."
+    format-echo "INFO" "Temporary backup directory at $BACKUP_DIR"
+    format-echo "INFO" "You may want to save these files before they are automatically cleaned up."
   fi
   
   print_with_separator "End of Kubernetes Cluster Conversion"

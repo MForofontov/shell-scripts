@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -128,13 +128,13 @@ command_exists() {
 # CHECK FOR REQUIRED DEPENDENCIES AND PERMISSIONS
 #---------------------------------------------------------------------
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   #---------------------------------------------------------------------
   # KUBECTL AVAILABILITY
   #---------------------------------------------------------------------
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
@@ -144,7 +144,7 @@ check_requirements() {
   #---------------------------------------------------------------------
   # Check if we can connect to the cluster
   if ! kubectl get nodes &>/dev/null; then
-    log_message "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
+    format-echo "ERROR" "Cannot connect to Kubernetes cluster. Check your connection and credentials."
     exit 1
   fi
   
@@ -156,7 +156,7 @@ check_requirements() {
     mkdir -p "$TEMPLATES_DIR"
   fi
   
-  log_message "SUCCESS" "All required tools are available."
+  format-echo "SUCCESS" "All required tools are available."
 }
 
 #=====================================================================
@@ -210,7 +210,7 @@ save_preset() {
   # VALIDATION
   #---------------------------------------------------------------------
   if [[ -z "$preset_name" ]]; then
-    log_message "ERROR" "Preset name is required"
+    format-echo "ERROR" "Preset name is required"
     return 1
   fi
   
@@ -227,7 +227,7 @@ save_preset() {
   done
   
   if [[ -z "$preset_content" ]]; then
-    log_message "ERROR" "No taints specified to save as preset"
+    format-echo "ERROR" "No taints specified to save as preset"
     return 1
   fi
   
@@ -237,7 +237,7 @@ save_preset() {
   # Save to preset file
   echo "$preset_content" > "$TEMPLATES_DIR/$preset_name"
   
-  log_message "SUCCESS" "Preset '$preset_name' saved to $TEMPLATES_DIR/$preset_name"
+  format-echo "SUCCESS" "Preset '$preset_name' saved to $TEMPLATES_DIR/$preset_name"
   return 0
 }
 
@@ -249,17 +249,17 @@ save_preset() {
 #---------------------------------------------------------------------
 get_nodes_by_selector() {
   local selector="$1"
-  log_message "INFO" "Getting nodes with selector: $selector"
+  format-echo "INFO" "Getting nodes with selector: $selector"
   
   local selected_nodes
   selected_nodes=$(kubectl get nodes -l "$selector" -o name | cut -d'/' -f2)
   
   if [[ -z "$selected_nodes" ]]; then
-    log_message "ERROR" "No nodes found matching selector: $selector"
+    format-echo "ERROR" "No nodes found matching selector: $selector"
     exit 1
   fi
   
-  log_message "INFO" "Selected nodes: $selected_nodes"
+  format-echo "INFO" "Selected nodes: $selected_nodes"
   echo "$selected_nodes"
 }
 
@@ -267,13 +267,13 @@ get_nodes_by_selector() {
 # VALIDATE NODE NAMES
 #---------------------------------------------------------------------
 validate_nodes() {
-  log_message "INFO" "Validating node names..."
+  format-echo "INFO" "Validating node names..."
   
   #---------------------------------------------------------------------
   # EMPTY NODES CHECK
   #---------------------------------------------------------------------
   if [[ ${#NODES[@]} -eq 0 ]]; then
-    log_message "ERROR" "No nodes specified."
+    format-echo "ERROR" "No nodes specified."
     usage
   fi
   
@@ -286,7 +286,7 @@ validate_nodes() {
   
   for node in "${NODES[@]}"; do
     if ! echo "$available_nodes" | grep -q "^$node$"; then
-      log_message "ERROR" "Node not found: $node"
+      format-echo "ERROR" "Node not found: $node"
       continue
     fi
     
@@ -294,11 +294,11 @@ validate_nodes() {
   done
   
   if [[ $valid_count -eq 0 ]]; then
-    log_message "ERROR" "No valid nodes found."
+    format-echo "ERROR" "No valid nodes found."
     exit 1
   fi
   
-  log_message "SUCCESS" "Found $valid_count valid nodes."
+  format-echo "SUCCESS" "Found $valid_count valid nodes."
 }
 
 #=====================================================================
@@ -315,9 +315,9 @@ validate_taint_format() {
   #---------------------------------------------------------------------
   # Check basic format: key=value:effect or key=value:effect:seconds
   if ! echo "$taint" | grep -q "^[a-zA-Z0-9][-a-zA-Z0-9_.]*\/\?[a-zA-Z0-9][-a-zA-Z0-9_.]*=[^:]*:(NoSchedule|PreferNoSchedule|NoExecute)(:[0-9]+)?$"; then
-    log_message "ERROR" "Invalid taint format: $taint"
-    log_message "INFO" "Taints must follow the format: key=value:effect or key=value:effect:seconds"
-    log_message "INFO" "Valid effects are: NoSchedule, PreferNoSchedule, NoExecute"
+    format-echo "ERROR" "Invalid taint format: $taint"
+    format-echo "INFO" "Taints must follow the format: key=value:effect or key=value:effect:seconds"
+    format-echo "INFO" "Valid effects are: NoSchedule, PreferNoSchedule, NoExecute"
     return 1
   fi
   
@@ -333,8 +333,8 @@ validate_taint_format() {
   
   # Check key length
   if [[ ${#key} -gt 253 ]]; then
-    log_message "ERROR" "Taint key too long: $key"
-    log_message "INFO" "Taint keys must be 253 characters or less"
+    format-echo "ERROR" "Taint key too long: $key"
+    format-echo "INFO" "Taint keys must be 253 characters or less"
     return 1
   fi
   
@@ -347,8 +347,8 @@ validate_taint_format() {
       local timeout
       timeout=$(echo "$taint" | cut -d: -f3)
       if [[ "$timeout" -lt 0 ]]; then
-        log_message "ERROR" "Invalid eviction timeout: $timeout"
-        log_message "INFO" "Eviction timeout must be a positive number"
+        format-echo "ERROR" "Invalid eviction timeout: $timeout"
+        format-echo "INFO" "Eviction timeout must be a positive number"
         return 1
       fi
     fi
@@ -361,7 +361,7 @@ validate_taint_format() {
 # VALIDATE ALL TAINTS
 #---------------------------------------------------------------------
 validate_taints() {
-  log_message "INFO" "Validating taint formats..."
+  format-echo "INFO" "Validating taint formats..."
   
   local valid_count=0
   
@@ -372,16 +372,16 @@ validate_taints() {
   done
   
   if [[ $valid_count -lt ${#TAINTS[@]} ]]; then
-    log_message "WARNING" "Some taints have invalid format"
+    format-echo "WARNING" "Some taints have invalid format"
     if [[ "$FORCE" != true ]]; then
       read -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 1
       fi
     fi
   else
-    log_message "SUCCESS" "All taints have valid format."
+    format-echo "SUCCESS" "All taints have valid format."
   fi
 }
 
@@ -396,7 +396,7 @@ test_pod_compatibility() {
     return 0
   fi
   
-  log_message "INFO" "Testing pod compatibility with the specified taints..."
+  format-echo "INFO" "Testing pod compatibility with the specified taints..."
   
   #---------------------------------------------------------------------
   # POD EVICTION ANALYSIS
@@ -404,14 +404,14 @@ test_pod_compatibility() {
   local has_incompatible=false
   
   for node in "${NODES[@]}"; do
-    log_message "INFO" "Checking pods on node: $node"
+    format-echo "INFO" "Checking pods on node: $node"
     
     # Get all pods on this node
     local pod_list
     pod_list=$(kubectl get pods --all-namespaces -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME")
     
     if [[ -z "$pod_list" ]]; then
-      log_message "INFO" "No pods found on node $node"
+      format-echo "INFO" "No pods found on node $node"
       continue
     fi
     
@@ -426,7 +426,7 @@ test_pod_compatibility() {
       namespace=$(echo "$pod_info" | awk '{print $1}')
       pod_name=$(echo "$pod_info" | awk '{print $2}')
       
-      log_message "INFO" "Checking pod: $namespace/$pod_name"
+      format-echo "INFO" "Checking pod: $namespace/$pod_name"
       
       # Get pod tolerations
       local tolerations
@@ -445,11 +445,11 @@ test_pod_compatibility() {
         if [[ "$taint_effect" == "NoExecute" ]]; then
           # Check if pod has tolerations for this taint
           if ! echo "$tolerations" | grep -q "\"key\":\"$taint_key\""; then
-            log_message "WARNING" "Pod $namespace/$pod_name does not tolerate taint $taint_key=$taint_value:$taint_effect"
-            log_message "WARNING" "This pod will be evicted when the taint is applied"
+            format-echo "WARNING" "Pod $namespace/$pod_name does not tolerate taint $taint_key=$taint_value:$taint_effect"
+            format-echo "WARNING" "This pod will be evicted when the taint is applied"
             has_incompatible=true
           else
-            log_message "INFO" "Pod $namespace/$pod_name tolerates taint $taint_key=$taint_value:$taint_effect"
+            format-echo "INFO" "Pod $namespace/$pod_name tolerates taint $taint_key=$taint_value:$taint_effect"
           fi
         fi
       done
@@ -461,16 +461,16 @@ test_pod_compatibility() {
   # USER CONFIRMATION
   #---------------------------------------------------------------------
   if [[ "$has_incompatible" == true ]]; then
-    log_message "WARNING" "Some pods will be evicted when these taints are applied"
+    format-echo "WARNING" "Some pods will be evicted when these taints are applied"
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
       read -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        log_message "INFO" "Operation cancelled by user."
+        format-echo "INFO" "Operation cancelled by user."
         exit 1
       fi
     fi
   else
-    log_message "SUCCESS" "All pods are compatible with the specified taints."
+    format-echo "SUCCESS" "All pods are compatible with the specified taints."
   fi
 }
 
@@ -482,7 +482,7 @@ test_pod_compatibility() {
 #---------------------------------------------------------------------
 apply_taints() {
   local node="$1"
-  log_message "INFO" "Applying taints to node: $node"
+  format-echo "INFO" "Applying taints to node: $node"
   
   #---------------------------------------------------------------------
   # REMOVE ALL TAINTS
@@ -490,22 +490,22 @@ apply_taints() {
   # Handle the case where we want to remove all taints
   if [[ "$REMOVE_ALL" == true ]]; then
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would run: kubectl taint nodes $node all-"
+      format-echo "DRY-RUN" "Would run: kubectl taint nodes $node all-"
       return 0
     fi
     
     if kubectl taint nodes "$node" all-; then
-      log_message "SUCCESS" "All taints removed from node $node."
+      format-echo "SUCCESS" "All taints removed from node $node."
       return 0
     else
-      log_message "ERROR" "Failed to remove all taints from node $node."
+      format-echo "ERROR" "Failed to remove all taints from node $node."
       return 1
     fi
   fi
   
   # Normal taint operation
   if [[ ${#TAINTS[@]} -eq 0 && ${#REMOVE_TAINTS[@]} -eq 0 ]]; then
-    log_message "WARNING" "No taints to apply or remove"
+    format-echo "WARNING" "No taints to apply or remove"
     return 0
   fi
   
@@ -515,12 +515,12 @@ apply_taints() {
   # Apply taints
   for taint in "${TAINTS[@]}"; do
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would run: kubectl taint nodes $node $taint"
+      format-echo "DRY-RUN" "Would run: kubectl taint nodes $node $taint"
     else
       if kubectl taint nodes "$node" "$taint" --overwrite; then
-        log_message "SUCCESS" "Taint $taint applied to node $node."
+        format-echo "SUCCESS" "Taint $taint applied to node $node."
       else
-        log_message "ERROR" "Failed to apply taint $taint to node $node."
+        format-echo "ERROR" "Failed to apply taint $taint to node $node."
         return 1
       fi
     fi
@@ -532,12 +532,12 @@ apply_taints() {
   # Remove taints
   for taint in "${REMOVE_TAINTS[@]}"; do
     if [[ "$DRY_RUN" == true ]]; then
-      log_message "DRY-RUN" "Would run: kubectl taint nodes $node $taint-"
+      format-echo "DRY-RUN" "Would run: kubectl taint nodes $node $taint-"
     else
       if kubectl taint nodes "$node" "$taint"-; then
-        log_message "SUCCESS" "Taint $taint removed from node $node."
+        format-echo "SUCCESS" "Taint $taint removed from node $node."
       else
-        log_message "ERROR" "Failed to remove taint $taint from node $node."
+        format-echo "ERROR" "Failed to remove taint $taint from node $node."
         return 1
       fi
     fi
@@ -551,7 +551,7 @@ apply_taints() {
 #---------------------------------------------------------------------
 process_preset() {
   local preset="$1"
-  log_message "INFO" "Processing preset: $preset"
+  format-echo "INFO" "Processing preset: $preset"
   
   #---------------------------------------------------------------------
   # BUILT-IN PRESET HANDLING
@@ -559,7 +559,7 @@ process_preset() {
   # Check if it's a built-in preset
   if [[ -n "${TAINT_PRESETS[$preset]}" ]]; then
     local preset_taints="${TAINT_PRESETS[$preset]}"
-    log_message "INFO" "Using built-in preset: $preset_taints"
+    format-echo "INFO" "Using built-in preset: $preset_taints"
     
     # Split comma-separated taints
     IFS=',' read -ra PRESET_TAINTS <<< "$preset_taints"
@@ -577,7 +577,7 @@ process_preset() {
   if [[ -f "$TEMPLATES_DIR/$preset" ]]; then
     local preset_content
     preset_content=$(cat "$TEMPLATES_DIR/$preset")
-    log_message "INFO" "Using custom preset: $preset_content"
+    format-echo "INFO" "Using custom preset: $preset_content"
     
     # Split comma-separated taints
     IFS=',' read -ra PRESET_TAINTS <<< "$preset_content"
@@ -588,8 +588,8 @@ process_preset() {
     return 0
   fi
   
-  log_message "ERROR" "Preset not found: $preset"
-  log_message "INFO" "Use --list-presets to see available presets"
+  format-echo "ERROR" "Preset not found: $preset"
+  format-echo "INFO" "Use --list-presets to see available presets"
   return 1
 }
 
@@ -650,7 +650,7 @@ parse_args() {
         shift 2
         ;;
       -*)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
       *)
@@ -694,7 +694,7 @@ main() {
 
   print_with_separator "Kubernetes Node Taint Management Script"
   
-  log_message "INFO" "Starting node taint management..."
+  format-echo "INFO" "Starting node taint management..."
   
   #---------------------------------------------------------------------
   # REQUIREMENT VERIFICATION
@@ -739,28 +739,28 @@ main() {
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Nodes:              ${NODES[*]}"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Nodes:              ${NODES[*]}"
   
   if [[ "$REMOVE_ALL" == true ]]; then
-    log_message "INFO" "  Action:             Remove all taints"
+    format-echo "INFO" "  Action:             Remove all taints"
   else
-    log_message "INFO" "  Taints to Apply:    ${TAINTS[*]}"
-    log_message "INFO" "  Taints to Remove:   ${REMOVE_TAINTS[*]}"
+    format-echo "INFO" "  Taints to Apply:    ${TAINTS[*]}"
+    format-echo "INFO" "  Taints to Remove:   ${REMOVE_TAINTS[*]}"
   fi
   
-  log_message "INFO" "  Test Compatibility: $TEST_COMPATIBILITY"
-  log_message "INFO" "  Dry Run:            $DRY_RUN"
+  format-echo "INFO" "  Test Compatibility: $TEST_COMPATIBILITY"
+  format-echo "INFO" "  Dry Run:            $DRY_RUN"
   
   #---------------------------------------------------------------------
   # USER CONFIRMATION
   #---------------------------------------------------------------------
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
-    log_message "WARNING" "You are about to modify taints on the following nodes: ${NODES[*]}"
+    format-echo "WARNING" "You are about to modify taints on the following nodes: ${NODES[*]}"
     read -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-      log_message "INFO" "Operation cancelled by user."
+      format-echo "INFO" "Operation cancelled by user."
       exit 0
     fi
   fi
@@ -773,7 +773,7 @@ main() {
   local failed_count=0
   
   for node in "${NODES[@]}"; do
-    log_message "INFO" "Processing node: $node"
+    format-echo "INFO" "Processing node: $node"
     
     if apply_taints "$node"; then
       success_count=$((success_count + 1))

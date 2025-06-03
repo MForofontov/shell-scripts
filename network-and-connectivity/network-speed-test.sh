@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -52,7 +52,7 @@ parse_args() {
           LOG_FILE="$2"
           shift 2
         else
-          log_message "ERROR" "Missing argument for --log"
+          format-echo "ERROR" "Missing argument for --log"
           usage
         fi
         ;;
@@ -60,7 +60,7 @@ parse_args() {
         usage
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -69,19 +69,19 @@ parse_args() {
 
 check_speedtest_cli() {
   if ! command -v speedtest-cli &> /dev/null; then
-    log_message "INFO" "speedtest-cli is not installed. Installing..."
+    format-echo "INFO" "speedtest-cli is not installed. Installing..."
     if [[ "$(uname)" == "Linux" ]]; then
       if ! sudo apt-get install -y speedtest-cli; then
-        log_message "ERROR" "Failed to install speedtest-cli."
+        format-echo "ERROR" "Failed to install speedtest-cli."
         exit 1
       fi
     elif [[ "$(uname)" == "Darwin" ]]; then
       if ! brew install speedtest-cli; then
-        log_message "ERROR" "Failed to install speedtest-cli."
+        format-echo "ERROR" "Failed to install speedtest-cli."
         exit 1
       fi
     else
-      log_message "ERROR" "Unsupported operating system: $(uname)"
+      format-echo "ERROR" "Unsupported operating system: $(uname)"
       exit 1
     fi
   fi
@@ -89,12 +89,12 @@ check_speedtest_cli() {
 
 run_speed_test() {
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-  log_message "INFO" "$TIMESTAMP: Running network speed test..."
+  format-echo "INFO" "$TIMESTAMP: Running network speed test..."
   if ! speedtest-cli; then
-    log_message "ERROR" "Failed to run network speed test."
+    format-echo "ERROR" "Failed to run network speed test."
     return 1
   fi
-  log_message "INFO" "$TIMESTAMP: Network speed test completed."
+  format-echo "INFO" "$TIMESTAMP: Network speed test completed."
   return 0
 }
 
@@ -111,14 +111,14 @@ main() {
   fi
 
   print_with_separator "Network Speed Test Script"
-  log_message "INFO" "Starting Network Speed Test Script..."
+  format-echo "INFO" "Starting Network Speed Test Script..."
 
   check_speedtest_cli
 
   if run_speed_test; then
-    log_message "SUCCESS" "Network speed test complete."
+    format-echo "SUCCESS" "Network speed test complete."
   else
-    log_message "ERROR" "Failed to run network speed test."
+    format-echo "ERROR" "Failed to run network speed test."
     print_with_separator "End of Network Speed Test Script"
     exit 1
   fi

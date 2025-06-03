@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -83,7 +83,7 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   #---------------------------------------------------------------------
   # PROVIDER-SPECIFIC REQUIREMENTS
@@ -91,21 +91,21 @@ check_requirements() {
   case "$PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube not found. Please install it first:"
+        format-echo "ERROR" "minikube not found. Please install it first:"
         echo "https://minikube.sigs.k8s.io/docs/start/"
         exit 1
       fi
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind not found. Please install it first:"
+        format-echo "ERROR" "kind not found. Please install it first:"
         echo "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
         exit 1
       fi
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d not found. Please install it first:"
+        format-echo "ERROR" "k3d not found. Please install it first:"
         echo "https://k3d.io/#installation"
         exit 1
       fi
@@ -116,7 +116,7 @@ check_requirements() {
   # COMMON REQUIREMENTS
   #---------------------------------------------------------------------
   if ! command_exists kubectl; then
-    log_message "ERROR" "kubectl not found. Please install it first:"
+    format-echo "ERROR" "kubectl not found. Please install it first:"
     echo "https://kubernetes.io/docs/tasks/tools/install-kubectl/"
     exit 1
   fi
@@ -126,12 +126,12 @@ check_requirements() {
   #---------------------------------------------------------------------
   # Specific to upgrade operations
   if [ "$PROVIDER" = "kind" ] && ! command_exists jq; then
-    log_message "ERROR" "jq not found but required for kind clusters. Please install it first:"
+    format-echo "ERROR" "jq not found but required for kind clusters. Please install it first:"
     echo "https://stedolan.github.io/jq/download/"
     exit 1
   fi
 
-  log_message "SUCCESS" "Required tools are available."
+  format-echo "SUCCESS" "Required tools are available."
 }
 
 #=====================================================================
@@ -139,7 +139,7 @@ check_requirements() {
 #=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
-  log_message "INFO" "Checking if cluster exists..."
+  format-echo "INFO" "Checking if cluster exists..."
   
   local cluster_exists=false
   
@@ -168,10 +168,10 @@ check_cluster_exists() {
   # EXISTENCE VERIFICATION
   #---------------------------------------------------------------------
   if $cluster_exists; then
-    log_message "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
+    format-echo "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
     return 0
   else
-    log_message "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
+    format-echo "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
     exit 1
   fi
 }
@@ -181,7 +181,7 @@ check_cluster_exists() {
 #=====================================================================
 # Get cluster info before upgrade
 get_cluster_info() {
-  log_message "INFO" "Getting cluster information before upgrade..."
+  format-echo "INFO" "Getting cluster information before upgrade..."
   
   local current_version=""
   
@@ -211,16 +211,16 @@ get_cluster_info() {
   #---------------------------------------------------------------------
   # CLUSTER INFORMATION DISPLAY
   #---------------------------------------------------------------------
-  log_message "INFO" "Current Kubernetes Version: $current_version"
-  log_message "INFO" "Target Kubernetes Version: $K8S_VERSION"
-  log_message "INFO" "Node Count: $NODE_COUNT"
+  format-echo "INFO" "Current Kubernetes Version: $current_version"
+  format-echo "INFO" "Target Kubernetes Version: $K8S_VERSION"
+  format-echo "INFO" "Node Count: $NODE_COUNT"
   
   #---------------------------------------------------------------------
   # VERSION COMPARISON
   #---------------------------------------------------------------------
   # Check if the versions are the same
   if [[ "$current_version" == "$K8S_VERSION" ]]; then
-    log_message "WARNING" "Cluster is already running Kubernetes version $K8S_VERSION."
+    format-echo "WARNING" "Cluster is already running Kubernetes version $K8S_VERSION."
     read -p "Continue anyway? [y/N]: " continue_anyway
     
     case "$continue_anyway" in
@@ -228,7 +228,7 @@ get_cluster_info() {
         return 0
         ;;
       *)
-        log_message "INFO" "Upgrade canceled by user."
+        format-echo "INFO" "Upgrade canceled by user."
         exit 0
         ;;
     esac
@@ -239,8 +239,8 @@ get_cluster_info() {
   #---------------------------------------------------------------------
   # Check if we're attempting to downgrade
   if [[ "$(printf '%s\n' "$current_version" "$K8S_VERSION" | sort -V | head -n1)" == "$K8S_VERSION" ]]; then
-    log_message "WARNING" "Target version ($K8S_VERSION) is older than current version ($current_version)."
-    log_message "WARNING" "Downgrading Kubernetes clusters is not recommended and may cause issues."
+    format-echo "WARNING" "Target version ($K8S_VERSION) is older than current version ($current_version)."
+    format-echo "WARNING" "Downgrading Kubernetes clusters is not recommended and may cause issues."
     
     if [ "$FORCE" != true ]; then
       read -p "Continue with downgrade anyway? [y/N]: " continue_anyway
@@ -250,12 +250,12 @@ get_cluster_info() {
           return 0
           ;;
         *)
-          log_message "INFO" "Downgrade canceled by user."
+          format-echo "INFO" "Downgrade canceled by user."
           exit 0
           ;;
       esac
     else
-      log_message "WARNING" "Force flag set. Proceeding with downgrade."
+      format-echo "WARNING" "Force flag set. Proceeding with downgrade."
     fi
   fi
   
@@ -272,11 +272,11 @@ create_backup() {
   # BACKUP FLAG CHECKING
   #---------------------------------------------------------------------
   if [ "$BACKUP" != true ]; then
-    log_message "WARNING" "Skipping backup as --no-backup flag was provided."
+    format-echo "WARNING" "Skipping backup as --no-backup flag was provided."
     return 0
   fi
   
-  log_message "INFO" "Creating backup before upgrade..."
+  format-echo "INFO" "Creating backup before upgrade..."
   
   #---------------------------------------------------------------------
   # PROVIDER-SPECIFIC BACKUP PROCEDURES
@@ -284,7 +284,7 @@ create_backup() {
   case "$PROVIDER" in
     minikube)
       # For minikube, we can't easily create a snapshot, so we'll export important resources
-      log_message "INFO" "Creating resource backup for minikube cluster..."
+      format-echo "INFO" "Creating resource backup for minikube cluster..."
       backup_dir="$CLUSTER_NAME-backup-$(date +%Y%m%d%H%M%S)"
       mkdir -p "$backup_dir"
       
@@ -300,11 +300,11 @@ create_backup() {
       kubectl get cm --all-namespaces -o json > "$backup_dir/configmaps.json"
       kubectl get secret --all-namespaces -o json > "$backup_dir/secrets.json"
       
-      log_message "SUCCESS" "Backup created at $backup_dir"
+      format-echo "SUCCESS" "Backup created at $backup_dir"
       ;;
     kind)
       # For kind, we'll back up the cluster configuration and resources
-      log_message "INFO" "Creating resource backup for kind cluster..."
+      format-echo "INFO" "Creating resource backup for kind cluster..."
       backup_dir="$CLUSTER_NAME-backup-$(date +%Y%m%d%H%M%S)"
       mkdir -p "$backup_dir"
       
@@ -318,11 +318,11 @@ create_backup() {
       kubectl get pv -o json > "$backup_dir/persistent-volumes.json"
       kubectl get pvc --all-namespaces -o json > "$backup_dir/persistent-volume-claims.json"
       
-      log_message "SUCCESS" "Backup created at $backup_dir"
+      format-echo "SUCCESS" "Backup created at $backup_dir"
       ;;
     k3d)
       # For k3d, we'll back up the cluster resources
-      log_message "INFO" "Creating resource backup for k3d cluster..."
+      format-echo "INFO" "Creating resource backup for k3d cluster..."
       backup_dir="$CLUSTER_NAME-backup-$(date +%Y%m%d%H%M%S)"
       mkdir -p "$backup_dir"
       
@@ -336,7 +336,7 @@ create_backup() {
       kubectl get pv -o json > "$backup_dir/persistent-volumes.json"
       kubectl get pvc --all-namespaces -o json > "$backup_dir/persistent-volume-claims.json"
       
-      log_message "SUCCESS" "Backup created at $backup_dir"
+      format-echo "SUCCESS" "Backup created at $backup_dir"
       ;;
   esac
   
@@ -351,15 +351,15 @@ create_backup() {
 #---------------------------------------------------------------------
 # Upgrade minikube cluster
 upgrade_minikube_cluster() {
-  log_message "INFO" "Upgrading minikube cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
+  format-echo "INFO" "Upgrading minikube cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
   
   #---------------------------------------------------------------------
   # CLUSTER SHUTDOWN
   #---------------------------------------------------------------------
   # Stop the cluster
-  log_message "INFO" "Stopping minikube cluster..."
+  format-echo "INFO" "Stopping minikube cluster..."
   if ! minikube stop -p "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to stop minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to stop minikube cluster '${CLUSTER_NAME}'."
     exit 1
   fi
   
@@ -367,20 +367,20 @@ upgrade_minikube_cluster() {
   # CLUSTER UPGRADE
   #---------------------------------------------------------------------
   # Start the cluster with the new Kubernetes version
-  log_message "INFO" "Starting minikube cluster with Kubernetes version ${K8S_VERSION}..."
+  format-echo "INFO" "Starting minikube cluster with Kubernetes version ${K8S_VERSION}..."
   if minikube start -p "${CLUSTER_NAME}" --kubernetes-version="${K8S_VERSION}"; then
-    log_message "SUCCESS" "minikube cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
+    format-echo "SUCCESS" "minikube cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
   else
     #---------------------------------------------------------------------
     # RECOVERY PROCEDURE
     #---------------------------------------------------------------------
-    log_message "ERROR" "Failed to upgrade minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to upgrade minikube cluster '${CLUSTER_NAME}'."
     # Try to revert to previous version if upgrade failed
-    log_message "INFO" "Attempting to revert to previous Kubernetes version ${CURRENT_VERSION}..."
+    format-echo "INFO" "Attempting to revert to previous Kubernetes version ${CURRENT_VERSION}..."
     if ! minikube start -p "${CLUSTER_NAME}" --kubernetes-version="${CURRENT_VERSION}"; then
-      log_message "ERROR" "Failed to revert to previous version. Cluster may be in an inconsistent state."
+      format-echo "ERROR" "Failed to revert to previous version. Cluster may be in an inconsistent state."
     else
-      log_message "INFO" "Successfully reverted to previous version ${CURRENT_VERSION}."
+      format-echo "INFO" "Successfully reverted to previous version ${CURRENT_VERSION}."
     fi
     exit 1
   fi
@@ -391,14 +391,14 @@ upgrade_minikube_cluster() {
 #---------------------------------------------------------------------
 # Upgrade kind cluster (requires delete and recreate)
 upgrade_kind_cluster() {
-  log_message "INFO" "Upgrading kind cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
+  format-echo "INFO" "Upgrading kind cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION BACKUP
   #---------------------------------------------------------------------
   # For kind, we need to save the config
   local temp_config=$(mktemp)
-  log_message "INFO" "Saving cluster configuration..."
+  format-echo "INFO" "Saving cluster configuration..."
   kubectl --context="kind-${CLUSTER_NAME}" get nodes -o json > "${temp_config}"
   
   # Get the number of nodes
@@ -408,9 +408,9 @@ upgrade_kind_cluster() {
   # CLUSTER DELETION
   #---------------------------------------------------------------------
   # Delete the cluster
-  log_message "INFO" "Deleting kind cluster for upgrade..."
+  format-echo "INFO" "Deleting kind cluster for upgrade..."
   if ! kind delete cluster --name "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}' for upgrade."
+    format-echo "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}' for upgrade."
     exit 1
   fi
   
@@ -418,7 +418,7 @@ upgrade_kind_cluster() {
   # CLUSTER RECREATION
   #---------------------------------------------------------------------
   # Create a new cluster with the specified Kubernetes version
-  log_message "INFO" "Creating new kind cluster with Kubernetes version ${K8S_VERSION}..."
+  format-echo "INFO" "Creating new kind cluster with Kubernetes version ${K8S_VERSION}..."
   
   # Generate a configuration for the cluster
   local kind_config=$(mktemp)
@@ -438,7 +438,7 @@ upgrade_kind_cluster() {
   # CLUSTER CREATION
   #---------------------------------------------------------------------
   if kind create cluster --name "${CLUSTER_NAME}" --image="kindest/node:v${K8S_VERSION}" --config="$kind_config"; then
-    log_message "SUCCESS" "kind cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
+    format-echo "SUCCESS" "kind cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
     
     # Clean up temporary files
     rm "${temp_config}" "${kind_config}"
@@ -446,13 +446,13 @@ upgrade_kind_cluster() {
     #---------------------------------------------------------------------
     # RECOVERY PROCEDURE
     #---------------------------------------------------------------------
-    log_message "ERROR" "Failed to upgrade kind cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to upgrade kind cluster '${CLUSTER_NAME}'."
     # Try to recreate with the previous version
-    log_message "INFO" "Attempting to recreate cluster with previous Kubernetes version ${CURRENT_VERSION}..."
+    format-echo "INFO" "Attempting to recreate cluster with previous Kubernetes version ${CURRENT_VERSION}..."
     if ! kind create cluster --name "${CLUSTER_NAME}" --image="kindest/node:v${CURRENT_VERSION}" --config="$kind_config"; then
-      log_message "ERROR" "Failed to recreate cluster with previous version. Resources may be lost."
+      format-echo "ERROR" "Failed to recreate cluster with previous version. Resources may be lost."
     else
-      log_message "INFO" "Successfully recreated cluster with previous version ${CURRENT_VERSION}."
+      format-echo "INFO" "Successfully recreated cluster with previous version ${CURRENT_VERSION}."
     fi
     rm "${temp_config}" "${kind_config}"
     exit 1
@@ -464,7 +464,7 @@ upgrade_kind_cluster() {
 #---------------------------------------------------------------------
 # Upgrade k3d cluster
 upgrade_k3d_cluster() {
-  log_message "INFO" "Upgrading k3d cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
+  format-echo "INFO" "Upgrading k3d cluster '${CLUSTER_NAME}' to Kubernetes ${K8S_VERSION}..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION BACKUP
@@ -478,9 +478,9 @@ upgrade_k3d_cluster() {
   # CLUSTER DELETION
   #---------------------------------------------------------------------
   # Delete the cluster
-  log_message "INFO" "Deleting k3d cluster for upgrade..."
+  format-echo "INFO" "Deleting k3d cluster for upgrade..."
   if ! k3d cluster delete "${CLUSTER_NAME}"; then
-    log_message "ERROR" "Failed to delete k3d cluster '${CLUSTER_NAME}' for upgrade."
+    format-echo "ERROR" "Failed to delete k3d cluster '${CLUSTER_NAME}' for upgrade."
     exit 1
   fi
   
@@ -488,24 +488,24 @@ upgrade_k3d_cluster() {
   # CLUSTER RECREATION
   #---------------------------------------------------------------------
   # Create a new cluster with the specified Kubernetes version
-  log_message "INFO" "Creating new k3d cluster with Kubernetes version ${K8S_VERSION}..."
+  format-echo "INFO" "Creating new k3d cluster with Kubernetes version ${K8S_VERSION}..."
   
   local k3d_args="--servers $node_count_server --agents $node_count_agent --image rancher/k3s:v${K8S_VERSION}-k3s1"
   
   if k3d cluster create "${CLUSTER_NAME}" $k3d_args; then
-    log_message "SUCCESS" "k3d cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
+    format-echo "SUCCESS" "k3d cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
   else
     #---------------------------------------------------------------------
     # RECOVERY PROCEDURE
     #---------------------------------------------------------------------
-    log_message "ERROR" "Failed to upgrade k3d cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to upgrade k3d cluster '${CLUSTER_NAME}'."
     # Try to recreate with the previous version
-    log_message "INFO" "Attempting to recreate cluster with previous Kubernetes version ${CURRENT_VERSION}..."
+    format-echo "INFO" "Attempting to recreate cluster with previous Kubernetes version ${CURRENT_VERSION}..."
     local prev_k3d_args="--servers $node_count_server --agents $node_count_agent --image rancher/k3s:v${CURRENT_VERSION}-k3s1"
     if ! k3d cluster create "${CLUSTER_NAME}" $prev_k3d_args; then
-      log_message "ERROR" "Failed to recreate cluster with previous version. Resources may be lost."
+      format-echo "ERROR" "Failed to recreate cluster with previous version. Resources may be lost."
     else
-      log_message "INFO" "Successfully recreated cluster with previous version ${CURRENT_VERSION}."
+      format-echo "INFO" "Successfully recreated cluster with previous version ${CURRENT_VERSION}."
     fi
     exit 1
   fi
@@ -516,7 +516,7 @@ upgrade_k3d_cluster() {
 #=====================================================================
 # Wait for cluster nodes to be ready
 wait_for_cluster() {
-  log_message "INFO" "Waiting for cluster to be ready after upgrade (timeout: ${WAIT_TIMEOUT}s)..."
+  format-echo "INFO" "Waiting for cluster to be ready after upgrade (timeout: ${WAIT_TIMEOUT}s)..."
   
   #---------------------------------------------------------------------
   # TIMEOUT TRACKING
@@ -563,7 +563,7 @@ wait_for_cluster() {
         # CORE COMPONENTS CHECK
         #---------------------------------------------------------------------
         if $all_ready; then
-          log_message "INFO" "Checking core components status..."
+          format-echo "INFO" "Checking core components status..."
           if kubectl get po -n kube-system &>/dev/null; then
             # Check if all core pods are running
             local all_pods_ready=true
@@ -587,15 +587,15 @@ wait_for_cluster() {
     #---------------------------------------------------------------------
     current_time=$(date +%s)
     if [[ $current_time -ge $end_time ]]; then
-      log_message "ERROR" "Timeout waiting for cluster to be ready after upgrade."
-      log_message "WARNING" "The scaling operation may have partially completed."
+      format-echo "ERROR" "Timeout waiting for cluster to be ready after upgrade."
+      format-echo "WARNING" "The scaling operation may have partially completed."
       exit 1
     fi
     
     sleep 5
   done
   
-  log_message "SUCCESS" "Cluster is ready after upgrade."
+  format-echo "SUCCESS" "Cluster is ready after upgrade."
 }
 
 #=====================================================================
@@ -603,7 +603,7 @@ wait_for_cluster() {
 #=====================================================================
 # Verify upgrade
 verify_upgrade() {
-  log_message "INFO" "Verifying upgrade..."
+  format-echo "INFO" "Verifying upgrade..."
   
   #---------------------------------------------------------------------
   # VERSION VERIFICATION
@@ -626,9 +626,9 @@ verify_upgrade() {
   # VERSION COMPARISON
   #---------------------------------------------------------------------
   if [[ "$current_version" == "$K8S_VERSION"* ]]; then
-    log_message "SUCCESS" "Cluster successfully upgraded to Kubernetes version $current_version"
+    format-echo "SUCCESS" "Cluster successfully upgraded to Kubernetes version $current_version"
   else
-    log_message "WARNING" "Cluster version after upgrade ($current_version) doesn't match target version ($K8S_VERSION)"
+    format-echo "WARNING" "Cluster version after upgrade ($current_version) doesn't match target version ($K8S_VERSION)"
     # This might not be an error, as patch versions can differ
   fi
 }
@@ -643,19 +643,19 @@ display_cluster_info() {
   #---------------------------------------------------------------------
   # VERSION INFORMATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Kubernetes Version:"
+  format-echo "INFO" "Kubernetes Version:"
   kubectl version
   
   #---------------------------------------------------------------------
   # NODE INFORMATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Nodes:"
+  format-echo "INFO" "Nodes:"
   kubectl get nodes
   
   #---------------------------------------------------------------------
   # CLUSTER INFORMATION
   #---------------------------------------------------------------------
-  log_message "INFO" "Cluster Info:"
+  format-echo "INFO" "Cluster Info:"
   kubectl cluster-info
   
   print_with_separator
@@ -692,7 +692,7 @@ confirm_upgrade() {
       return 0
       ;;
     *)
-      log_message "INFO" "Upgrade canceled by user."
+      format-echo "INFO" "Upgrade canceled by user."
       exit 0
       ;;
   esac
@@ -717,8 +717,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -745,7 +745,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -756,12 +756,12 @@ parse_args() {
   #---------------------------------------------------------------------
   # Check if required parameters are provided
   if [ -z "$CLUSTER_NAME" ]; then
-    log_message "ERROR" "Cluster name is required. Use -n or --name to specify."
+    format-echo "ERROR" "Cluster name is required. Use -n or --name to specify."
     usage
   fi
   
   if [ -z "$K8S_VERSION" ]; then
-    log_message "ERROR" "Target Kubernetes version is required. Use -v or --version to specify."
+    format-echo "ERROR" "Target Kubernetes version is required. Use -v or --version to specify."
     usage
   fi
 }
@@ -791,18 +791,18 @@ main() {
 
   print_with_separator "Kubernetes Cluster Upgrade Script"
   
-  log_message "INFO" "Starting Kubernetes cluster upgrade..."
+  format-echo "INFO" "Starting Kubernetes cluster upgrade..."
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
-  log_message "INFO" "  Provider:     $PROVIDER"
-  log_message "INFO" "  Target K8s:   $K8S_VERSION"
-  log_message "INFO" "  Force Upgrade: $FORCE"
-  log_message "INFO" "  Create Backup: $BACKUP"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name: $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:     $PROVIDER"
+  format-echo "INFO" "  Target K8s:   $K8S_VERSION"
+  format-echo "INFO" "  Force Upgrade: $FORCE"
+  format-echo "INFO" "  Create Backup: $BACKUP"
   
   #---------------------------------------------------------------------
   # PREREQUISITE CHECKS
@@ -860,10 +860,10 @@ main() {
   # COMPLETION
   #---------------------------------------------------------------------
   print_with_separator "End of Kubernetes Cluster Upgrade"
-  log_message "SUCCESS" "Kubernetes cluster upgrade completed successfully."
+  format-echo "SUCCESS" "Kubernetes cluster upgrade completed successfully."
   
   if [ -n "$BACKUP_DIR" ]; then
-    log_message "INFO" "Backup of the cluster before upgrade is available at: $BACKUP_DIR"
+    format-echo "INFO" "Backup of the cluster before upgrade is available at: $BACKUP_DIR"
   fi
 }
 

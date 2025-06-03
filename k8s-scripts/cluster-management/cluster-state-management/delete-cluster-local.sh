@@ -9,14 +9,14 @@
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Construct the path to the logger and utility files relative to the script's directory
-LOG_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/log/log-with-levels.sh"
+FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
 
 # Source the logger file
-if [ -f "$LOG_FUNCTION_FILE" ]; then
-  source "$LOG_FUNCTION_FILE"
+if [ -f "$FORMAT_ECHO_FILE" ]; then
+  source "$FORMAT_ECHO_FILE"
 else
-  echo -e "\033[1;31mError:\033[0m Logger file not found at $LOG_FUNCTION_FILE"
+  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
   exit 1
 fi
 
@@ -77,33 +77,33 @@ command_exists() {
 #=====================================================================
 # Check for required tools
 check_requirements() {
-  log_message "INFO" "Checking requirements..."
+  format-echo "INFO" "Checking requirements..."
   
   case "$PROVIDER" in
     minikube)
       if ! command_exists minikube; then
-        log_message "ERROR" "minikube not found. Please install it first:"
+        format-echo "ERROR" "minikube not found. Please install it first:"
         echo "https://minikube.sigs.k8s.io/docs/start/"
         exit 1
       fi
       ;;
     kind)
       if ! command_exists kind; then
-        log_message "ERROR" "kind not found. Please install it first:"
+        format-echo "ERROR" "kind not found. Please install it first:"
         echo "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
         exit 1
       fi
       ;;
     k3d)
       if ! command_exists k3d; then
-        log_message "ERROR" "k3d not found. Please install it first:"
+        format-echo "ERROR" "k3d not found. Please install it first:"
         echo "https://k3d.io/#installation"
         exit 1
       fi
       ;;
   esac
 
-  log_message "SUCCESS" "Required tools are available."
+  format-echo "SUCCESS" "Required tools are available."
 }
 
 #=====================================================================
@@ -111,7 +111,7 @@ check_requirements() {
 #=====================================================================
 # Check if cluster exists
 check_cluster_exists() {
-  log_message "INFO" "Checking if cluster exists..."
+  format-echo "INFO" "Checking if cluster exists..."
   
   local cluster_exists=false
   
@@ -134,10 +134,10 @@ check_cluster_exists() {
   esac
   
   if $cluster_exists; then
-    log_message "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
+    format-echo "SUCCESS" "Cluster '${CLUSTER_NAME}' found."
     return 0
   else
-    log_message "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
+    format-echo "ERROR" "Cluster '${CLUSTER_NAME}' not found for provider ${PROVIDER}."
     exit 1
   fi
 }
@@ -151,12 +151,12 @@ check_cluster_exists() {
 #---------------------------------------------------------------------
 # Delete cluster with minikube
 delete_minikube_cluster() {
-  log_message "INFO" "Deleting minikube cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Deleting minikube cluster '${CLUSTER_NAME}'..."
   
   if minikube delete -p ${CLUSTER_NAME}; then
-    log_message "SUCCESS" "minikube cluster '${CLUSTER_NAME}' deleted successfully."
+    format-echo "SUCCESS" "minikube cluster '${CLUSTER_NAME}' deleted successfully."
   else
-    log_message "ERROR" "Failed to delete minikube cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to delete minikube cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -166,12 +166,12 @@ delete_minikube_cluster() {
 #---------------------------------------------------------------------
 # Delete cluster with kind
 delete_kind_cluster() {
-  log_message "INFO" "Deleting kind cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Deleting kind cluster '${CLUSTER_NAME}'..."
   
   if kind delete cluster --name ${CLUSTER_NAME}; then
-    log_message "SUCCESS" "kind cluster '${CLUSTER_NAME}' deleted successfully."
+    format-echo "SUCCESS" "kind cluster '${CLUSTER_NAME}' deleted successfully."
   else
-    log_message "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to delete kind cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -181,12 +181,12 @@ delete_kind_cluster() {
 #---------------------------------------------------------------------
 # Delete cluster with k3d
 delete_k3d_cluster() {
-  log_message "INFO" "Deleting k3d cluster '${CLUSTER_NAME}'..."
+  format-echo "INFO" "Deleting k3d cluster '${CLUSTER_NAME}'..."
   
   if k3d cluster delete ${CLUSTER_NAME}; then
-    log_message "SUCCESS" "k3d cluster '${CLUSTER_NAME}' deleted successfully."
+    format-echo "SUCCESS" "k3d cluster '${CLUSTER_NAME}' deleted successfully."
   else
-    log_message "ERROR" "Failed to delete k3d cluster '${CLUSTER_NAME}'."
+    format-echo "ERROR" "Failed to delete k3d cluster '${CLUSTER_NAME}'."
     exit 1
   fi
 }
@@ -208,7 +208,7 @@ confirm_deletion() {
       return 0
       ;;
     *)
-      log_message "INFO" "Deletion canceled by user."
+      format-echo "INFO" "Deletion canceled by user."
       exit 0
       ;;
   esac
@@ -233,8 +233,8 @@ parse_args() {
         case "$PROVIDER" in
           minikube|kind|k3d) ;;
           *)
-            log_message "ERROR" "Unsupported provider '${PROVIDER}'."
-            log_message "ERROR" "Supported providers: minikube, kind, k3d"
+            format-echo "ERROR" "Unsupported provider '${PROVIDER}'."
+            format-echo "ERROR" "Supported providers: minikube, kind, k3d"
             exit 1
             ;;
         esac
@@ -249,7 +249,7 @@ parse_args() {
         shift 2
         ;;
       *)
-        log_message "ERROR" "Unknown option: $1"
+        format-echo "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
@@ -257,7 +257,7 @@ parse_args() {
   
   # Check if cluster name is provided
   if [ -z "$CLUSTER_NAME" ]; then
-    log_message "ERROR" "Cluster name is required. Use -n or --name to specify."
+    format-echo "ERROR" "Cluster name is required. Use -n or --name to specify."
     usage
   fi
 }
@@ -282,13 +282,13 @@ main() {
 
   print_with_separator "Kubernetes Cluster Deletion Script"
   
-  log_message "INFO" "Starting Kubernetes cluster deletion..."
+  format-echo "INFO" "Starting Kubernetes cluster deletion..."
   
   # Display configuration
-  log_message "INFO" "Configuration:"
-  log_message "INFO" "  Cluster Name: $CLUSTER_NAME"
-  log_message "INFO" "  Provider:     $PROVIDER"
-  log_message "INFO" "  Force Delete: $FORCE"
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name: $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:     $PROVIDER"
+  format-echo "INFO" "  Force Delete: $FORCE"
   
   # Check requirements
   check_requirements
@@ -313,7 +313,7 @@ main() {
   esac
   
   print_with_separator "End of Kubernetes Cluster Deletion"
-  log_message "SUCCESS" "Kubernetes cluster deletion completed successfully."
+  format-echo "SUCCESS" "Kubernetes cluster deletion completed successfully."
 }
 
 # Run the main function
