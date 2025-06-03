@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 LOG_FUNCTION_FILE="$SCRIPT_DIR/../../functions/log/log-with-levels.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,9 +25,15 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 OUTPUT_FILE=""
 LOG_FILE="/dev/null"
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Generate Changelog Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -46,6 +55,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -74,7 +86,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -89,6 +107,9 @@ main() {
   print_with_separator "Generate Changelog Script"
   log_message "INFO" "Starting Generate Changelog Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate required arguments
   if [ -z "$OUTPUT_FILE" ]; then
     log_message "ERROR" "<output_file> is required."
@@ -110,6 +131,9 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # CHANGELOG GENERATION
+  #---------------------------------------------------------------------
   # Get the project name from the current directory
   PROJECT_NAME=$(basename "$(pwd)")
   CURRENT_DATE=$(date +"%Y-%m-%d %H:%M:%S")
@@ -132,7 +156,13 @@ main() {
     exit 1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Generate Changelog Script"
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
