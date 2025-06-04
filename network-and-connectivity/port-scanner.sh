@@ -231,7 +231,6 @@ get_service_name() {
     445) echo "SMB" ;;
     2049) echo "NFS" ;;
     548) echo "AFP" ;;
-    2049) echo "NFS" ;;
     3690) echo "SVN" ;;
     
     # Remote access
@@ -349,7 +348,6 @@ get_service_name() {
     30000) echo "Minecraft Bedrock" ;;
     
     # IoT and Smart Home
-    1883) echo "MQTT" ;;
     5683) echo "CoAP" ;;
     8123) echo "Home Assistant" ;;
     8888) echo "SmartThings" ;;
