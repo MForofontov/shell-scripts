@@ -4,7 +4,10 @@
 
 set -euo pipefail
 
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
+SCRIPT_DIR=$(dirname "$(realpath "$0" 2>/dev/null || echo "$0")")
 FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
@@ -22,9 +25,16 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 PROCESS_NAME=""
 LOG_FILE="/dev/null"
+EXIT_CODE=0
 
+#=====================================================================
+# USAGE AND HELP
+#=====================================================================
 usage() {
   print_with_separator "Check Process Script"
   echo -e "\033[1;34mDescription:\033[0m"
@@ -34,7 +44,7 @@ usage() {
   echo "  $0 <process_name> [--log <log_file>] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m<process_name>\033[0m   (Required) Name of the process to check."
+  echo -e "  \033[1;36m<process_name>\033[0m   (Required) Name of the process to check."
   echo -e "  \033[1;33m--log <log_file>\033[0m (Optional) Path to save the log messages."
   echo -e "  \033[1;33m--help\033[0m           (Optional) Display this help message."
   echo
@@ -45,6 +55,9 @@ usage() {
   exit 1
 }
 
+#=====================================================================
+# ARGUMENT PARSING
+#=====================================================================
 parse_args() {
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -72,7 +85,13 @@ parse_args() {
   done
 }
 
+#=====================================================================
+# MAIN FUNCTION
+#=====================================================================
 main() {
+  #---------------------------------------------------------------------
+  # INITIALIZATION
+  #---------------------------------------------------------------------
   parse_args "$@"
 
   # Configure log file
@@ -87,6 +106,9 @@ main() {
   print_with_separator "Check Process Script"
   format-echo "INFO" "Starting Check Process Script..."
 
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
   # Validate process name
   if [ -z "$PROCESS_NAME" ]; then
     format-echo "ERROR" "Process name is required."
@@ -94,16 +116,33 @@ main() {
     usage
   fi
 
+  #---------------------------------------------------------------------
+  # PROCESS CHECKING
+  #---------------------------------------------------------------------
   format-echo "INFO" "Checking if process $PROCESS_NAME is running..."
 
   if pgrep "$PROCESS_NAME" > /dev/null; then
     format-echo "SUCCESS" "Process $PROCESS_NAME is running."
   else
     format-echo "ERROR" "Process $PROCESS_NAME is not running."
+    EXIT_CODE=1
   fi
 
+  #---------------------------------------------------------------------
+  # COMPLETION
+  #---------------------------------------------------------------------
   print_with_separator "End of Check Process Script"
-  format-echo "INFO" "Process check completed."
+  if [ $EXIT_CODE -eq 0 ]; then
+    format-echo "SUCCESS" "Process check completed successfully."
+  else
+    format-echo "WARNING" "Process check completed. Process not found."
+  fi
+  
+  return $EXIT_CODE
 }
 
+#=====================================================================
+# SCRIPT EXECUTION
+#=====================================================================
 main "$@"
+exit $? 

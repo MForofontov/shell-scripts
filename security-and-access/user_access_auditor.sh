@@ -316,11 +316,6 @@ get_macos_user_info() {
   fi
   
   for username in $userlist; do
-    # Skip root and daemon accounts unless in verbose mode
-    if [[ "$VERBOSE" == "false" && ("$username" == "root" || "$username" == "daemon" || "$username" == "nobody") ]]; then
-      continue
-    fi
-    
     # Skip comment lines
     [[ "$username" =~ ^#.*$ ]] && continue
     
@@ -432,32 +427,55 @@ get_sudo_info() {
   
   # Simplified approach for macOS - just show admin group and current user
   if [[ "$IS_MACOS" == "true" ]]; then
+    # Get current user
+    local current_user=$(whoami)
+    
     # First output the admin group
     case "$OUTPUT_FORMAT" in
       text)
         print_table_row "admin" "Group with sudo access" $col_entity $col_type
         # Also show current user if likely to have sudo (based on id command)
         if id | grep -q "admin"; then
-          print_table_row "$(whoami)" "User with sudo access" $col_entity $col_type
+          print_table_row "$current_user" "User with sudo access" $col_entity $col_type
+        fi
+        # Add root user only if current user is not already root
+        if [[ "$current_user" != "root" ]]; then
+          print_table_row "root" "User with sudo access" $col_entity $col_type
         fi
         ;;
       csv)
         echo "\"admin\",\"Group with sudo access\""
         if id | grep -q "admin"; then
-          echo "\"$(whoami)\",\"User with sudo access\""
+          echo "\"$current_user\",\"User with sudo access\""
+        fi
+        if [[ "$current_user" != "root" ]]; then
+          echo "\"root\",\"User with sudo access\""
         fi
         ;;
       json)
+        local entries=0
         echo "      {"
         echo "        \"name\": \"admin\","
         echo "        \"type\": \"Group with sudo access\""
-        if id | grep -q "admin"; then
-          echo "      },"
-          echo "      {"
-          echo "        \"name\": \"$(whoami)\","
-          echo "        \"type\": \"User with sudo access\""
-        fi
         echo "      }"
+        entries=$((entries+1))
+        
+        if id | grep -q "admin"; then
+          echo ","
+          echo "      {"
+          echo "        \"name\": \"$current_user\","
+          echo "        \"type\": \"User with sudo access\""
+          echo "      }"
+          entries=$((entries+1))
+        fi
+        
+        if [[ "$current_user" != "root" ]]; then
+          echo ","
+          echo "      {"
+          echo "        \"name\": \"root\","
+          echo "        \"type\": \"User with sudo access\""
+          echo "      }"
+        fi
         ;;
     esac
   else
@@ -553,8 +571,6 @@ get_login_history() {
   while read -r line && [[ $entry_count -lt 10 ]]; do
     # Skip empty lines and wtmp entries
     [[ -z "$line" || "$line" == wtmp* ]] && continue
-    
-    local entry=""
     
     # Handle reboot entries
     if [[ "$line" == reboot* ]]; then
