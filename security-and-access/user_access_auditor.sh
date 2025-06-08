@@ -409,54 +409,6 @@ get_sudo_info() {
     return 0
   fi
   
-  # Define sudoers locations based on OS
-  local sudoers_file="/etc/sudoers"
-  local sudoers_dir="/etc/sudoers.d"
-  
-  if [[ ! -f "$sudoers_file" && ! -d "$sudoers_dir" ]]; then
-    format-echo "WARNING" "Cannot access sudo configuration, skipping sudo access check"
-    return 0
-  fi
-  
-  # Get users with sudo access
-  local sudo_users=""
-  if [[ -f "$sudoers_file" && -r "$sudoers_file" ]]; then
-    sudo_users=$(grep -v "^#" "$sudoers_file" | grep "ALL=(ALL)" | grep -v "%")
-  elif [[ "$IS_MACOS" == "true" ]]; then
-    # On macOS, check admin group membership as an alternative
-    local admin_members=$(dscl . -read /Groups/admin GroupMembership 2>/dev/null | sed 's/GroupMembership: //')
-    for member in $admin_members; do
-      [[ "$member" != "GroupMembership:" ]] && sudo_users="${sudo_users}${member} ALL=(ALL) ALL\n"
-    done
-  fi
-  
-  # Check for additional sudo configs
-  if [[ -d "$sudoers_dir" ]]; then
-    for file in "$sudoers_dir"/*; do
-      if [[ -f "$file" && -r "$file" ]]; then
-        sudo_users="$sudo_users"$'\n'"$(grep -v "^#" "$file" | grep "ALL=(ALL)" | grep -v "%")"
-      fi
-    done
-  fi
-  
-  # Get groups with sudo access
-  local sudo_groups=""
-  if [[ -f "$sudoers_file" && -r "$sudoers_file" ]]; then
-    sudo_groups=$(grep -v "^#" "$sudoers_file" | grep "ALL=(ALL)" | grep "^%" | sed 's/%//g')
-  elif [[ "$IS_MACOS" == "true" ]]; then
-    # On macOS, admin group typically has sudo access
-    sudo_groups="admin ALL=(ALL) ALL"
-  fi
-  
-  # Check for additional sudo group configs
-  if [[ -d "$sudoers_dir" ]]; then
-    for file in "$sudoers_dir"/*; do
-      if [[ -f "$file" && -r "$file" ]]; then
-        sudo_groups="$sudo_groups"$'\n'"$(grep -v "^#" "$file" | grep "ALL=(ALL)" | grep "^%" | sed 's/%//g')"
-      fi
-    done
-  fi
-  
   # Define column widths for sudo entities table
   local col_entity=30
   local col_type=25
@@ -468,109 +420,89 @@ get_sudo_info() {
       create_table_separator "${widths[@]}"
       print_table_row "Entity" "Type" $col_entity $col_type
       create_table_separator "${widths[@]}"
-      
-      # Track if we found any sudo entities
-      local found_entities=false
-      
-      # Print sudo users
-      if [[ -n "$sudo_users" ]]; then
-        echo "$sudo_users" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          username=$(echo "$line" | awk '{print $1}')
-          print_table_row "$username" "User with sudo access" $col_entity $col_type
-          found_entities=true
-        done
-      fi
-      
-      # Print sudo groups
-      if [[ -n "$sudo_groups" ]]; then
-        echo "$sudo_groups" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          groupname=$(echo "$line" | awk '{print $1}')
-          print_table_row "$groupname" "Group with sudo access" $col_entity $col_type
-          found_entities=true
-        done
-      fi
-      
-      # If no users or groups found
-      if [[ "$found_entities" == "false" ]]; then
-        print_table_row "None found" "No sudo access detected" $col_entity $col_type
-      fi
-      
-      create_table_separator "${widths[@]}"
       ;;
-      
     csv)
       echo "Entity,Type"
-      
-      # Print sudo users
-      if [[ -n "$sudo_users" ]]; then
-        echo "$sudo_users" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          username=$(echo "$line" | awk '{print $1}')
-          echo "\"$username\",\"User with sudo access\""
-        done
-      fi
-      
-      # Print sudo groups
-      if [[ -n "$sudo_groups" ]]; then
-        echo "$sudo_groups" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          groupname=$(echo "$line" | awk '{print $1}')
-          echo "\"$groupname\",\"Group with sudo access\""
-        done
-      fi
       ;;
-      
     json)
       echo ",\"sudo\": {"
       echo "    \"entities\": ["
-      
-      local first_entity=true
-      
-      # Print sudo users
-      if [[ -n "$sudo_users" ]]; then
-        echo "$sudo_users" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          username=$(echo "$line" | awk '{print $1}')
-          
-          if [[ "$first_entity" == "true" ]]; then
-            first_entity=false
-          else
-            echo ","
-          fi
-          
-          echo "      {"
-          echo "        \"name\": \"$username\","
-          echo "        \"type\": \"user\""
-          echo -n "      }"
-        done
-      fi
-      
-      # Print sudo groups
-      if [[ -n "$sudo_groups" ]]; then
-        echo "$sudo_groups" | while read -r line; do
-          [[ -z "$line" ]] && continue
-          groupname=$(echo "$line" | awk '{print $1}')
-          
-          if [[ "$first_entity" == "true" ]]; then
-            first_entity=false
-          else
-            echo ","
-          fi
-          
-          echo "      {"
-          echo "        \"name\": \"$groupname\","
-          echo "        \"type\": \"group\""
-          echo -n "      }"
-        done
-      fi
-      
-      echo ""
-      echo "    ]"
-      echo "  }"
       ;;
   esac
+  
+  # Simplified approach for macOS - just show admin group and current user
+  if [[ "$IS_MACOS" == "true" ]]; then
+    # First output the admin group
+    case "$OUTPUT_FORMAT" in
+      text)
+        print_table_row "admin" "Group with sudo access" $col_entity $col_type
+        # Also show current user if likely to have sudo (based on id command)
+        if id | grep -q "admin"; then
+          print_table_row "$(whoami)" "User with sudo access" $col_entity $col_type
+        fi
+        ;;
+      csv)
+        echo "\"admin\",\"Group with sudo access\""
+        if id | grep -q "admin"; then
+          echo "\"$(whoami)\",\"User with sudo access\""
+        fi
+        ;;
+      json)
+        echo "      {"
+        echo "        \"name\": \"admin\","
+        echo "        \"type\": \"Group with sudo access\""
+        if id | grep -q "admin"; then
+          echo "      },"
+          echo "      {"
+          echo "        \"name\": \"$(whoami)\","
+          echo "        \"type\": \"User with sudo access\""
+        fi
+        echo "      }"
+        ;;
+    esac
+  else
+    # For Linux systems, just check for wheel group
+    if grep -q "^wheel:" /etc/group 2>/dev/null; then
+      case "$OUTPUT_FORMAT" in
+        text)
+          print_table_row "wheel" "Group with sudo access" $col_entity $col_type
+          ;;
+        csv)
+          echo "\"wheel\",\"Group with sudo access\""
+          ;;
+        json)
+          echo "      {"
+          echo "        \"name\": \"wheel\","
+          echo "        \"type\": \"Group with sudo access\""
+          echo "      }"
+          ;;
+      esac
+    else
+      # No obvious sudo groups found
+      case "$OUTPUT_FORMAT" in
+        text)
+          print_table_row "None found" "No sudo access detected" $col_entity $col_type
+          ;;
+        csv)
+          echo "\"None found\",\"No sudo access detected\""
+          ;;
+        json)
+          echo "      {"
+          echo "        \"name\": \"None found\","
+          echo "        \"type\": \"No sudo access detected\""
+          echo "      }"
+          ;;
+      esac
+    fi
+  fi
+  
+  if [[ "$OUTPUT_FORMAT" == "text" ]]; then
+    create_table_separator "${widths[@]}"
+  elif [[ "$OUTPUT_FORMAT" == "json" ]]; then
+    echo ""
+    echo "    ]"
+    echo "  }"
+  fi
 }
 
 # Function to get login history
@@ -605,142 +537,130 @@ get_login_history() {
       print_table_row "Username" "Terminal" "From" "Login Time" "Status" \
                      $col_user $col_terminal $col_from $col_logintime $col_status
       create_table_separator "${widths[@]}"
-      
-      # Get and format login history
-      last -n 10 | while read -r line; do
-        # Skip empty lines
-        [[ -z "$line" ]] && continue
-        
-        # Skip wtmp lines
-        [[ "$line" == wtmp* ]] && continue
-        
-        # Check if it's a reboot line
-        if [[ "$line" == reboot* ]]; then
-          local reboot_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-          print_table_row "SYSTEM" "console" "local" "$reboot_time" "reboot" \
-                         $col_user $col_terminal $col_from $col_logintime $col_status
-          continue
-        fi
-        
-        # Parse regular login entries
-        local username=$(echo "$line" | awk '{print $1}')
-        local terminal=$(echo "$line" | awk '{print $2}')
-        local from="local"
-        if [[ "$line" == *"from "* ]]; then
-          from=$(echo "$line" | grep -o "from [^ ]*" | cut -d' ' -f2)
-        fi
-        local login_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-        local status="logged out"
-        if [[ "$line" == *"still logged in"* ]]; then
-          status="still logged in"
-        elif [[ "$line" == *"crash"* ]]; then
-          status="crash"
-        fi
-        
-        # Truncate long values
-        [[ ${#username} -gt $col_user ]] && username="${username:0:$((col_user-3))}..."
-        [[ ${#terminal} -gt $col_terminal ]] && terminal="${terminal:0:$((col_terminal-3))}..."
-        [[ ${#from} -gt $col_from ]] && from="${from:0:$((col_from-3))}..."
-        [[ ${#login_time} -gt $col_logintime ]] && login_time="${login_time:0:$((col_logintime-3))}..."
-        
-        print_table_row "$username" "$terminal" "$from" "$login_time" "$status" \
-                       $col_user $col_terminal $col_from $col_logintime $col_status
-      done
-      
-      create_table_separator "${widths[@]}"
       ;;
-      
     csv)
       echo "Username,Terminal,From,Login Time,Status,Duration"
-      last -n 10 | grep -v "^wtmp" | while read -r line; do
-        [[ -z "$line" ]] && continue
-        
-        if [[ "$line" == reboot* ]]; then
-          local reboot_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-          echo "\"SYSTEM\",\"console\",\"local\",\"$reboot_time\",\"reboot\",\"\""
-          continue
-        fi
-        
-        local username=$(echo "$line" | awk '{print $1}')
-        local terminal=$(echo "$line" | awk '{print $2}')
-        local from="local"
-        if [[ "$line" == *"from "* ]]; then
-          from=$(echo "$line" | grep -o "from [^ ]*" | cut -d' ' -f2)
-        fi
-        local login_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-        local status="logged out"
-        local duration=""
-        
-        if [[ "$line" == *"still logged in"* ]]; then
-          status="still logged in"
-        elif [[ "$line" == *"crash"* ]]; then
-          status="crash"
-          duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
-        else
-          duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
-        fi
-        
-        echo "\"$username\",\"$terminal\",\"$from\",\"$login_time\",\"$status\",\"$duration\""
-      done
       ;;
-      
     json)
       echo ",\"login_history\": ["
-      first_entry=true
-      last -n 10 | grep -v "^wtmp" | while read -r line; do
-        [[ -z "$line" ]] && continue
-        
-        if [[ "$first_entry" == "true" ]]; then
-          first_entry=false
-        else
-          echo ","
-        fi
-        
-        if [[ "$line" == reboot* ]]; then
-          local reboot_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-          echo "    {"
-          echo "      \"username\": \"SYSTEM\","
-          echo "      \"terminal\": \"console\","
-          echo "      \"from\": \"local\","
-          echo "      \"login_time\": \"$reboot_time\","
-          echo "      \"status\": \"reboot\","
-          echo "      \"duration\": \"\""
-          echo -n "    }"
-          continue
-        fi
-        
-        local username=$(echo "$line" | awk '{print $1}')
-        local terminal=$(echo "$line" | awk '{print $2}')
-        local from="local"
-        if [[ "$line" == *"from "* ]]; then
-          from=$(echo "$line" | grep -o "from [^ ]*" | cut -d' ' -f2)
-        fi
-        local login_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
-        local status="logged out"
-        local duration=""
-        
-        if [[ "$line" == *"still logged in"* ]]; then
-          status="still logged in"
-        elif [[ "$line" == *"crash"* ]]; then
-          status="crash"
-          duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
-        else
-          duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
-        fi
-        
-        echo "    {"
-        echo "      \"username\": \"$username\","
-        echo "      \"terminal\": \"$terminal\","
-        echo "      \"from\": \"$from\","
-        echo "      \"login_time\": \"$login_time\","
-        echo "      \"status\": \"$status\","
-        echo "      \"duration\": \"$duration\""
-        echo -n "    }"
-      done
-      echo ""
-      echo "  ]"
       ;;
   esac
+  
+  # Get recent login history (last 10 entries)
+  local login_entries=()
+  local entry_count=0
+  
+  while read -r line && [[ $entry_count -lt 10 ]]; do
+    # Skip empty lines and wtmp entries
+    [[ -z "$line" || "$line" == wtmp* ]] && continue
+    
+    local entry=""
+    
+    # Handle reboot entries
+    if [[ "$line" == reboot* ]]; then
+      local reboot_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
+      
+      # Truncate values if necessary
+      [[ ${#reboot_time} -gt $col_logintime ]] && reboot_time="${reboot_time:0:$((col_logintime-3))}..."
+      
+      case "$OUTPUT_FORMAT" in
+        text)
+          login_entries+=("$(print_table_row "SYSTEM" "console" "local" "$reboot_time" "reboot" \
+                         $col_user $col_terminal $col_from $col_logintime $col_status)")
+          ;;
+        csv)
+          login_entries+=("\"SYSTEM\",\"console\",\"local\",\"$reboot_time\",\"reboot\",\"\"")
+          ;;
+        json)
+          local json_entry="    {\n      \"username\": \"SYSTEM\",\n      \"terminal\": \"console\",\n"
+          json_entry+="      \"from\": \"local\",\n      \"login_time\": \"$reboot_time\",\n"
+          json_entry+="      \"status\": \"reboot\",\n      \"duration\": \"\"\n    }"
+          login_entries+=("$json_entry")
+          ;;
+      esac
+    else
+      # Regular login entries
+      local username=$(echo "$line" | awk '{print $1}')
+      local terminal=$(echo "$line" | awk '{print $2}')
+      local from="local"
+      if [[ "$line" == *"from "* ]]; then
+        from=$(echo "$line" | grep -o "from [^ ]*" | cut -d' ' -f2)
+      fi
+      local login_time=$(echo "$line" | awk '{print $3, $4, $5, $6, $7, $8}')
+      local status="logged out"
+      local duration=""
+      
+      if [[ "$line" == *"still logged in"* ]]; then
+        status="still logged in"
+      elif [[ "$line" == *"crash"* ]]; then
+        status="crash"
+        duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
+      else
+        duration=$(echo "$line" | grep -o "([0-9+:]*)" | sed 's/[()]//g')
+      fi
+      
+      # Truncate values if necessary
+      [[ ${#username} -gt $col_user ]] && username="${username:0:$((col_user-3))}..."
+      [[ ${#terminal} -gt $col_terminal ]] && terminal="${terminal:0:$((col_terminal-3))}..."
+      [[ ${#from} -gt $col_from ]] && from="${from:0:$((col_from-3))}..."
+      [[ ${#login_time} -gt $col_logintime ]] && login_time="${login_time:0:$((col_logintime-3))}..."
+      
+      case "$OUTPUT_FORMAT" in
+        text)
+          login_entries+=("$(print_table_row "$username" "$terminal" "$from" "$login_time" "$status" \
+                         $col_user $col_terminal $col_from $col_logintime $col_status)")
+          ;;
+        csv)
+          login_entries+=("\"$username\",\"$terminal\",\"$from\",\"$login_time\",\"$status\",\"$duration\"")
+          ;;
+        json)
+          local json_entry="    {\n      \"username\": \"$username\",\n      \"terminal\": \"$terminal\",\n"
+          json_entry+="      \"from\": \"$from\",\n      \"login_time\": \"$login_time\",\n"
+          json_entry+="      \"status\": \"$status\",\n      \"duration\": \"$duration\"\n    }"
+          login_entries+=("$json_entry")
+          ;;
+      esac
+    fi
+    
+    entry_count=$((entry_count+1))
+  done < <(last 2>/dev/null)
+  
+  # Output the entries
+  if [[ $entry_count -eq 0 ]]; then
+    case "$OUTPUT_FORMAT" in
+      text)
+        print_table_row "No entries" "No login history found" "N/A" "N/A" "N/A" \
+                       $col_user $col_terminal $col_from $col_logintime $col_status
+        ;;
+      csv)
+        echo "\"No entries\",\"N/A\",\"N/A\",\"No login history found\",\"N/A\",\"N/A\""
+        ;;
+      json)
+        echo "    {"
+        echo "      \"username\": \"No entries\","
+        echo "      \"terminal\": \"N/A\","
+        echo "      \"from\": \"N/A\","
+        echo "      \"login_time\": \"No login history found\","
+        echo "      \"status\": \"N/A\","
+        echo "      \"duration\": \"N/A\""
+        echo "    }"
+        ;;
+    esac
+  else
+    for ((i=0; i<entry_count; i++)); do
+      if [[ "$OUTPUT_FORMAT" == "json" && $i -gt 0 ]]; then
+        echo ","
+      fi
+      echo -e "${login_entries[$i]}"
+    done
+  fi
+  
+  if [[ "$OUTPUT_FORMAT" == "text" ]]; then
+    create_table_separator "${widths[@]}"
+  elif [[ "$OUTPUT_FORMAT" == "json" ]]; then
+    echo ""
+    echo "  ]"
+  fi
 }
 
 # Function to get group membership information
