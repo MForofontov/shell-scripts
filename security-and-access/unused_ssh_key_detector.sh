@@ -1,5 +1,5 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/security-and-access/unused_ssh_key_detector.sh
+# unused_ssh_key_detector.sh
 # Script to detect unused SSH keys and suggest remediation actions.
 
 set -eo pipefail
@@ -7,7 +7,7 @@ set -eo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+SCRIPT_DIR=$(dirname "$(realpath "$0" 2>/dev/null || echo "$0")")
 FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
 
@@ -50,6 +50,7 @@ ACTION="report"  # Options: report, backup, archive, disable, remove
 EXCLUSIONS=()
 OUTPUT_FILE=""
 MAX_THREADS=4  # For parallel processing
+MIN_USAGE_SCORE=1  # Minimum score required to consider a key as used
 
 #=====================================================================
 # USAGE AND HELP
@@ -64,9 +65,10 @@ usage() {
   echo "  $0 [options]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m--ssh-dir <directory>\033[0m       (Optional) Base directory to scan for SSH keys (default: /home)"
+  echo -e "  \033[1;33m--ssh-dir <directory>\033[0m       (Optional) Base directory to scan for SSH keys (default: $SSH_DIR)"
   echo -e "  \033[1;33m--user <username>\033[0m           (Optional) Scan only this specific user's SSH directory"
   echo -e "  \033[1;33m--age <days>\033[0m                (Optional) Age threshold in days (default: 90)"
+  echo -e "  \033[1;33m--min-score <number>\033[0m        (Optional) Minimum usage score to consider a key as used (default: 1)"
   echo -e "  \033[1;33m--no-auth-keys\033[0m              (Optional) Don't check authorized_keys files"
   echo -e "  \033[1;33m--no-known-hosts\033[0m            (Optional) Don't check known_hosts files"
   echo -e "  \033[1;33m--no-ssh-agent\033[0m              (Optional) Don't check SSH agent for loaded keys"
@@ -83,8 +85,8 @@ usage() {
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --user johndoe --age 180 --action report"
-  echo "  $0 --ssh-dir /home --exclude '*.backup' --format json --output unused_keys.json"
-  echo "  $0 --action backup --verbose"
+  echo "  $0 --ssh-dir $SSH_DIR --exclude '*.backup' --format json --output unused_keys.json"
+  echo "  $0 --action backup --verbose --min-score 2"
   print_with_separator
   exit 1
 }
@@ -120,6 +122,14 @@ parse_args() {
           usage
         fi
         AGE_THRESHOLD="$2"
+        shift 2
+        ;;
+      --min-score)
+        if [ -z "${2:-}" ] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
+          format-echo "ERROR" "Invalid min-score value: $2. Must be a positive integer."
+          usage
+        fi
+        MIN_USAGE_SCORE="$2"
         shift 2
         ;;
       --no-auth-keys)
@@ -277,6 +287,7 @@ find_ssh_keys() {
   
   # Find all private key files (common naming patterns)
   while IFS= read -r key_file; do
+    [[ -z "$key_file" ]] && continue
     # Skip files that match exclusion patterns
     if is_excluded "$key_file"; then
       if [[ "$VERBOSE" == "true" ]]; then
@@ -290,6 +301,7 @@ find_ssh_keys() {
   
   # Also look for custom key files that don't match the id_* pattern
   while IFS= read -r key_file; do
+    [[ -z "$key_file" ]] && continue
     # Skip if this is a public key
     if [[ "$key_file" == *.pub ]]; then
       continue
@@ -431,10 +443,11 @@ is_in_ssh_agent() {
   return 1  # Key is not loaded in SSH agent
 }
 
-# Function to check if a key has been used in SSH logs
-is_in_ssh_logs() {
+# Function to count how many times a key appears in logs
+count_key_usages_in_logs() {
   local key_path="$1"
   local key_fingerprint=""
+  local count=0
   
   # Get the fingerprint of the private key
   if command_exists ssh-keygen; then
@@ -447,23 +460,38 @@ is_in_ssh_logs() {
   fi
   
   if [[ -z "$key_fingerprint" ]]; then
-    return 1  # Couldn't determine fingerprint
+    echo "0"
+    return
   fi
   
   # Check all SSH log files
   for log_file in "${SSH_LOG_FILES[@]}"; do
     if [[ -f "$log_file" ]]; then
-      if grep -q "$key_fingerprint" "$log_file" 2>/dev/null; then
-        return 0  # Key fingerprint found in logs
+      if ! this_count=$(grep -c "$key_fingerprint" "$log_file" 2>/dev/null); then
+        this_count=0
       fi
+      count=$((count + this_count))
       
-      # Also check by key type and file name (logs may not show fingerprint)
+      # Also check by key file name (logs may not show fingerprint)
       local key_basename=$(basename "$key_path")
-      if grep -q "$key_basename" "$log_file" 2>/dev/null; then
-        return 0  # Key name found in logs
+      if ! this_count=$(grep -c "$key_basename" "$log_file" 2>/dev/null); then
+        this_count=0
       fi
+      count=$((count + this_count))
     fi
   done
+  
+  echo "$count"
+}
+
+# Function to check if a key has been used in SSH logs
+is_in_ssh_logs() {
+  local key_path="$1"
+  local usage_count=$(count_key_usages_in_logs "$key_path")
+  
+  if [[ "$usage_count" -gt 0 ]]; then
+    return 0  # Key is found in logs
+  fi
   
   return 1  # Key is not found in any SSH log
 }
@@ -565,11 +593,12 @@ analyze_key_usage() {
   local key_path="$1"
   local usage_score=0
   local usage_reasons=()
+  local usage_count=0
   
   # Check if key is in authorized_keys
   if [[ "$CHECK_AUTH_KEYS" == "true" ]]; then
     if is_in_authorized_keys "$key_path"; then
-      ((usage_score++))
+      usage_score=$((usage_score + 1))
       usage_reasons+=("Found in authorized_keys")
     fi
   fi
@@ -577,7 +606,7 @@ analyze_key_usage() {
   # Check if key is in known_hosts
   if [[ "$CHECK_KNOWN_HOSTS" == "true" ]]; then
     if is_in_known_hosts "$key_path"; then
-      ((usage_score++))
+      usage_score=$((usage_score + 1))
       usage_reasons+=("Referenced in known_hosts")
     fi
   fi
@@ -585,33 +614,48 @@ analyze_key_usage() {
   # Check if key is loaded in SSH agent
   if [[ "$CHECK_SSH_AGENT" == "true" ]]; then
     if is_in_ssh_agent "$key_path"; then
-      ((usage_score++))
+      usage_score=$((usage_score + 1))
       usage_reasons+=("Loaded in SSH agent")
     fi
   fi
   
   # Check if key has been used in SSH logs
   if [[ "$CHECK_SSH_LOGS" == "true" ]]; then
-    if is_in_ssh_logs "$key_path"; then
-      ((usage_score++))
-      usage_reasons+=("Referenced in SSH logs")
+    # Sanitize the usage count to ensure it's a clean integer
+    local raw_count=$(count_key_usages_in_logs "$key_path")
+    usage_count=$(echo "$raw_count" | tr -d '\n\r' | grep -o '[0-9]*' || echo "0")
+    usage_count=${usage_count:-0}  # Default to 0 if empty
+    
+    if [[ $usage_count -gt 0 ]]; then
+      usage_score=$((usage_score + 1))
+      usage_reasons+=("Referenced in SSH logs ($usage_count times)")
     fi
   fi
   
   # Check if key has been accessed recently
   if [[ "$CHECK_ACCESS_TIME" == "true" ]]; then
     if is_recently_accessed "$key_path"; then
-      ((usage_score++))
+      usage_score=$((usage_score + 1))
       usage_reasons+=("Recently accessed")
     fi
   fi
   
-  # If we have no usage indicators, it's likely unused
-  if [[ "$usage_score" -eq 0 ]]; then
-    echo "unused:No usage indicators found"
+  # Clean up and ensure the score is a valid integer
+  usage_score=${usage_score:-0}
+  
+  # Prepare the reason text
+  local reason=""
+  if [[ "$usage_score" -lt "$MIN_USAGE_SCORE" ]]; then
+    status="unused"
+    reason="No significant usage indicators found (score: $usage_score, required: $MIN_USAGE_SCORE)"
   else
-    echo "used:${usage_reasons[*]}"
+    status="used"
+    reason="${usage_reasons[*]}"
+    [[ -z "$reason" ]] && reason="Recently accessed"
   fi
+  
+  # Output in a format that's easier to parse reliably
+  printf "STATUS=%s\nREASON=%s\nSCORE=%d\nCOUNT=%d\n" "$status" "$reason" "$usage_score" "$usage_count"
 }
 
 # Function to scan all users for unused SSH keys
@@ -621,7 +665,7 @@ scan_users_for_keys() {
   if [[ "$FORMAT" == "json" ]]; then
     echo "[" > "$temp_results_file"
   elif [[ "$FORMAT" == "csv" ]]; then
-    echo "User,Key Path,Key Type,Key Bits,Fingerprint,Status,Last Accessed,Creation Time,Comment" > "$temp_results_file"
+    echo "User,Key Path,Key Type,Key Bits,Fingerprint,Status,Usage Score,Times Used,Reason,Last Accessed,Creation Time,Comment" > "$temp_results_file"
   fi
 
   if [[ -n "$SINGLE_USER" ]]; then
@@ -661,9 +705,14 @@ scan_users_for_keys() {
   fi
 
   if [[ "$FORMAT" == "json" ]]; then
-    sed -i'.tmp' '$ s/,$//' "$temp_results_file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      # For macOS sed
+      sed -i '' -e '$ s/,$//' "$temp_results_file"
+    else
+      # For Linux sed
+      sed -i '$ s/,$//' "$temp_results_file"
+    fi
     echo "]" >> "$temp_results_file"
-    rm -f "${temp_results_file}.tmp"
   fi
 
   if [[ -n "$OUTPUT_FILE" ]]; then
@@ -715,9 +764,16 @@ scan_single_user() {
     
     # Analyze key usage
     local usage_result=$(analyze_key_usage "$key_path")
-    local status=$(echo "$usage_result" | cut -d':' -f1)
-    local reason=$(echo "$usage_result" | cut -d':' -f2-)
+    local status=$(echo "$usage_result" | grep "^STATUS=" | cut -d= -f2)
+    local reason=$(echo "$usage_result" | grep "^REASON=" | cut -d= -f2-)
+    local usage_score=$(echo "$usage_result" | grep "^SCORE=" | cut -d= -f2)
+    local usage_count=$(echo "$usage_result" | grep "^COUNT=" | cut -d= -f2)
     
+    # Default values in case parsing fails
+    [[ -z "$status" ]] && status="unknown"
+    [[ -z "$usage_score" ]] && usage_score=0
+    [[ -z "$usage_count" ]] && usage_count=0
+
     # Get key details
     local key_details=$(get_key_details "$key_path")
     local key_type=$(echo "$key_details" | grep '"type"' | cut -d'"' -f4)
@@ -738,10 +794,11 @@ scan_single_user() {
         {
           echo "User: $username"
           echo "Key: $key_path"
-          echo "Type: $key_type"
-          echo "Bits: $key_bits"
-          echo "Fingerprint: $fingerprint"
+          echo "Type: ${key_type:-no}"
+          echo "Bits: ${key_bits:-no}"
+          echo "Fingerprint: ${fingerprint:-no}"
           echo "Status: $status"
+          echo "Usage Score: $usage_score/$MIN_USAGE_SCORE required"
           echo "Reason: $reason"
           echo "Last Accessed: $access_time"
           echo "Created: $creation_time"
@@ -757,10 +814,12 @@ scan_single_user() {
           echo "  {"
           echo "    \"user\": \"$username\","
           echo "    \"key_path\": \"$key_path\","
-          echo "    \"key_type\": \"$key_type\","
-          echo "    \"key_bits\": \"$key_bits\","
-          echo "    \"fingerprint\": \"$fingerprint\","
+          echo "    \"key_type\": \"${key_type:-no}\","
+          echo "    \"key_bits\": \"${key_bits:-no}\","
+          echo "    \"fingerprint\": \"${fingerprint:-no}\","
           echo "    \"status\": \"$status\","
+          echo "    \"usage_score\": \"$usage_score/$MIN_USAGE_SCORE\","
+          echo "    \"times_used\": \"$usage_count\","
           echo "    \"reason\": \"$reason\","
           echo "    \"last_accessed\": \"$access_time\","
           echo "    \"creation_time\": \"$creation_time\","
@@ -770,7 +829,7 @@ scan_single_user() {
         ;;
       
       csv)
-        echo "$username,\"$key_path\",\"$key_type\",\"$key_bits\",\"$fingerprint\",\"$status\",\"$access_time\",\"$creation_time\",\"$comment\"" >> "$results_file"
+        echo "$username,\"$key_path\",\"${key_type:-no}\",\"${key_bits:-no}\",\"${fingerprint:-no}\",\"$status\",\"$usage_score/$MIN_USAGE_SCORE\",\"$usage_count\",\"$reason\",\"$access_time\",\"$creation_time\",\"$comment\"" >> "$results_file"
         ;;
     esac
     
@@ -945,6 +1004,7 @@ main() {
     format-echo "INFO" "  SSH Directory: $SSH_DIR"
     format-echo "INFO" "  User: ${SINGLE_USER:-All users}"
     format-echo "INFO" "  Age Threshold: $AGE_THRESHOLD days"
+    format-echo "INFO" "  Min Usage Score: $MIN_USAGE_SCORE"
     format-echo "INFO" "  Action: $ACTION"
     format-echo "INFO" "  Output Format: $FORMAT"
     if [[ -n "$OUTPUT_FILE" ]]; then
