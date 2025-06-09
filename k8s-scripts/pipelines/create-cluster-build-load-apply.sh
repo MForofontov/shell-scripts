@@ -1,5 +1,5 @@
 #!/bin/bash
-# create-cluster-build-load-apply.sh
+# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/pipelines/create-cluster-build-load-apply.sh
 # Script to create a cluster, build/load images into the cluster, and apply manifests if files are given.
 
 set -euo pipefail
@@ -44,6 +44,7 @@ MANIFEST_ROOT=""
 USE_REGISTRY=false
 REGISTRY_PORT=5000
 REGISTRY_NAME="local-registry"
+SKIP_CONNECTION_CHECK=false
 
 #=====================================================================
 # USAGE AND HELP
@@ -68,6 +69,7 @@ usage() {
   echo -e "  \033[1;33m--use-registry\033[0m              (Optional) Use local registry for images (auto-enabled for multi-node)"
   echo -e "  \033[1;33m--registry-port <PORT>\033[0m      (Optional) Port for local registry (default: ${REGISTRY_PORT})"
   echo -e "  \033[1;33m--registry-name <NAME>\033[0m      (Optional) Name for local registry (default: ${REGISTRY_NAME})"
+  echo -e "  \033[1;33m--skip-connection-check\033[0m     (Optional) Skip checking if registry is already connected to cluster"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Show this help message"
   echo
@@ -132,6 +134,10 @@ parse_args() {
       --registry-name)
         REGISTRY_NAME="$2"
         shift 2
+        ;;
+      --skip-connection-check)
+        SKIP_CONNECTION_CHECK=true
+        shift
         ;;
       --log)
         LOG_FILE="$2"
@@ -214,9 +220,9 @@ setup_registry_and_push_images() {
     "--cluster" "$CLUSTER_NAME"
   )
 
-  # Add manifest directory if specified
-  if [[ -n "$MANIFEST_ROOT" ]]; then
-    registry_args+=("-m" "$MANIFEST_ROOT")
+  # Add skip-connection-check if specified
+  if [[ "$SKIP_CONNECTION_CHECK" = true ]]; then
+    registry_args+=("--skip-connection-check")
   fi
 
   # Add log file if specified
@@ -337,8 +343,8 @@ main() {
   #---------------------------------------------------------------------
   # MANIFEST APPLICATION
   #---------------------------------------------------------------------
-  # If manifests directory is provided and registry wasn't used to update them
-  if [[ -n "$MANIFEST_ROOT" && !($USE_REGISTRY = true && -n "$IMAGE_LIST") ]]; then
+  # Always apply manifests when specified, since registry script doesn't handle manifests anymore
+  if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
       format-echo "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
       exit 1
@@ -374,6 +380,7 @@ main() {
   echo "  Provider: $PROVIDER"
   echo "  Node Count: $NODE_COUNT"
   
+  # Display registry information whenever registry is used
   if [[ "$USE_REGISTRY" = true && -n "$IMAGE_LIST" ]]; then
     echo -e "\033[1;32mRegistry Information:\033[0m"
     echo "  Registry Name: $REGISTRY_NAME"
