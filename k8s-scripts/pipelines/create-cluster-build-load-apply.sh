@@ -12,6 +12,8 @@ FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
 BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images.sh"
 APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
+CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster-local.sh"
+REGISTRY_SCRIPT="$SCRIPT_DIR/../image-management/build-and-push-images-to-local-docker-registry.sh"
 
 if [ -f "$FORMAT_ECHO_FILE" ]; then
   source "$FORMAT_ECHO_FILE"
@@ -39,6 +41,9 @@ WAIT_TIMEOUT=300
 LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
+USE_REGISTRY=false
+REGISTRY_PORT=5000
+REGISTRY_NAME="local-registry"
 
 #=====================================================================
 # USAGE AND HELP
@@ -60,6 +65,9 @@ usage() {
   echo -e "  \033[1;33m-f, --config <FILE>\033[0m         (Optional) Path to provider config file"
   echo -e "  \033[1;36m-i, --images <FILE>\033[0m         (Required for image build/load) Images file to build/load"
   echo -e "  \033[1;36m-m, --manifests <DIR>\033[0m       (Required for manifest apply) Manifests directory to apply"
+  echo -e "  \033[1;33m--use-registry\033[0m              (Optional) Use local registry for images (auto-enabled for multi-node)"
+  echo -e "  \033[1;33m--registry-port <PORT>\033[0m      (Optional) Port for local registry (default: ${REGISTRY_PORT})"
+  echo -e "  \033[1;33m--registry-name <NAME>\033[0m      (Optional) Name for local registry (default: ${REGISTRY_NAME})"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Show this help message"
   echo
@@ -67,10 +75,14 @@ usage() {
   echo "  - All options are optional unless you want to build/load images or apply manifests."
   echo "  - \033[1;36m-i, --images\033[0m is required only if you want to build/load images."
   echo "  - \033[1;36m-m, --manifests\033[0m is required only if you want to apply manifests."
+  echo "  - For multi-node clusters (NODE_COUNT > 1), a registry is automatically enabled."
+  echo "  - For single-node clusters, direct image loading is used by default (faster)."
+  echo "  - Use --use-registry with single-node clusters if you specifically need registry functionality."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -n mycluster -i images.txt -m k8s --log pipeline.log"
-  echo "  $0 --provider kind --nodes 2"
+  echo "  $0 --provider kind --nodes 3 -i images.txt"
+  echo "  $0 --provider minikube --use-registry -i images.txt"
   print_with_separator
   exit 1
 }
@@ -109,6 +121,18 @@ parse_args() {
         MANIFEST_ROOT="$2"
         shift 2
         ;;
+      --use-registry)
+        USE_REGISTRY=true
+        shift
+        ;;
+      --registry-port)
+        REGISTRY_PORT="$2"
+        shift 2
+        ;;
+      --registry-name)
+        REGISTRY_NAME="$2"
+        shift 2
+        ;;
       --log)
         LOG_FILE="$2"
         shift 2
@@ -128,39 +152,85 @@ parse_args() {
 # CLUSTER MANAGEMENT
 #=====================================================================
 #---------------------------------------------------------------------
-# CREATE A CLUSTER BASED ON THE SELECTED PROVIDER
+# CREATE A CLUSTER USING CREATE-CLUSTER-LOCAL.SH
 #---------------------------------------------------------------------
 create_cluster() {
   print_with_separator "Creating Kubernetes Cluster"
-  format-echo "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER"
+  format-echo "INFO" "Creating cluster: $CLUSTER_NAME with provider: $PROVIDER using create-cluster-local.sh"
 
-  #---------------------------------------------------------------------
-  # PROVIDER-SPECIFIC CLUSTER CREATION
-  #---------------------------------------------------------------------
-  case "$PROVIDER" in
-    minikube)
-      minikube start -p "$CLUSTER_NAME" --nodes="$NODE_COUNT" --kubernetes-version="$K8S_VERSION" ${CONFIG_FILE:+--config "$CONFIG_FILE"}
-      ;;
-    kind)
-      if [[ -n "$CONFIG_FILE" ]]; then
-        kind create cluster --name "$CLUSTER_NAME" --config "$CONFIG_FILE" --image "kindest/node:$K8S_VERSION"
-      else
-        kind create cluster --name "$CLUSTER_NAME" --image "kindest/node:$K8S_VERSION"
-      fi
-      ;;
-    k3d)
-      if [[ -n "$CONFIG_FILE" ]]; then
-        k3d cluster create "$CLUSTER_NAME" --config "$CONFIG_FILE"
-      else
-        k3d cluster create "$CLUSTER_NAME" --servers "$NODE_COUNT"
-      fi
-      ;;
-    *)
-      format-echo "ERROR" "Unsupported provider: $PROVIDER"
-      exit 1
-      ;;
-  esac
-  format-echo "SUCCESS" "Cluster $CLUSTER_NAME created."
+  if [ ! -f "$CREATE_CLUSTER_SCRIPT" ]; then
+    format-echo "ERROR" "Create cluster script not found: $CREATE_CLUSTER_SCRIPT"
+    exit 1
+  fi
+
+  # Prepare arguments for create-cluster-local.sh
+  local cluster_args=(
+    "-n" "$CLUSTER_NAME"
+    "-p" "$PROVIDER"
+    "-c" "$NODE_COUNT"
+    "-v" "$K8S_VERSION"
+  )
+
+  # Add config file if specified
+  if [[ -n "$CONFIG_FILE" ]]; then
+    cluster_args+=("-f" "$CONFIG_FILE")
+  fi
+
+  # Add log file if specified
+  if [[ -n "$LOG_FILE" ]]; then
+    cluster_args+=("--log" "$LOG_FILE")
+  fi
+
+  # Execute create-cluster-local.sh with the prepared arguments
+  if ! "$CREATE_CLUSTER_SCRIPT" "${cluster_args[@]}"; then
+    format-echo "ERROR" "Failed to create $PROVIDER cluster '$CLUSTER_NAME'"
+    exit 1
+  fi
+
+  format-echo "SUCCESS" "Cluster $CLUSTER_NAME created successfully."
+}
+
+#=====================================================================
+# IMAGE MANAGEMENT
+#=====================================================================
+#---------------------------------------------------------------------
+# SETUP REGISTRY AND PUSH IMAGES
+#---------------------------------------------------------------------
+setup_registry_and_push_images() {
+  print_with_separator "Setting Up Registry and Pushing Images"
+  format-echo "INFO" "Setting up registry and pushing images for $PROVIDER cluster: $CLUSTER_NAME"
+
+  if [ ! -f "$REGISTRY_SCRIPT" ]; then
+    format-echo "ERROR" "Registry script not found: $REGISTRY_SCRIPT"
+    exit 1
+  fi
+
+  # Prepare arguments for build-and-push-images-to-local-docker-registry.sh
+  local registry_args=(
+    "-f" "$IMAGE_LIST"
+    "-p" "$REGISTRY_PORT"
+    "-n" "$REGISTRY_NAME"
+    "--k8s" "$PROVIDER"
+    "--cluster" "$CLUSTER_NAME"
+  )
+
+  # Add manifest directory if specified
+  if [[ -n "$MANIFEST_ROOT" ]]; then
+    registry_args+=("-m" "$MANIFEST_ROOT")
+  fi
+
+  # Add log file if specified
+  if [[ -n "$LOG_FILE" ]]; then
+    registry_args+=("--log" "$LOG_FILE")
+  fi
+
+  # Execute build-and-push-images-to-local-docker-registry.sh with the prepared arguments
+  if ! "$REGISTRY_SCRIPT" "${registry_args[@]}"; then
+    format-echo "ERROR" "Failed to setup registry and push images"
+    exit 1
+  fi
+
+  format-echo "SUCCESS" "Registry setup and images pushed successfully."
 }
 
 #=====================================================================
@@ -171,6 +241,15 @@ main() {
   # INITIALIZATION
   #---------------------------------------------------------------------
   parse_args "$@"
+
+  #---------------------------------------------------------------------
+  # VALIDATION
+  #---------------------------------------------------------------------
+  # Auto-enable registry for multi-node clusters with images
+  if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -gt 1 && "$USE_REGISTRY" != true ]]; then
+    USE_REGISTRY=true
+    format-echo "INFO" "Multi-node cluster detected - automatically enabling registry"
+  fi
 
   #---------------------------------------------------------------------
   # LOG CONFIGURATION
@@ -188,6 +267,31 @@ main() {
   format-echo "INFO" "Starting Create Cluster, Build/Load Images, and Apply Manifests Script..."
 
   #---------------------------------------------------------------------
+  # DISPLAY CONFIGURATION
+  #---------------------------------------------------------------------
+  format-echo "INFO" "Configuration:"
+  format-echo "INFO" "  Cluster Name:    $CLUSTER_NAME"
+  format-echo "INFO" "  Provider:        $PROVIDER"
+  format-echo "INFO" "  Node Count:      $NODE_COUNT"
+  format-echo "INFO" "  K8s Version:     $K8S_VERSION"
+  format-echo "INFO" "  Config File:     ${CONFIG_FILE:-None}"
+  
+  if [[ -n "$IMAGE_LIST" ]]; then
+    format-echo "INFO" "  Images File:     $IMAGE_LIST"
+    if [[ "$USE_REGISTRY" = true ]]; then
+      format-echo "INFO" "  Registry:        Enabled"
+      format-echo "INFO" "  Registry Name:   $REGISTRY_NAME"
+      format-echo "INFO" "  Registry Port:   $REGISTRY_PORT"
+    else
+      format-echo "INFO" "  Registry:        Disabled (using direct load)"
+    fi
+  fi
+  
+  if [[ -n "$MANIFEST_ROOT" ]]; then
+    format-echo "INFO" "  Manifests Dir:   $MANIFEST_ROOT"
+  fi
+
+  #---------------------------------------------------------------------
   # CLUSTER CREATION
   #---------------------------------------------------------------------
   create_cluster
@@ -195,41 +299,87 @@ main() {
   #---------------------------------------------------------------------
   # IMAGE BUILDING AND LOADING
   #---------------------------------------------------------------------
-  # Build and load images into the cluster only if an image list is provided and NODE_COUNT is 1
-  if [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -eq 1 ]]; then
-    if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
-      format-echo "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
-      print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
-      exit 1
+  if [[ -n "$IMAGE_LIST" ]]; then
+    if [[ "$USE_REGISTRY" = true ]]; then
+      # Use registry approach for multi-node or when explicitly requested
+      setup_registry_and_push_images
+    else
+      # Use direct loading approach for single-node (more efficient)
+      if [ ! -f "$BUILD_LOAD_SCRIPT" ]; then
+        format-echo "ERROR" "Image build/load script not found: $BUILD_LOAD_SCRIPT"
+        exit 1
+      fi
+      
+      format-echo "INFO" "Building and loading images directly (single-node cluster)"
+      
+      # Prepare arguments for build-and-load-images.sh
+      local build_args=(
+        "-f" "$IMAGE_LIST"
+        "--provider" "$PROVIDER"
+        "--name" "$CLUSTER_NAME"
+      )
+      
+      # Add log file if specified
+      if [[ -n "$LOG_FILE" ]]; then
+        build_args+=("--log" "$LOG_FILE")
+      fi
+      
+      # Execute build-and-load-images.sh with the prepared arguments
+      if ! "$BUILD_LOAD_SCRIPT" "${build_args[@]}"; then
+        format-echo "ERROR" "Failed to build and load images"
+        exit 1
+      fi
+      
+      format-echo "SUCCESS" "Images built and loaded successfully."
     fi
-    BUILD_CMD=("$BUILD_LOAD_SCRIPT" -f "$IMAGE_LIST" --provider "$PROVIDER" --name "$CLUSTER_NAME")
-    [ -n "$LOG_FILE" ] && BUILD_CMD+=(--log "$LOG_FILE")
-    format-echo "INFO" "Building and loading images from $IMAGE_LIST (single-node cluster)"
-    "${BUILD_CMD[@]}"
-  elif [[ -n "$IMAGE_LIST" && "$NODE_COUNT" -ne 1 ]]; then
-    format-echo "WARNING" "Skipping build-and-load-images.sh: cluster has more than one node. Use a registry for multi-node clusters."
   fi
 
   #---------------------------------------------------------------------
   # MANIFEST APPLICATION
   #---------------------------------------------------------------------
-  # If manifests directory is provided, apply manifests
-  if [[ -n "$MANIFEST_ROOT" ]]; then
+  # If manifests directory is provided and registry wasn't used to update them
+  if [[ -n "$MANIFEST_ROOT" && !($USE_REGISTRY = true && -n "$IMAGE_LIST") ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
       format-echo "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
-      print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
       exit 1
     fi
-    APPLY_CMD=("$APPLY_MANIFESTS_SCRIPT" --manifests "$MANIFEST_ROOT")
-    [ -n "$LOG_FILE" ] && APPLY_CMD+=(--log "$LOG_FILE")
+    
     format-echo "INFO" "Applying manifests from $MANIFEST_ROOT"
-    "${APPLY_CMD[@]}"
+    
+    # Prepare arguments for apply-k8s-configuration.sh
+    local apply_args=("--manifests" "$MANIFEST_ROOT")
+    
+    # Add log file if specified
+    if [[ -n "$LOG_FILE" ]]; then
+      apply_args+=("--log" "$LOG_FILE")
+    fi
+    
+    # Execute apply-k8s-configuration.sh with the prepared arguments
+    if ! "$APPLY_MANIFESTS_SCRIPT" "${apply_args[@]}"; then
+      format-echo "ERROR" "Failed to apply manifests"
+      exit 1
+    fi
+    
+    format-echo "SUCCESS" "Manifests applied successfully."
   fi
 
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
   format-echo "SUCCESS" "Cluster creation, image build/load, and manifest application complete."
+  
+  # Print summary information
+  echo -e "\033[1;32mCluster Information:\033[0m"
+  echo "  Cluster Name: $CLUSTER_NAME"
+  echo "  Provider: $PROVIDER"
+  echo "  Node Count: $NODE_COUNT"
+  
+  if [[ "$USE_REGISTRY" = true && -n "$IMAGE_LIST" ]]; then
+    echo -e "\033[1;32mRegistry Information:\033[0m"
+    echo "  Registry Name: $REGISTRY_NAME"
+    echo "  Registry Port: $REGISTRY_PORT"
+  fi
+  
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
 }
 
