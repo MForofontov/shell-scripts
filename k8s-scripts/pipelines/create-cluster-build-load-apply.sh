@@ -13,7 +13,7 @@ UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-se
 BUILD_LOAD_SCRIPT="$SCRIPT_DIR/../image-management/build-and-load-images.sh"
 APPLY_MANIFESTS_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-configuration-management/apply-k8s-configuration.sh"
 CREATE_CLUSTER_SCRIPT="$SCRIPT_DIR/../cluster-management/cluster-state-management/create-cluster-local.sh"
-REGISTRY_SCRIPT="$SCRIPT_DIR/../image-management/build-and-push-images-to-local-docker-registry.sh"
+REGISTRY_SCRIPT="$SCRIPT_DIR/../image-management/k8s-registry-pipeline.sh"
 
 if [ -f "$FORMAT_ECHO_FILE" ]; then
   source "$FORMAT_ECHO_FILE"
@@ -42,7 +42,7 @@ LOG_FILE=""
 IMAGE_LIST=""
 MANIFEST_ROOT=""
 USE_REGISTRY=false
-REGISTRY_PORT=5000
+REGISTRY_PORT=5001
 REGISTRY_NAME="local-registry"
 SKIP_CONNECTION_CHECK=false
 
