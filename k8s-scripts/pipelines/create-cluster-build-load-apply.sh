@@ -1,5 +1,5 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/k8s-scripts/pipelines/create-cluster-build-load-apply.sh
+# create-cluster-build-load-apply.sh
 # Script to create a cluster, build/load images into the cluster, and apply manifests if files are given.
 
 set -euo pipefail
@@ -388,7 +388,7 @@ main() {
   fi
   
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
-}
+  }
 
 #=====================================================================
 # SCRIPT EXECUTION
