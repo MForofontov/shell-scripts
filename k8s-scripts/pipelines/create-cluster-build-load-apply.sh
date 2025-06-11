@@ -44,7 +44,7 @@ MANIFEST_ROOT=""
 USE_REGISTRY=false
 REGISTRY_PORT=5001
 REGISTRY_NAME="local-registry"
-SKIP_CONNECTION_CHECK=false
+REGISTRY_HOST="localhost"
 
 #=====================================================================
 # USAGE AND HELP
@@ -69,7 +69,7 @@ usage() {
   echo -e "  \033[1;33m--use-registry\033[0m              (Optional) Use local registry for images (auto-enabled for multi-node)"
   echo -e "  \033[1;33m--registry-port <PORT>\033[0m      (Optional) Port for local registry (default: ${REGISTRY_PORT})"
   echo -e "  \033[1;33m--registry-name <NAME>\033[0m      (Optional) Name for local registry (default: ${REGISTRY_NAME})"
-  echo -e "  \033[1;33m--skip-connection-check\033[0m     (Optional) Skip checking if registry is already connected to cluster"
+  echo -e "  \033[1;33m--registry-host <HOST>\033[0m      (Optional) Host for registry (default: ${REGISTRY_HOST})"
   echo -e "  \033[1;33m--log <FILE>\033[0m                (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                      (Optional) Show this help message"
   echo
@@ -135,9 +135,9 @@ parse_args() {
         REGISTRY_NAME="$2"
         shift 2
         ;;
-      --skip-connection-check)
-        SKIP_CONNECTION_CHECK=true
-        shift
+      --registry-host)
+        REGISTRY_HOST="$2"
+        shift 2
         ;;
       --log)
         LOG_FILE="$2"
@@ -204,39 +204,42 @@ create_cluster() {
 #---------------------------------------------------------------------
 setup_registry_and_push_images() {
   print_with_separator "Setting Up Registry and Pushing Images"
-  format-echo "INFO" "Setting up registry and pushing images for $PROVIDER cluster: $CLUSTER_NAME"
+  format-echo "INFO" "Setting up registry and pushing images"
 
   if [ ! -f "$REGISTRY_SCRIPT" ]; then
     format-echo "ERROR" "Registry script not found: $REGISTRY_SCRIPT"
     exit 1
   fi
 
-  # Prepare arguments for build-and-push-images-to-local-docker-registry.sh
+  # Prepare arguments for registry script - simplified for updated version
   local registry_args=(
     "-f" "$IMAGE_LIST"
     "-p" "$REGISTRY_PORT"
     "-n" "$REGISTRY_NAME"
-    "--k8s" "$PROVIDER"
-    "--cluster" "$CLUSTER_NAME"
+    "-h" "$REGISTRY_HOST"
   )
-
-  # Add skip-connection-check if specified
-  if [[ "$SKIP_CONNECTION_CHECK" = true ]]; then
-    registry_args+=("--skip-connection-check")
-  fi
 
   # Add log file if specified
   if [[ -n "$LOG_FILE" ]]; then
     registry_args+=("--log" "$LOG_FILE")
   fi
 
-  # Execute build-and-push-images-to-local-docker-registry.sh with the prepared arguments
+  # Execute registry script with the prepared arguments
   if ! "$REGISTRY_SCRIPT" "${registry_args[@]}"; then
     format-echo "ERROR" "Failed to setup registry and push images"
     exit 1
   fi
 
   format-echo "SUCCESS" "Registry setup and images pushed successfully."
+  
+  # Set the appropriate registry host for different providers and OS
+  if [[ "$PROVIDER" == "minikube" && "$OSTYPE" == "darwin"* ]]; then
+    format-echo "INFO" "For MacOS with minikube, deployments should reference: host.docker.internal:$REGISTRY_PORT/<image>"
+    REGISTRY_HOST_INSTRUCTION="host.docker.internal:$REGISTRY_PORT"
+  else
+    format-echo "INFO" "Deployments should reference: $REGISTRY_HOST:$REGISTRY_PORT/<image>"
+    REGISTRY_HOST_INSTRUCTION="$REGISTRY_HOST:$REGISTRY_PORT"
+  fi
 }
 
 #=====================================================================
@@ -288,6 +291,7 @@ main() {
       format-echo "INFO" "  Registry:        Enabled"
       format-echo "INFO" "  Registry Name:   $REGISTRY_NAME"
       format-echo "INFO" "  Registry Port:   $REGISTRY_PORT"
+      format-echo "INFO" "  Registry Host:   $REGISTRY_HOST"
     else
       format-echo "INFO" "  Registry:        Disabled (using direct load)"
     fi
@@ -305,6 +309,9 @@ main() {
   #---------------------------------------------------------------------
   # IMAGE BUILDING AND LOADING
   #---------------------------------------------------------------------
+  # Track registry host instruction for later output
+  REGISTRY_HOST_INSTRUCTION=""
+  
   if [[ -n "$IMAGE_LIST" ]]; then
     if [[ "$USE_REGISTRY" = true ]]; then
       # Use registry approach for multi-node or when explicitly requested
@@ -343,7 +350,6 @@ main() {
   #---------------------------------------------------------------------
   # MANIFEST APPLICATION
   #---------------------------------------------------------------------
-  # Always apply manifests when specified, since registry script doesn't handle manifests anymore
   if [[ -n "$MANIFEST_ROOT" ]]; then
     if [ ! -f "$APPLY_MANIFESTS_SCRIPT" ]; then
       format-echo "ERROR" "Apply manifests script not found: $APPLY_MANIFESTS_SCRIPT"
@@ -380,15 +386,42 @@ main() {
   echo "  Provider: $PROVIDER"
   echo "  Node Count: $NODE_COUNT"
   
+  # Display context switch command
+  case "$PROVIDER" in
+    minikube)
+      echo "  Switch Context: kubectl config use-context minikube-$CLUSTER_NAME"
+      ;;
+    kind)
+      echo "  Switch Context: kubectl config use-context kind-$CLUSTER_NAME"
+      ;;
+    k3d)
+      echo "  Switch Context: kubectl config use-context k3d-$CLUSTER_NAME"
+      ;;
+  esac
+  
   # Display registry information whenever registry is used
   if [[ "$USE_REGISTRY" = true && -n "$IMAGE_LIST" ]]; then
     echo -e "\033[1;32mRegistry Information:\033[0m"
     echo "  Registry Name: $REGISTRY_NAME"
     echo "  Registry Port: $REGISTRY_PORT"
+    
+    # Show image reference format if we have it
+    if [[ -n "$REGISTRY_HOST_INSTRUCTION" ]]; then
+      echo -e "\033[1;33mIMPORTANT:\033[0m In your deployments, reference images as:"
+      echo "  $REGISTRY_HOST_INSTRUCTION/<image-name>:<tag>"
+      
+      # Add note about imagePullSecrets for minikube
+      if [[ "$PROVIDER" == "minikube" ]]; then
+        echo "  Add to deployments:"
+        echo "  spec:"
+        echo "    imagePullSecrets:"
+        echo "    - name: regcred"
+      fi
+    fi
   fi
   
   print_with_separator "End of Create Cluster, Build/Load Images, and Apply Manifests Script"
-  }
+}
 
 #=====================================================================
 # SCRIPT EXECUTION
