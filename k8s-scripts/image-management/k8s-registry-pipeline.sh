@@ -1,6 +1,6 @@
 #!/bin/bash
 # k8s-registry-pipeline.sh
-# Script to set up an insecure Docker registry, build images, and push them to the registry.
+# Simplified script to set up a Docker registry and push images to it.
 
 set -euo pipefail
 
@@ -38,20 +38,16 @@ LOG_FILE="/dev/null"  # Default log file location
 REGISTRY_PORT=5001    # Default local registry port
 REGISTRY_NAME="local-registry" # Default registry name
 REGISTRY_HOST="localhost" # Default registry host
-K8S_PROVIDER=""       # Kubernetes provider (kind, minikube, k3d)
-CLUSTER_NAME=""       # Cluster name
-SKIP_CONNECTION_CHECK=false # Skip connection check when possible
-NAMESPACE="project-002"   # Default namespace
 
 #=====================================================================
 # USAGE AND HELP
 #=====================================================================
 # Function to display usage instructions
 usage() {
-  print_with_separator "Insecure Docker Registry Setup and Image Push Script"
+  print_with_separator "Docker Registry Setup and Image Push Script"
   echo -e "\033[1;34mDescription:\033[0m"
-  echo "  This script creates an insecure HTTP Docker registry,"
-  echo "  builds Docker images, and pushes them to the registry."
+  echo "  This script creates a Docker registry, builds Docker images,"
+  echo "  and pushes them to the registry."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [options]"
@@ -61,17 +57,12 @@ usage() {
   echo -e "  \033[1;33m-p, --port <PORT>\033[0m        (Optional) Port for registry (default: ${REGISTRY_PORT})"
   echo -e "  \033[1;33m-n, --name <NAME>\033[0m        (Optional) Name for registry container (default: ${REGISTRY_NAME})"
   echo -e "  \033[1;33m-h, --host <HOST>\033[0m        (Optional) Host for registry (default: ${REGISTRY_HOST})"
-  echo -e "  \033[1;33m--k8s <PROVIDER>\033[0m         (Optional) Kubernetes provider (kind, minikube, k3d) to configure for registry"
-  echo -e "  \033[1;33m--cluster <NAME>\033[0m         (Optional) Kubernetes cluster name"
-  echo -e "  \033[1;33m--namespace <NAMESPACE>\033[0m  (Optional) Kubernetes namespace (default: ${NAMESPACE})"
-  echo -e "  \033[1;33m--skip-connection-check\033[0m  (Optional) Skip checking if cluster is already connected to registry"
   echo -e "  \033[1;33m--log <FILE>\033[0m             (Optional) Log output to specified file"
   echo -e "  \033[1;33m--help\033[0m                   (Optional) Show this help message"
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 -f images.txt"
   echo "  $0 -f images.txt -p 5555 -n my-registry -h registry.local"
-  echo "  $0 -f images.txt --k8s minikube --cluster my-cluster"
   print_with_separator
   exit 1
 }
@@ -92,12 +83,6 @@ registry_exists() {
 # Check if registry container is running
 registry_running() {
   docker ps --filter "name=^/${REGISTRY_NAME}$" --format '{{.Names}}' | grep -q "^${REGISTRY_NAME}$"
-}
-
-# Check if registry is connected to a Docker network
-registry_connected_to_network() {
-  local network="$1"
-  docker network inspect "$network" 2>/dev/null | grep -q "\"$REGISTRY_NAME\""
 }
 
 # Check if port is available
@@ -129,7 +114,7 @@ check_port_availability() {
 #=====================================================================
 # DOCKER REGISTRY OPERATIONS
 #=====================================================================
-# Create and start an insecure Docker registry
+# Create and start a Docker registry
 setup_registry() {
   #---------------------------------------------------------------------
   # REGISTRY CREATION
@@ -154,7 +139,7 @@ setup_registry() {
     docker stop "$REGISTRY_NAME" 2>/dev/null || true
     docker rm "$REGISTRY_NAME" 2>/dev/null || true
     
-    # Create the insecure registry
+    # Create the registry
     if ! docker run -d --name "$REGISTRY_NAME" \
          -p "$REGISTRY_PORT:5000" \
          --restart=always \
@@ -190,214 +175,6 @@ setup_registry() {
     sleep 2
     ((attempt++))
   done
-}
-
-#=====================================================================
-# KUBERNETES CONFIGURATION
-#=====================================================================
-# Configure Kubernetes to use the insecure registry
-configure_kubernetes_for_registry() {
-  if [ -z "$K8S_PROVIDER" ]; then
-    format-echo "INFO" "No Kubernetes provider specified, skipping cluster configuration"
-    return
-  fi
-  
-  format-echo "INFO" "Configuring $K8S_PROVIDER to use insecure registry"
-  
-  case "$K8S_PROVIDER" in
-    kind)
-      if [ -z "$CLUSTER_NAME" ]; then
-        format-echo "ERROR" "Cluster name is required for kind provider"
-        exit 1
-      fi
-      
-      # Check if cluster exists
-      if ! kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
-        format-echo "ERROR" "kind cluster '$CLUSTER_NAME' not found"
-        exit 1
-      fi
-      
-      # Check if registry is already connected to kind network
-      local kind_network="kind"
-      if ! $SKIP_CONNECTION_CHECK && registry_connected_to_network "$kind_network"; then
-        format-echo "INFO" "Registry already connected to kind network - skipping connection"
-      else
-        # Connect registry to kind network
-        format-echo "INFO" "Connecting registry to kind network"
-        if ! docker network connect "$kind_network" "$REGISTRY_NAME" 2>/dev/null; then
-          format-echo "ERROR" "Failed to connect registry to kind network"
-          exit 1
-        fi
-        format-echo "SUCCESS" "Connected registry to kind network"
-      fi
-      
-      # Configure kind nodes to use insecure registry
-      format-echo "INFO" "Configuring kind nodes to use insecure registry"
-      for node in $(kind get nodes --name "$CLUSTER_NAME"); do
-        docker exec "$node" bash -c "echo '{\"insecure-registries\":[\"$REGISTRY_NAME:5000\"]}' > /etc/docker/daemon.json"
-        docker exec "$node" systemctl restart docker
-      done
-      
-      # Update registry host to use registry container name within the kind network
-      REGISTRY_HOST="$REGISTRY_NAME"
-      format-echo "SUCCESS" "Registry accessible within kind cluster as $REGISTRY_HOST:5000"
-      
-      # Create Kubernetes secret for Docker registry authentication
-      format-echo "INFO" "Creating Kubernetes image pull secret"
-      # Create namespace if it doesn't exist
-      kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-      
-      # Create Docker registry secret
-      kubectl create secret docker-registry regcred \
-        --docker-server="$REGISTRY_HOST:5000" \
-        --docker-username=user \
-        --docker-password=pass \
-        --namespace="$NAMESPACE" \
-        --dry-run=client -o yaml | kubectl apply -f -
-      
-      format-echo "SUCCESS" "Created image pull secret in namespace $NAMESPACE"
-      ;;
-      
-    minikube)
-      if [ -z "$CLUSTER_NAME" ]; then
-        CLUSTER_NAME="minikube"
-      fi
-      
-      # Check if cluster exists - use flexible pattern matching
-      if ! minikube profile list 2>/dev/null | grep -q "[[:space:]]${CLUSTER_NAME}[[:space:]]"; then
-        # Try another approach
-        if ! minikube profile list 2>/dev/null | grep -o -E "[a-zA-Z0-9-]+" | grep -q "^${CLUSTER_NAME}$"; then
-          format-echo "ERROR" "minikube profile '$CLUSTER_NAME' not found"
-          # Show available profiles for troubleshooting
-          format-echo "INFO" "Available profiles:"
-          minikube profile list 2>/dev/null
-          exit 1
-        fi
-      fi
-      
-      # For minikube, we need different hostnames for host vs. container access
-      if [[ "$OSTYPE" == "darwin"* ]]; then
-        # On macOS, containers use host.docker.internal to access the host
-        MINIKUBE_REGISTRY_HOST="host.docker.internal"
-        # The host itself uses localhost
-        PUSH_REGISTRY_HOST="localhost"
-      else
-        # On Linux, use the host's IP address
-        MINIKUBE_REGISTRY_HOST=$(ip -4 addr show scope global | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-        PUSH_REGISTRY_HOST="$MINIKUBE_REGISTRY_HOST"
-      fi
-      
-      # Configure minikube to use insecure registry
-      format-echo "INFO" "Configuring minikube to use insecure registry"
-      
-      # Restart minikube with insecure registry configuration
-      format-echo "INFO" "Restarting minikube with insecure registry configuration"
-      minikube stop -p "$CLUSTER_NAME"
-      minikube start -p "$CLUSTER_NAME" --insecure-registry="$MINIKUBE_REGISTRY_HOST:$REGISTRY_PORT"
-      
-      # Delete and recreate minikube with the proper configuration
-      format-echo "INFO" "Completely recreating minikube with insecure registry support"
-      minikube delete -p "$CLUSTER_NAME"
-      format-echo "INFO" "Starting minikube with explicit insecure registry configuration"
-      minikube start -p "$CLUSTER_NAME" --insecure-registry="$MINIKUBE_REGISTRY_HOST:$REGISTRY_PORT"
-
-      # Verify the configuration was applied correctly
-      format-echo "INFO" "Verifying minikube insecure registry configuration"
-      minikube ssh -p "$CLUSTER_NAME" "grep -r insecure /etc || echo 'Insecure registry configuration not found'"
-
-      # Give minikube time to fully initialize
-      format-echo "INFO" "Waiting for minikube to stabilize after configuration"
-      sleep 5
-
-      # Rather than verify Docker is running, let's just create the registry secret
-      format-echo "INFO" "Creating Kubernetes image pull secret"
-      kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
-      # Create Docker registry secret with insecure flag
-      kubectl create secret docker-registry regcred \
-        --docker-server="$MINIKUBE_REGISTRY_HOST:$REGISTRY_PORT" \
-        --docker-username=user \
-        --docker-password=pass \
-        --namespace="$NAMESPACE" \
-        --dry-run=client -o yaml | kubectl apply -f -
-
-      format-echo "SUCCESS" "Created image pull secret in namespace $NAMESPACE"
-      
-      # Patch existing deployments to use the image pull secret
-      format-echo "INFO" "Patching existing deployments to use the registry credentials"
-      kubectl get deployments -n "$NAMESPACE" -o name 2>/dev/null | while read -r deployment; do
-        format-echo "INFO" "Patching $deployment to use regcred"
-        kubectl patch $deployment -n "$NAMESPACE" --type=strategic --patch '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"regcred"}]}}}}' 2>/dev/null || true
-      done
-      
-      # Update REGISTRY_HOST for image building/pushing to use the host perspective
-      format-echo "INFO" "Using $PUSH_REGISTRY_HOST:$REGISTRY_PORT for pushing images"
-      REGISTRY_HOST="$PUSH_REGISTRY_HOST"
-      
-      format-echo "SUCCESS" "Registry accessible from host as $REGISTRY_HOST:$REGISTRY_PORT"
-      format-echo "SUCCESS" "Registry accessible from minikube as $MINIKUBE_REGISTRY_HOST:$REGISTRY_PORT"
-      ;;
-      
-    k3d)
-      if [ -z "$CLUSTER_NAME" ]; then
-        format-echo "ERROR" "Cluster name is required for k3d provider"
-        exit 1
-      fi
-      
-      # Check if cluster exists
-      if ! k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
-        format-echo "ERROR" "k3d cluster '$CLUSTER_NAME' not found"
-        exit 1
-      fi
-      
-      # Check if registry is already connected to k3d network
-      local k3d_network="k3d-$CLUSTER_NAME"
-      if ! $SKIP_CONNECTION_CHECK && registry_connected_to_network "$k3d_network"; then
-        format-echo "INFO" "Registry already connected to k3d network - skipping connection"
-      else
-        # Connect registry to k3d network
-        format-echo "INFO" "Connecting registry to k3d network"
-        if ! docker network connect "$k3d_network" "$REGISTRY_NAME" 2>/dev/null; then
-          format-echo "ERROR" "Failed to connect registry to k3d network"
-          exit 1
-        fi
-        format-echo "SUCCESS" "Connected registry to k3d network"
-      fi
-      
-      # Configure k3d to use insecure registry
-      format-echo "INFO" "Configuring k3d to use insecure registry"
-      
-      # Update registry host to use registry container name within the k3d network
-      REGISTRY_HOST="$REGISTRY_NAME"
-      format-echo "SUCCESS" "Registry accessible within k3d cluster as $REGISTRY_HOST:5000"
-      
-      # Create Kubernetes secret for Docker registry authentication
-      format-echo "INFO" "Creating Kubernetes image pull secret"
-      
-      # Create namespace if it doesn't exist
-      kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-      
-      # Create Docker registry secret
-      kubectl create secret docker-registry regcred \
-        --docker-server="$REGISTRY_HOST:5000" \
-        --docker-username=user \
-        --docker-password=pass \
-        --namespace="$NAMESPACE" \
-        --dry-run=client -o yaml | kubectl apply -f -
-      
-      format-echo "SUCCESS" "Created image pull secret in namespace $NAMESPACE"
-      ;;
-      
-    *)
-      format-echo "ERROR" "Unsupported Kubernetes provider: $K8S_PROVIDER"
-      format-echo "ERROR" "Supported providers: kind, minikube, k3d"
-      exit 1
-      ;;
-  esac
-  
-  # Add instructions for deployment YAMLs
-  format-echo "INFO" "Add this section to your deployment YAMLs to use the registry:"
-  echo -e "\033[1;36mspec:\n  template:\n    spec:\n      imagePullSecrets:\n        - name: regcred\033[0m"
 }
 
 #=====================================================================
@@ -468,7 +245,7 @@ build_and_push_images() {
     #---------------------------------------------------------------------
     format-echo "INFO" "Pushing image $registry_image to registry"
     
-    # Push the image to the registry with insecure flag
+    # Push the image to the registry
     if ! docker push "$registry_image"; then
       format-echo "ERROR" "Failed to push image $registry_image to registry"
       continue
@@ -503,22 +280,6 @@ parse_args() {
         REGISTRY_HOST="$2"
         shift 2
         ;;
-      --k8s)
-        K8S_PROVIDER="$2"
-        shift 2
-        ;;
-      --cluster)
-        CLUSTER_NAME="$2"
-        shift 2
-        ;;
-      --namespace)
-        NAMESPACE="$2"
-        shift 2
-        ;;
-      --skip-connection-check)
-        SKIP_CONNECTION_CHECK=true
-        shift
-        ;;
       --log)
         LOG_FILE="$2"
         shift 2
@@ -547,18 +308,6 @@ parse_args() {
     format-echo "ERROR" "Image list file does not exist: $IMAGE_LIST"
     exit 1
   fi
-  
-  # Validate Kubernetes provider if specified
-  if [[ -n "$K8S_PROVIDER" ]]; then
-    case "$K8S_PROVIDER" in
-      kind|minikube|k3d) ;;
-      *)
-        format-echo "ERROR" "Unsupported Kubernetes provider: $K8S_PROVIDER"
-        format-echo "ERROR" "Supported providers: kind, minikube, k3d"
-        exit 1
-        ;;
-    esac
-  fi
 }
 
 #=====================================================================
@@ -582,32 +331,6 @@ check_requirements() {
   if ! command_exists curl; then
     format-echo "ERROR" "curl not found. Please install curl."
     exit 1
-  fi
-  
-  #---------------------------------------------------------------------
-  # KUBERNETES PROVIDER SPECIFIC CHECKS
-  #---------------------------------------------------------------------
-  if [ -n "$K8S_PROVIDER" ]; then
-    case "$K8S_PROVIDER" in
-      kind)
-        if ! command_exists kind; then
-          format-echo "ERROR" "kind not found. Please install kind."
-          exit 1
-        fi
-        ;;
-      minikube)
-        if ! command_exists minikube; then
-          format-echo "ERROR" "minikube not found. Please install minikube."
-          exit 1
-        fi
-        ;;
-      k3d)
-        if ! command_exists k3d; then
-          format-echo "ERROR" "k3d not found. Please install k3d."
-          exit 1
-        fi
-        ;;
-    esac
   fi
   
   format-echo "SUCCESS" "All required tools are available."
@@ -647,22 +370,16 @@ main() {
     exec > >(tee -a "$LOG_FILE") 2>&1
   fi
 
-  print_with_separator "Insecure Docker Registry Setup and Image Push Script"
+  print_with_separator "Docker Registry Setup and Image Push Script"
   
   #---------------------------------------------------------------------
   # CONFIGURATION DISPLAY
   #---------------------------------------------------------------------
-  format-echo "INFO" "Starting insecure registry setup and image push process..."
+  format-echo "INFO" "Starting registry setup and image push process..."
   format-echo "INFO" "  Registry Host:  $REGISTRY_HOST"
   format-echo "INFO" "  Registry Port:  $REGISTRY_PORT"
   format-echo "INFO" "  Registry Name:  $REGISTRY_NAME"
   format-echo "INFO" "  Image List:     $IMAGE_LIST"
-  format-echo "INFO" "  Namespace:      $NAMESPACE"
-  
-  if [ -n "$K8S_PROVIDER" ]; then
-    format-echo "INFO" "  K8s Provider:   $K8S_PROVIDER"
-    format-echo "INFO" "  Cluster Name:   $CLUSTER_NAME"
-  fi
 
   #---------------------------------------------------------------------
   # EXECUTION STAGES
@@ -670,13 +387,8 @@ main() {
   # Check for required tools
   check_requirements
   
-  # Set up insecure Docker registry
+  # Set up Docker registry
   setup_registry
-  
-  # Configure Kubernetes to use the insecure registry (if requested)
-  if [ -n "$K8S_PROVIDER" ]; then
-    configure_kubernetes_for_registry
-  fi
   
   # Build and push images to the registry
   build_and_push_images
@@ -684,28 +396,15 @@ main() {
   #---------------------------------------------------------------------
   # COMPLETION
   #---------------------------------------------------------------------
-  print_with_separator "End of Insecure Docker Registry Setup and Image Push Script"
+  print_with_separator "End of Docker Registry Setup and Image Push Script"
   
   # Show registry access information
   echo -e "\033[1;32mRegistry Information:\033[0m"
   echo "  Registry URL: http://$REGISTRY_HOST:$REGISTRY_PORT/v2/"
   echo "  Registry container name: $REGISTRY_NAME"
+  echo "  Images can be referenced as: $REGISTRY_HOST:$REGISTRY_PORT/<image-name>:<tag>"
   
-  if [ "$K8S_PROVIDER" = "minikube" ]; then
-    echo "  Images can be referenced in deployments as: host.docker.internal:$REGISTRY_PORT/<image-name>:<tag>"
-  else
-    echo "  Images can be referenced in deployments as: $REGISTRY_HOST:$REGISTRY_PORT/<image-name>:<tag>"
-  fi
-  
-  # Reminder about deployment configuration
-  echo -e "\033[1;36mRemember to add this to your deployment YAMLs:\033[0m"
-  echo "  spec:"
-  echo "    template:"
-  echo "      spec:"
-  echo "        imagePullSecrets:"
-  echo "          - name: regcred"
-  
-  format-echo "SUCCESS" "Insecure registry setup and image push completed successfully."
+  format-echo "SUCCESS" "Registry setup and image push completed successfully."
 }
 
 #=====================================================================
