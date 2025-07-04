@@ -24,6 +24,8 @@ usage() {
     echo -e "\033[1;34mAvailable Scripts:\033[0m"
     echo
 
+    CURRENT_FOLDER=""
+
     # Find all scripts and group them by folder, excluding specific folders and this script
     find "$BASE_DIR" -type f -name "*.sh" \
         ! -path "$BASE_DIR/functions/*" \
