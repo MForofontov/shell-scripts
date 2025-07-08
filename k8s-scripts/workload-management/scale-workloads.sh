@@ -1352,3 +1352,6 @@ main() {
   format-echo "SUCCESS" "Workload scaling completed."
   print_with_separator
 }
+
+# Execute the main function when the script is run
+main "$@"
