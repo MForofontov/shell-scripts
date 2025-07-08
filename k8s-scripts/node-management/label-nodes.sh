@@ -2,6 +2,8 @@
 # label-nodes.sh
 # Script to manage Kubernetes node labels with batch operations and templates
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

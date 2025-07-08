@@ -2,6 +2,8 @@
 # clean-cluster.sh
 # Script to reset a Kubernetes cluster to a clean state by removing non-system workloads
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

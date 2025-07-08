@@ -2,6 +2,8 @@
 # restart-cluster.sh
 # Script to restart Kubernetes clusters across various providers
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

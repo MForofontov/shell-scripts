@@ -2,6 +2,8 @@
 # delete-cluster.sh
 # Script to delete Kubernetes clusters from various providers
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

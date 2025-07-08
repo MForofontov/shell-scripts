@@ -2,7 +2,7 @@
 # unused_ssh_key_detector.sh
 # Script to detect unused SSH keys and suggest remediation actions.
 
-set -eo pipefail
+set -euo pipefail
 
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES

@@ -2,6 +2,8 @@
 # resume-cluster.sh
 # Script to resume paused Kubernetes clusters with additional validation
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

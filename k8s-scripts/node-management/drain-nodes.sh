@@ -2,6 +2,8 @@
 # drain-nodes.sh
 # Script to safely cordon and drain Kubernetes nodes for maintenance
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
