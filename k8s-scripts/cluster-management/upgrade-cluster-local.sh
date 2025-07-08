@@ -2,6 +2,8 @@
 # upgrade-cluster-local.sh
 # Script to upgrade Kubernetes clusters across various providers
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

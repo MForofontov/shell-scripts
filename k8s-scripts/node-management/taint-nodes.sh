@@ -2,6 +2,8 @@
 # taint-nodes.sh
 # Script to manage Kubernetes node taints with batch operations and presets
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

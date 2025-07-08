@@ -2,6 +2,8 @@
 # list-clusters.sh
 # Script to list all Kubernetes clusters across various providers, both local and cloud
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

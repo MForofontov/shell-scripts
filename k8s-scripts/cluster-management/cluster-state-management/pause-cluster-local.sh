@@ -2,6 +2,8 @@
 # pause-cluster.sh
 # Script to temporarily pause/hibernate Kubernetes clusters to save resources
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

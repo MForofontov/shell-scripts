@@ -2,6 +2,8 @@
 # convert-cluster.sh
 # Script to convert/migrate between Kubernetes cluster providers
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

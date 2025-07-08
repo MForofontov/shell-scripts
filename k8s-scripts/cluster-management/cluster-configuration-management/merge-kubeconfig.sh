@@ -2,6 +2,8 @@
 # merge-kubeconfig.sh
 # Script to merge multiple kubeconfig files into a single file
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

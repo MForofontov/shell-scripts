@@ -2,6 +2,8 @@
 # rotate-certs.sh
 # Script to rotate Kubernetes cluster certificates before expiration
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

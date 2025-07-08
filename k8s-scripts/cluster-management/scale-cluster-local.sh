@@ -2,6 +2,8 @@
 # scale-cluster-local.sh
 # Script to scale Kubernetes clusters by changing the number of nodes
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================

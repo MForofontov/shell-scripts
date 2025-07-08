@@ -2,6 +2,8 @@
 # switch-context.sh
 # Script to easily switch between Kubernetes contexts
 
+set -euo pipefail
+
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
