@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+#=====================================================================
+# CONFIGURATION AND DEPENDENCIES
+#=====================================================================
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
@@ -22,6 +25,9 @@ else
   exit 1
 fi
 
+#=====================================================================
+# DEFAULT VALUES
+#=====================================================================
 DB_NAME=""
 DB_USER=""
 DB_PASSWORD=""
