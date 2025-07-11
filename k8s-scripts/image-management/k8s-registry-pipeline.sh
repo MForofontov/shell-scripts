@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # k8s-registry-pipeline.sh
 # Simplified script to set up a Docker registry and push images to it.
 

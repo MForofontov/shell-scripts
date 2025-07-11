@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scale-cluster-local.sh
 # Script to scale Kubernetes clusters by changing the number of nodes
 

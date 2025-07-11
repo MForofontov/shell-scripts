@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # check-updates.sh
 # Script to check for and install system updates.
 

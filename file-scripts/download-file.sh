@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # download-file.sh
 # Script to download a file using curl
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # git-conflict-finder.sh
 # Script to find merge conflicts in a Git repository
 

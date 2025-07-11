@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ping.sh
 # Script to ping a list of servers/websites and check their reachability
 

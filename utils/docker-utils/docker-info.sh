@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # docker-info.sh
 # Script to show detailed information about Docker containers, images, volumes, and networks.
 

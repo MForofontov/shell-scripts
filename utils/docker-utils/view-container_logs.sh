@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # view_container_logs.sh
 # Script to view logs of a specified Docker container with additional options.
 

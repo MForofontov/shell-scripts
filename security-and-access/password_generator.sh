@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # filepath: /Users/mykfor1/Documents/git/github/shell-scripts/security-and-access/password_generator.sh
 # Advanced script to generate strong, random passwords with various options.
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # backup-postgresql-compressed.sh
 # Script to back up a PostgreSQL database and compress the backup.
 

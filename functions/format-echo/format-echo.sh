@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Utility script to log messages with log levels, timestamps, and optional file logging.
 
 # Function to log messages with log levels and timestamps

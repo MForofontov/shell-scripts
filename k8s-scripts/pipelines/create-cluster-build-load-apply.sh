@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create-cluster-build-load-apply.sh
 # Script to create a cluster, build/load images into the cluster, and apply manifests if files are given.
 

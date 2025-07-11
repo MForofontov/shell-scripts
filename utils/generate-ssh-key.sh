@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # generate-ssh-key.sh
 # Script to generate an SSH key pair.
 

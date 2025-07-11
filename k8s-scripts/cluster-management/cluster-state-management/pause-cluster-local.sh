@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # pause-cluster.sh
 # Script to temporarily pause/hibernate Kubernetes clusters to save resources
 

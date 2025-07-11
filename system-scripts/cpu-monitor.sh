@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # cpu-monitor.sh
 # Script to monitor CPU usage and alert if it exceeds a threshold.
 

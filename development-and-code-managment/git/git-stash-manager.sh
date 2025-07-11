@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # git-stash-manager.sh
 # Script to manage Git stashes (list, apply, drop)
 

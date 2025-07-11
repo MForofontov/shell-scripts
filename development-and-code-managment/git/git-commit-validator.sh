@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # git-commit-validator.sh
 # Script to validate and commit changes with a proper commit message
 

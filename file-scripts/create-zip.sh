@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create-zip.sh
 # Script to create a zip archive of a directory or file
 

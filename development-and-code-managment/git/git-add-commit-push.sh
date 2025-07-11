@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # git-add-commit-push.sh
 # Script to automate Git operations: add, commit, and push
 

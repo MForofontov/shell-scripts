@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # switch-context.sh
 # Script to easily switch between Kubernetes contexts
 

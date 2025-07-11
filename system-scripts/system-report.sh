@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # system-report.sh
 # Script to generate a comprehensive system report.
 

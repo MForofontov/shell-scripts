@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # rotate-certs.sh
 # Script to rotate Kubernetes cluster certificates before expiration
 

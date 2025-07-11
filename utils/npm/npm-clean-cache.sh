@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # npm-clean-cache.sh
 # Script to clean the NPM cache.
 

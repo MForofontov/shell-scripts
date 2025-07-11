@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # unused_ssh_key_detector.sh
 # Script to detect unused SSH keys and suggest remediation actions.
 
