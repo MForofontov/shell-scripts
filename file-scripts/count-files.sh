@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # count-files.sh
 # Script to count the number of files and directories in a given path
 

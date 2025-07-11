@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # arp-table-viewer.sh
 # Script to view and log the ARP table
 

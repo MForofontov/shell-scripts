@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # firewall_configurator.sh
 # Script to configure basic firewall rules using UFW.
 

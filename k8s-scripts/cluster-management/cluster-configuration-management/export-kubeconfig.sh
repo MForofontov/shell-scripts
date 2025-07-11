@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # export-kubeconfig.sh
 # Script to export kubeconfig from Kubernetes clusters for sharing
 

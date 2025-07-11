@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # active-host-scanner.sh
 # Script to scan a network for active hosts
 

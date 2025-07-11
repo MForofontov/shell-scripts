@@ -1,5 +1,5 @@
-#!/bin/bash
-# delete-cluster.sh
+#!/usr/bin/env bash
+# delete-cluster-local.sh
 # Script to delete Kubernetes clusters from various providers
 
 set -euo pipefail

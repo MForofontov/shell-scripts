@@ -1,4 +1,5 @@
-# Function to print a message with separators to both terminal and log file
+#!/usr/bin/env bash
+# print-with-separator.sh
 print_with_separator() {
   local MESSAGE="${1:-}"
   local TERMINAL_WIDTH=$(tput cols 2>/dev/null || echo 80) # Default to 80 if terminal width is unavailable

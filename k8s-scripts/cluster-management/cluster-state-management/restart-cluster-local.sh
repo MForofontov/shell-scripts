@@ -1,5 +1,5 @@
-#!/bin/bash
-# restart-cluster.sh
+#!/usr/bin/env bash
+# restart-cluster-local.sh
 # Script to restart Kubernetes clusters across various providers
 
 set -euo pipefail

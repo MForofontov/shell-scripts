@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # port-scanner.sh
 # Script to scan open ports on a specified server
 

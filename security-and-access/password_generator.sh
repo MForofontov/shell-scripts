@@ -1,5 +1,5 @@
-#!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/security-and-access/password_generator.sh
+#!/usr/bin/env bash
+# password_generator.sh
 # Advanced script to generate strong, random passwords with various options.
 
 set -euo pipefail

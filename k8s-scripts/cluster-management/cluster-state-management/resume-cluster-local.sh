@@ -1,5 +1,5 @@
-#!/bin/bash
-# resume-cluster.sh
+#!/usr/bin/env bash
+# resume-cluster-local.sh
 # Script to resume paused Kubernetes clusters with additional validation
 
 set -euo pipefail

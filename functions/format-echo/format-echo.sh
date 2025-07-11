@@ -1,5 +1,5 @@
-#!/bin/bash
-# Utility script to log messages with log levels, timestamps, and optional file logging.
+#!/usr/bin/env bash
+# format-echo.sh
 
 # Function to log messages with log levels and timestamps
 format-echo() {

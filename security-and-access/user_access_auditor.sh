@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # user_access_auditor.sh
 # Script to audit user access and log the results.
 

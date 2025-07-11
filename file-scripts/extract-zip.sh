@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # extract-zip.sh
 # Script to extract a zip archive
 

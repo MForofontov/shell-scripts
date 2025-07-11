@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # generate-changelog.sh
 # Script to generate a changelog from the Git log
 

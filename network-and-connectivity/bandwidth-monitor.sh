@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # bandwidth-monitor.sh
 # Script to monitor bandwidth usage on a specified network interface
 

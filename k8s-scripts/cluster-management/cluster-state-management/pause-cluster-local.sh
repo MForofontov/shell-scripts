@@ -1,5 +1,5 @@
-#!/bin/bash
-# pause-cluster.sh
+#!/usr/bin/env bash
+# pause-cluster-local.sh
 # Script to temporarily pause/hibernate Kubernetes clusters to save resources
 
 set -euo pipefail

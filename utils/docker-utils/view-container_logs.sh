@@ -1,5 +1,5 @@
-#!/bin/bash
-# view_container_logs.sh
+#!/usr/bin/env bash
+# view-container_logs.sh
 # Script to view logs of a specified Docker container with additional options.
 
 set -euo pipefail

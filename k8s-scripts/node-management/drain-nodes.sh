@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # drain-nodes.sh
 # Script to safely cordon and drain Kubernetes nodes for maintenance
 

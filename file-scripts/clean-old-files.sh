@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # clean-old-files.sh
 # Script to delete files older than a specified number of days
 

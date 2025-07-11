@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # build-and-load-images.sh
 # Build Docker images and load them into a local Kubernetes cluster (minikube, kind, or k3d)
 

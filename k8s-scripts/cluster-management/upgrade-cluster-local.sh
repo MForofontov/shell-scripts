@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # upgrade-cluster-local.sh
 # Script to upgrade Kubernetes clusters across various providers
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # schedule-task.sh
 # Script to schedule a task using cron or launchd (on macOS).
 

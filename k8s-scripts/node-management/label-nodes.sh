@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # label-nodes.sh
 # Script to manage Kubernetes node labels with batch operations and templates
 

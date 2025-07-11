@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # extract-tar.sh
 # Script to extract a tar archive
 

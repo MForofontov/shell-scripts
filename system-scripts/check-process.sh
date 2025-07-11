@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # check-process.sh
 # Script to check if a specific process is running.
 

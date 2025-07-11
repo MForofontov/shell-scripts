@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # docker-cleanup.sh
 # Script to clean up all Docker containers, images, volumes, and networks.
 

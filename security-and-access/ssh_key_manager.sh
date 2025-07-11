@@ -1,5 +1,5 @@
-#!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/security-and-access/ssh_key_manager.sh
+#!/usr/bin/env bash
+# ssh_key_manager.sh
 # Script to generate, manage and distribute SSH keys with advanced features.
 
 set -euo pipefail
