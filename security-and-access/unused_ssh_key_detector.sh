@@ -10,6 +10,7 @@ set -euo pipefail
 SCRIPT_DIR=$(dirname "$(realpath "$0" 2>/dev/null || echo "$0")")
 FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
 UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
+COMMON_FUNCTION_FILE="$SCRIPT_DIR/../functions/utility.sh"
 
 if [ -f "$FORMAT_ECHO_FILE" ]; then
   source "$FORMAT_ECHO_FILE"
@@ -22,6 +23,13 @@ if [ -f "$UTILITY_FUNCTION_FILE" ]; then
   source "$UTILITY_FUNCTION_FILE"
 else
   echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
+  exit 1
+fi
+
+if [ -f "$COMMON_FUNCTION_FILE" ]; then
+  source "$COMMON_FUNCTION_FILE"
+else
+  echo -e "\033[1;31mError:\033[0m Utility file not found at $COMMON_FUNCTION_FILE"
   exit 1
 fi
 
@@ -253,11 +261,6 @@ validate_args() {
 #=====================================================================
 # UTILITY FUNCTIONS
 #=====================================================================
-# Function to check if a command exists
-command_exists() {
-  command -v "$1" >/dev/null 2>&1
-}
-
 # Function to get keys that match exclusion patterns
 is_excluded() {
   local key_path="$1"
