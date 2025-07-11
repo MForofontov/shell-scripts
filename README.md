@@ -37,8 +37,8 @@ Operations on files and directories such as archiving, cleanup and renaming (e.g
 ### network-and-connectivity
 Network tools including `network-speed-test.sh`, `port-scanner.sh` and `active-host-scanner.sh`.
 
-### development-and-code-managment
-Helpers for development tasks. Examples include `git/git-add-commit-push.sh` and `dependecies-updater/dependency-updater-npm.sh`.
+### development-and-code-management
+Helpers for development tasks. Examples include `git/git-add-commit-push.sh` and `dependencies-updater/dependency-updater-npm.sh`.
 
 ### security-and-access
 Scripts focused on security like `ssh_key_manager.sh`, `firewall_configurator.sh` and `password_generator.sh`.
