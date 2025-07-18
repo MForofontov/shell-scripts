@@ -6,7 +6,7 @@ A curated collection of standalone shell scripts for system administration, deve
 
 ### Clone the repository
 ```bash
-git clone https://github.com/your-username/shell-scripts.git
+git clone https://github.com/MForofontov/shell-scripts.git
 cd shell-scripts
 ```
 
