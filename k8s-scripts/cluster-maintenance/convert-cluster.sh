@@ -240,18 +240,12 @@ validate_cluster() {
   local cluster="$2"
   local context="$3"
   local kubeconfig="$4"
-  local temp_env=""
   
   format-echo "INFO" "Validating $provider cluster '$cluster'..."
   
-  # Set KUBECONFIG if provided
-  if [[ -n "$kubeconfig" ]]; then
-    temp_env="KUBECONFIG=$kubeconfig"
-  fi
-  
   # Set context if provided
   if [[ -n "$context" ]]; then
-    if ! eval "$temp_env kubectl config use-context '$context'" &>/dev/null; then
+    if ! KUBECONFIG="$kubeconfig" kubectl config use-context "$context" &>/dev/null; then
       format-echo "ERROR" "Cannot switch to context '$context'. Please check it exists."
       return 1
     fi
@@ -271,7 +265,7 @@ validate_cluster() {
         # For cloud providers, we need to check if the cluster exists
         format-echo "INFO" "Auto-detecting context for $provider cluster '$cluster'..."
         local contexts
-        contexts=$(eval "$temp_env kubectl config get-contexts -o name" 2>/dev/null)
+        contexts=$(KUBECONFIG="$kubeconfig" kubectl config get-contexts -o name 2>/dev/null)
         
         # Try to find a context matching the cluster name pattern
         case "$provider" in
@@ -296,14 +290,14 @@ validate_cluster() {
         ;;
     esac
     
-    if ! eval "$temp_env kubectl config use-context '$context'" &>/dev/null; then
+    if ! KUBECONFIG="$kubeconfig" kubectl config use-context "$context" &>/dev/null; then
       format-echo "ERROR" "Cannot switch to auto-detected context '$context'. Please check it exists."
       return 1
     fi
   fi
   
   # Verify we can access the cluster
-  if ! eval "$temp_env kubectl get nodes" &>/dev/null; then
+  if ! KUBECONFIG="$kubeconfig" kubectl get nodes &>/dev/null; then
     format-echo "ERROR" "Cannot access cluster using context '$context'."
     format-echo "ERROR" "Please check your cluster is running and accessible."
     return 1
@@ -441,7 +435,7 @@ get_namespaces() {
   
   # Get all namespaces if requested
   if [[ "$INCLUDE_ALL_NAMESPACES" == true ]]; then
-    ns_list=($(kubectl get namespaces $kubeconfig_flag -o jsonpath='{.items[*].metadata.name}'))
+    ns_list=($(kubectl get namespaces "$kubeconfig_flag" -o jsonpath='{.items[*].metadata.name}'))
     format-echo "INFO" "Found ${#ns_list[@]} namespaces in total."
   else
     # Use specified namespaces
@@ -520,7 +514,7 @@ export_resources() {
     if [[ "$DRY_RUN" == true ]]; then
       format-echo "DRY-RUN" "Would export Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
     else
-      if ! kubectl get crds $kubeconfig_flag -o yaml > "$BACKUP_DIR/crds.yaml"; then
+      if ! kubectl get crds "$kubeconfig_flag" -o yaml > "$BACKUP_DIR/crds.yaml"; then
         format-echo "WARNING" "Failed to export Custom Resource Definitions."
       else
         format-echo "SUCCESS" "Exported Custom Resource Definitions to $BACKUP_DIR/crds.yaml"
@@ -542,7 +536,7 @@ export_resources() {
     if [[ "$DRY_RUN" == true ]]; then
       format-echo "DRY-RUN" "Would export namespace $ns to $BACKUP_DIR/$ns/namespace.yaml"
     else
-      if ! kubectl get namespace $ns $kubeconfig_flag -o yaml > "$BACKUP_DIR/$ns/namespace.yaml"; then
+      if ! kubectl get namespace "$ns" "$kubeconfig_flag" -o yaml > "$BACKUP_DIR/$ns/namespace.yaml"; then
         format-echo "WARNING" "Failed to export namespace definition for $ns."
       else
         format-echo "SUCCESS" "Exported namespace definition to $BACKUP_DIR/$ns/namespace.yaml"
@@ -557,8 +551,8 @@ export_resources() {
         format-echo "DRY-RUN" "Would export $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
       else
         # Check if resource exists in this namespace
-        if kubectl get "$resource" $kubeconfig_flag -n "$ns" &>/dev/null; then
-          if ! kubectl get "$resource" $kubeconfig_flag -n "$ns" -o yaml > "$BACKUP_DIR/$ns/$resource.yaml"; then
+        if kubectl get "$resource" "$kubeconfig_flag" -n "$ns" &>/dev/null; then
+          if ! kubectl get "$resource" "$kubeconfig_flag" -n "$ns" -o yaml > "$BACKUP_DIR/$ns/$resource.yaml"; then
             format-echo "WARNING" "Failed to export $resource from namespace $ns."
           else
             format-echo "SUCCESS" "Exported $resource from namespace $ns to $BACKUP_DIR/$ns/$resource.yaml"
@@ -580,7 +574,7 @@ export_resources() {
       mkdir -p "$BACKUP_DIR/$ns/custom-resources"
       
       # Get all CRDs
-      local crds=$(kubectl get crds $kubeconfig_flag -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+      local crds=$(kubectl get crds "$kubeconfig_flag" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
       
       for crd in $crds; do
         # Skip Kubernetes system CRDs
@@ -589,11 +583,11 @@ export_resources() {
         fi
         
         # Check if this CRD has resources in this namespace
-        if kubectl get "$crd" $kubeconfig_flag -n "$ns" &>/dev/null; then
+        if kubectl get "$crd" "$kubeconfig_flag" -n "$ns" &>/dev/null; then
           if [[ "$DRY_RUN" == true ]]; then
             format-echo "DRY-RUN" "Would export custom resource $crd from namespace $ns"
           else
-            if ! kubectl get "$crd" $kubeconfig_flag -n "$ns" -o yaml > "$BACKUP_DIR/$ns/custom-resources/$crd.yaml"; then
+            if ! kubectl get "$crd" "$kubeconfig_flag" -n "$ns" -o yaml > "$BACKUP_DIR/$ns/custom-resources/$crd.yaml"; then
               format-echo "WARNING" "Failed to export custom resource $crd from namespace $ns."
             else
               format-echo "SUCCESS" "Exported custom resource $crd from namespace $ns"
@@ -819,7 +813,7 @@ import_resources() {
     if [[ "$DRY_RUN" == true ]]; then
       format-echo "DRY-RUN" "Would import Custom Resource Definitions from $BACKUP_DIR/crds.yaml"
     else
-      if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/crds.yaml"; then
+      if ! kubectl apply "$kubeconfig_flag" -f "$BACKUP_DIR/crds.yaml"; then
         format-echo "WARNING" "Failed to import some Custom Resource Definitions."
       else
         format-echo "SUCCESS" "Imported Custom Resource Definitions."
@@ -851,9 +845,9 @@ import_resources() {
       if [[ "$DRY_RUN" == true ]]; then
         format-echo "DRY-RUN" "Would create namespace $ns from $BACKUP_DIR/$ns/namespace.yaml"
       else
-        if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/$ns/namespace.yaml"; then
+        if ! kubectl apply "$kubeconfig_flag" -f "$BACKUP_DIR/$ns/namespace.yaml"; then
           format-echo "WARNING" "Failed to create namespace $ns. Trying to create it directly."
-          kubectl create namespace $kubeconfig_flag "$ns" || {
+          kubectl create namespace "$kubeconfig_flag" "$ns" || {
             format-echo "ERROR" "Failed to create namespace $ns. Skipping this namespace."
             continue
           }
@@ -865,7 +859,7 @@ import_resources() {
       if [[ "$DRY_RUN" == true ]]; then
         format-echo "DRY-RUN" "Would create namespace $ns"
       else
-        kubectl create namespace $kubeconfig_flag "$ns" || {
+        kubectl create namespace "$kubeconfig_flag" "$ns" || {
           format-echo "ERROR" "Failed to create namespace $ns. Skipping this namespace."
           continue
         }
@@ -891,7 +885,7 @@ import_resources() {
             continue
           fi
           
-          if ! kubectl apply $kubeconfig_flag -f "$BACKUP_DIR/$ns/$resource.yaml"; then
+          if ! kubectl apply "$kubeconfig_flag" -f "$BACKUP_DIR/$ns/$resource.yaml"; then
             format-echo "WARNING" "Failed to import some $resource in namespace $ns."
           else
             format-echo "SUCCESS" "Imported $resource in namespace $ns."
@@ -918,7 +912,7 @@ import_resources() {
         if [[ "$DRY_RUN" == true ]]; then
           format-echo "DRY-RUN" "Would import custom resource $cr from $cr_file"
         else
-          if ! kubectl apply $kubeconfig_flag -f "$cr_file"; then
+          if ! kubectl apply "$kubeconfig_flag" -f "$cr_file"; then
             format-echo "WARNING" "Failed to import custom resource $cr in namespace $ns."
           else
             format-echo "SUCCESS" "Imported custom resource $cr in namespace $ns."
@@ -958,7 +952,7 @@ verify_import() {
     format-echo "INFO" "Verifying resources in namespace: $ns"
     
     # Check if namespace exists
-    if ! kubectl get namespace $kubeconfig_flag "$ns" &>/dev/null; then
+    if ! kubectl get namespace "$kubeconfig_flag" "$ns" &>/dev/null; then
       format-echo "ERROR" "Namespace $ns does not exist in target cluster."
       continue
     fi
@@ -980,7 +974,7 @@ verify_import() {
       
       # Get resource count in target
       local target_count=0
-      target_count=$(kubectl get $resource $kubeconfig_flag -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
+      target_count=$(kubectl get "$resource" "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
       target_count=$(echo $target_count) # Trim whitespace
       
       format-echo "INFO" "Found $target_count of $source_count $resource resources in namespace $ns."
@@ -1000,11 +994,11 @@ verify_import() {
     local pods_total=0
     local pods_running=0
     
-    pods_total=$(kubectl get pods $kubeconfig_flag -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
+    pods_total=$(kubectl get pods "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
     pods_total=$(echo $pods_total) # Trim whitespace
     
     if [[ "$pods_total" -gt 0 ]]; then
-      pods_running=$(kubectl get pods $kubeconfig_flag -n "$ns" --no-headers 2>/dev/null | grep -c "Running" || echo 0)
+      pods_running=$(kubectl get pods "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | grep -c "Running" || echo 0)
       format-echo "INFO" "$pods_running of $pods_total pods are running in namespace $ns."
       
       if [[ "$pods_running" -lt "$pods_total" ]]; then
