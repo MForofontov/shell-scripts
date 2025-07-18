@@ -39,6 +39,7 @@ usage() {
   echo "  This script updates npm dependencies and generates a summary of updated packages."
   echo "  It must be run in a directory containing a 'package.json' file."
   echo "  It also supports optional logging to a file."
+  echo "  The 'jq' utility must be installed to parse npm output."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
   echo "  $0 [--log <log_file>] [--help]"
@@ -140,6 +141,12 @@ main() {
   #---------------------------------------------------------------------
   # Generate a summary of updated packages
   format-echo "INFO" "Generating summary of updated packages..."
+
+  # Ensure jq is available for parsing npm output
+  if ! command -v jq >/dev/null; then
+    format-echo "ERROR" "jq is required to parse npm output. Please install jq."
+    exit 1
+  fi
   UPDATED_PACKAGES=$(npm outdated --json 2>/dev/null)
 
   if [ -n "$UPDATED_PACKAGES" ] && [ "$UPDATED_PACKAGES" != "null" ]; then
