@@ -1,5 +1,4 @@
 #!/bin/bash
-# filepath: /Users/mykfor1/Documents/git/github/shell-scripts/security-and-access/secure_file_permissions.sh
 # Script to set secure permissions for sensitive files.
 
 set -euo pipefail
