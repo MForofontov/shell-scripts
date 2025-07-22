@@ -15,6 +15,13 @@ cd shell-scripts
 chmod +x shell-scripts.sh */*.sh */*/*.sh
 ```
 
+### Lint scripts with shellcheck
+Run shellcheck on all scripts:
+```bash
+./utils/run-shellcheck.sh
+```
+If `shellcheck` is not installed, install it via your package manager (for example, `sudo apt-get install shellcheck`).
+
 ### Running a script
 List all available scripts:
 ```bash
