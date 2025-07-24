@@ -113,14 +113,7 @@ main() {
   #---------------------------------------------------------------------
   parse_args "$@"
 
-  # Configure log file - send all console output to log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    # Use tee to send all stdout to the log file
-    exec > >(tee -a "$LOG_FILE") 2>&1
+  setup_log_file
   fi
 
   print_with_separator "DNS Resolver Script"
