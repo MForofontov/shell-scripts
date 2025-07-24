@@ -74,14 +74,7 @@ parse_args() {
 main() {
   parse_args "$@"
 
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    exec > >(tee -a "$LOG_FILE") 2>&1
-  fi
+  setup_log_file
 
   print_with_separator "NPM Update All Packages Script"
   format-echo "INFO" "Starting NPM Update All Packages Script..."
