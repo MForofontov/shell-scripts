@@ -116,9 +116,7 @@ main() {
 
   # Create a new tmux session and start Docker Compose
   format-echo "INFO" "Creating a new tmux session and starting Docker Compose..."
-  tmux new-session -d -s "$SESSION_NAME" -c "$DOCKER_COMPOSE_DIR" "docker-compose up"
-
-  if [ $? -eq 0 ]; then
+  if tmux new-session -d -s "$SESSION_NAME" -c "$DOCKER_COMPOSE_DIR" "docker-compose up"; then
     format-echo "SUCCESS" "Docker Compose started in tmux session '$SESSION_NAME'."
   else
     format-echo "ERROR" "Failed to start Docker Compose in tmux session."

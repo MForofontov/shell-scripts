@@ -96,8 +96,7 @@ main() {
 
   # Stop all running containers
   format-echo "INFO" "Stopping all running containers..."
-  STOPPED_CONTAINERS=$(docker stop $RUNNING_CONTAINERS)
-  if [ $? -eq 0 ]; then
+  if STOPPED_CONTAINERS=$(docker stop $RUNNING_CONTAINERS); then
     format-echo "SUCCESS" "Stopped containers: $STOPPED_CONTAINERS"
   else
     format-echo "ERROR" "Failed to stop some containers."

@@ -351,9 +351,8 @@ monitor_resources() {
   if [ -n "$CONTAINER" ]; then
     # Monitoring Docker container
     local container_stats
-    container_stats=$(get_container_stats "$CONTAINER")
-    
-    if [ $? -eq 0 ]; then
+
+    if container_stats=$(get_container_stats "$CONTAINER"); then
       # Parse container stats
       cpu_usage=$(echo "$container_stats" | cut -d':' -f1)
       memory_usage=$(echo "$container_stats" | cut -d':' -f2)
