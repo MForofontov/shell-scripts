@@ -7,25 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
-
-if [ -f "$FORMAT_ECHO_FILE" ]; then
-  source "$FORMAT_ECHO_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
-  exit 1
-fi
-
-if [ -f "$UTILITY_FUNCTION_FILE" ]; then
-  source "$UTILITY_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
-  exit 1
-fi
-
-#=====================================================================
+source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 DOCKER_COMPOSE_DIR=""
