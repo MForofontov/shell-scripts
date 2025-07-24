@@ -410,9 +410,9 @@ is_in_ssh_agent() {
   fi
   
   # Check if the key is loaded in SSH agent
-  local agent_keys=$(ssh-add -l 2>/dev/null)
-  if [[ $? -eq 0 && -n "$agent_keys" ]]; then
-    if echo "$agent_keys" | grep -q "$key_fingerprint"; then
+  local agent_keys
+  if agent_keys=$(ssh-add -l 2>/dev/null); then
+    if [[ -n "$agent_keys" ]] && echo "$agent_keys" | grep -q "$key_fingerprint"; then
       return 0  # Key is loaded in SSH agent
     fi
   fi
