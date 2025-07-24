@@ -7,38 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-
-# Construct the path to the logger and utility files relative to the script's directory
-FORMAT_ECHO_FILE="$SCRIPT_DIR/../../functions/format-echo/format-echo.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../functions/print-functions/print-with-separator.sh"
-COMMON_FUNCTION_FILE="$SCRIPT_DIR/../../functions/utility.sh"
-
-# Source the logger file
-if [ -f "$FORMAT_ECHO_FILE" ]; then
-  source "$FORMAT_ECHO_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
-  exit 1
-fi
-
-# Source the utility file for print_with_separator
-if [ -f "$UTILITY_FUNCTION_FILE" ]; then
-  source "$UTILITY_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
-  exit 1
-fi
-
-if [ -f "$COMMON_FUNCTION_FILE" ]; then
-  source "$COMMON_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $COMMON_FUNCTION_FILE"
-  exit 1
-fi
-
-#=====================================================================
+source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 NODES=()
@@ -686,14 +655,7 @@ main() {
   #---------------------------------------------------------------------
   # LOG CONFIGURATION
   #---------------------------------------------------------------------
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    exec > >(tee -a "$LOG_FILE") 2>&1
-  fi
+  setup_log_file
 
   print_with_separator "Kubernetes Node Taint Management Script"
   

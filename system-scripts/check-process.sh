@@ -7,25 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
-SCRIPT_DIR=$(dirname "$(realpath "$0" 2>/dev/null || echo "$0")")
-FORMAT_ECHO_FILE="$SCRIPT_DIR/../functions/format-echo/format-echo.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../functions/print-functions/print-with-separator.sh"
-
-if [ -f "$FORMAT_ECHO_FILE" ]; then
-  source "$FORMAT_ECHO_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
-  exit 1
-fi
-
-if [ -f "$UTILITY_FUNCTION_FILE" ]; then
-  source "$UTILITY_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
-  exit 1
-fi
-
-#=====================================================================
+source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 PROCESS_NAME=""
@@ -94,14 +76,7 @@ main() {
   #---------------------------------------------------------------------
   parse_args "$@"
 
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    exec > >(tee -a "$LOG_FILE") 2>&1
-  fi
+  setup_log_file
 
   print_with_separator "Check Process Script"
   format-echo "INFO" "Starting Check Process Script..."

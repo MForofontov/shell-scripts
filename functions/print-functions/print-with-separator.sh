@@ -1,3 +1,9 @@
+# Source common utilities so that helper functions are available wherever this
+# file is sourced.
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+COMMON_FUNCTION_FILE="$SCRIPT_DIR/../utility.sh"
+[ -f "$COMMON_FUNCTION_FILE" ] && source "$COMMON_FUNCTION_FILE"
+
 # Function to print a message with separators to both terminal and log file
 print_with_separator() {
   local MESSAGE="${1:-}"

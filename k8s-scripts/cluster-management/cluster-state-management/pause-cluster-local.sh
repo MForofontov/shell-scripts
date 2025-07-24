@@ -7,38 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
-# Dynamically determine the directory of the current script
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-
-# Construct the path to the logger and utility files relative to the script's directory
-FORMAT_ECHO_FILE="$SCRIPT_DIR/../../../functions/format-echo/format-echo.sh"
-UTILITY_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/print-functions/print-with-separator.sh"
-COMMON_FUNCTION_FILE="$SCRIPT_DIR/../../../functions/utility.sh"
-
-# Source the logger file
-if [ -f "$FORMAT_ECHO_FILE" ]; then
-  source "$FORMAT_ECHO_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m format-echo file not found at $FORMAT_ECHO_FILE"
-  exit 1
-fi
-
-# Source the utility file for print_with_separator
-if [ -f "$UTILITY_FUNCTION_FILE" ]; then
-  source "$UTILITY_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $UTILITY_FUNCTION_FILE"
-  exit 1
-fi
-
-if [ -f "$COMMON_FUNCTION_FILE" ]; then
-  source "$COMMON_FUNCTION_FILE"
-else
-  echo -e "\033[1;31mError:\033[0m Utility file not found at $COMMON_FUNCTION_FILE"
-  exit 1
-fi
-
-#=====================================================================
+source "$(dirname "$0")/../../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 # Default values
@@ -460,9 +429,7 @@ drain_cluster_nodes() {
     kubectl cordon "$node_name" --timeout="${WAIT_TIMEOUT}s" &>/dev/null
     
     format-echo "INFO" "Draining node $node_name"
-    kubectl drain "$node_name" --ignore-daemonsets --delete-emptydir-data --force --timeout="${WAIT_TIMEOUT}s" &>/dev/null
-    
-    if [[ $? -eq 0 ]]; then
+    if kubectl drain "$node_name" --ignore-daemonsets --delete-emptydir-data --force --timeout="${WAIT_TIMEOUT}s" &>/dev/null; then
       format-echo "SUCCESS" "Node $node_name drained successfully"
     else
       format-echo "WARNING" "Failed to drain node $node_name completely, continuing anyway"
@@ -512,8 +479,7 @@ create_cluster_snapshot() {
             vm_name="$cluster"
           fi
           
-          VBoxManage snapshot "$vm_name" take "$snapshot_name" &>/dev/null
-          if [[ $? -eq 0 ]]; then
+          if VBoxManage snapshot "$vm_name" take "$snapshot_name" &>/dev/null; then
             format-echo "SUCCESS" "Created VirtualBox snapshot: $snapshot_name"
             echo "SNAPSHOT_CREATED=true" >> "$STATE_DIR/${cluster}-${provider}.state"
             echo "SNAPSHOT_NAME=$snapshot_name" >> "$STATE_DIR/${cluster}-${provider}.state"
@@ -623,8 +589,7 @@ pause_cluster() {
       # First try the pause feature (for newer minikube versions)
       if minikube help | grep -q "pause"; then
         format-echo "INFO" "Using minikube pause feature"
-        minikube pause -p "$cluster"
-        if [[ $? -eq 0 ]]; then
+        if minikube pause -p "$cluster"; then
           format-echo "SUCCESS" "Minikube cluster '$cluster' paused successfully"
           return 0
         else
@@ -634,8 +599,7 @@ pause_cluster() {
       
       # Fall back to stopping the cluster
       format-echo "INFO" "Stopping minikube cluster '$cluster'"
-      minikube stop -p "$cluster"
-      if [[ $? -eq 0 ]]; then
+      if minikube stop -p "$cluster"; then
         format-echo "SUCCESS" "Minikube cluster '$cluster' stopped successfully"
         return 0
       else
@@ -663,9 +627,7 @@ pause_cluster() {
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
         format-echo "INFO" "Stopping container: $container_name"
-        docker stop "$container_id" > /dev/null
-        
-        if [[ $? -eq 0 ]]; then
+        if docker stop "$container_id" > /dev/null; then
           format-echo "SUCCESS" "Container $container_name stopped successfully"
         else
           format-echo "ERROR" "Failed to stop container $container_name"
@@ -680,9 +642,7 @@ pause_cluster() {
     k3d)
       # k3d has a stop feature
       format-echo "INFO" "Stopping k3d cluster '$cluster'"
-      k3d cluster stop "$cluster"
-      
-      if [[ $? -eq 0 ]]; then
+      if k3d cluster stop "$cluster"; then
         format-echo "SUCCESS" "K3d cluster '$cluster' stopped successfully"
         return 0
       else
@@ -890,14 +850,7 @@ main() {
   # Parse arguments
   parse_args "$@"
 
-  # Configure log file
-  if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
-    if ! touch "$LOG_FILE" 2>/dev/null; then
-      echo -e "\033[1;31mError:\033[0m Cannot write to log file $LOG_FILE."
-      exit 1
-    fi
-    # Redirect stdout/stderr to log file and console
-    exec > >(tee -a "$LOG_FILE") 2>&1
+  setup_log_file
   fi
 
   print_with_separator "Kubernetes Cluster Pause Script"
