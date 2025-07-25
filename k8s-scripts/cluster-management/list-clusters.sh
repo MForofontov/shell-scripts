@@ -7,12 +7,14 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 PROVIDER="all"       # Default is to list clusters from all providers
 FORMAT="table"       # Output format: table, json, yaml
 SHOW_DETAILS=false   # Show detailed information
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FILTER=""            # Filter clusters by name
 REGION=""            # Region for cloud providers

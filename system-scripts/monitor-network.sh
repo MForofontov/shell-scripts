@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -22,6 +23,7 @@ INTERVAL=1
 DURATION=0
 BRIEF_OUTPUT=false
 VERBOSE=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 EXIT_CODE=0
 TCPDUMP_CMD=()

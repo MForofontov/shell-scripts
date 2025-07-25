@@ -7,10 +7,12 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 INPUT_LOG=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 OUTPUT_FORMAT="simple"  # simple, csv, or json
 INCLUDE_IPV6=false

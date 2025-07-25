@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -14,6 +15,7 @@ SERVER=""
 START_PORT=1
 END_PORT=65535
 OUTPUT_FILE=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 TIMEOUT=1
 VERBOSE=false

@@ -7,9 +7,12 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
+# LOG file path used by utility functions
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 usage() {
@@ -87,7 +90,7 @@ main() {
   # Display confirmation prompt
   format-echo "INFO" "The following containers will be stopped:"
   docker ps --format "table {{.ID}}\t{{.Names}}"
-  read -p "Are you sure you want to stop all running containers? (y/N): " CONFIRM
+  read -r -p "Are you sure you want to stop all running containers? (y/N): " CONFIRM
   if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
     format-echo "INFO" "Operation canceled."
     print_with_separator "End of Stop All Docker Containers Script"
@@ -96,7 +99,7 @@ main() {
 
   # Stop all running containers
   format-echo "INFO" "Stopping all running containers..."
-  if STOPPED_CONTAINERS=$(docker stop $RUNNING_CONTAINERS); then
+  if STOPPED_CONTAINERS=$(docker stop "$RUNNING_CONTAINERS"); then
     format-echo "SUCCESS" "Stopped containers: $STOPPED_CONTAINERS"
   else
     format-echo "ERROR" "Failed to stop some containers."

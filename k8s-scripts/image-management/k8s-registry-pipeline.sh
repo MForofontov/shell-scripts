@@ -7,10 +7,12 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 IMAGE_LIST=""         # File containing list of images to build and push
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"  # Default log file location
 REGISTRY_PORT=5001    # Default local registry port
 REGISTRY_NAME="local-registry" # Default registry name

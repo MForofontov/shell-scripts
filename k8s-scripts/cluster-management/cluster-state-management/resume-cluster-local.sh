@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -15,6 +16,7 @@ PROVIDER="auto"
 STATE_FILE=""
 STATE_DIR="$HOME/.kube/cluster-states"
 WAIT_TIMEOUT=300
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 VERBOSE=false
 RESTORE_WORKLOADS=false

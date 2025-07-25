@@ -7,12 +7,14 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 IMAGE_LIST=""         # File containing list of images to build and load
 CLUSTER_NAME="k8s-cluster"  # Default cluster name
 PROVIDER="minikube"   # Default Kubernetes provider
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"  # Default log file location
 
 #=====================================================================

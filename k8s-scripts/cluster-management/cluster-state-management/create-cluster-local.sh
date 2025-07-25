@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -17,6 +18,7 @@ NODE_COUNT=1
 K8S_VERSION="latest"
 CONFIG_FILE=""
 WAIT_TIMEOUT=300 # 5 minutes timeout
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

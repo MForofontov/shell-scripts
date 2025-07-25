@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -17,6 +18,7 @@ TEMPLATE=""
 OVERWRITE=false
 DRY_RUN=false
 FORCE=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 IMPORT_FILE=""
 EXPORT_FILE=""
