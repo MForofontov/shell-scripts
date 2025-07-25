@@ -7,9 +7,12 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
+# LOG file path used by utility functions
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 usage() {
@@ -69,7 +72,7 @@ docker_cleanup() {
   fi
 
   # Confirm before proceeding
-  read -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (y/N): " confirm
+  read -r -p "This will delete ALL Docker containers, images, volumes, and networks. Are you sure? (y/N): " confirm
   if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     format-echo "INFO" "Cleanup canceled."
     print_with_separator "End of Docker Cleanup Script"
@@ -80,7 +83,7 @@ docker_cleanup() {
   RUNNING_CONTAINERS=$(docker ps -q)
   if [ -n "$RUNNING_CONTAINERS" ]; then
     format-echo "INFO" "Stopping all running containers..."
-    docker stop $RUNNING_CONTAINERS
+    docker stop "$RUNNING_CONTAINERS"
   else
     format-echo "INFO" "No running containers to stop."
   fi
@@ -89,7 +92,7 @@ docker_cleanup() {
   ALL_CONTAINERS=$(docker ps -aq)
   if [ -n "$ALL_CONTAINERS" ]; then
     format-echo "INFO" "Removing all containers..."
-    docker rm $ALL_CONTAINERS
+    docker rm "$ALL_CONTAINERS"
   else
     format-echo "INFO" "No containers to remove."
   fi
@@ -98,7 +101,7 @@ docker_cleanup() {
   ALL_IMAGES=$(docker images -q)
   if [ -n "$ALL_IMAGES" ]; then
     format-echo "INFO" "Removing all images..."
-    docker rmi $ALL_IMAGES -f
+    docker rmi "$ALL_IMAGES" -f
   else
     format-echo "INFO" "No images to remove."
   fi
@@ -107,7 +110,7 @@ docker_cleanup() {
   ALL_VOLUMES=$(docker volume ls -q)
   if [ -n "$ALL_VOLUMES" ]; then
     format-echo "INFO" "Removing all volumes..."
-    docker volume rm $ALL_VOLUMES
+    docker volume rm "$ALL_VOLUMES"
   else
     format-echo "INFO" "No volumes to remove."
   fi
@@ -116,7 +119,7 @@ docker_cleanup() {
   ALL_NETWORKS=$(docker network ls -q)
   if [ -n "$ALL_NETWORKS" ]; then
     format-echo "INFO" "Removing all networks..."
-    docker network rm $ALL_NETWORKS
+    docker network rm "$ALL_NETWORKS"
   else
     format-echo "INFO" "No networks to remove."
   fi

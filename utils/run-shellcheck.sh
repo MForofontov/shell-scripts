@@ -21,4 +21,4 @@ if ! command_exists shellcheck; then
   exit 1
 fi
 
-find "$REPO_ROOT" -type f -name '*.sh' -exec shellcheck "$@" {} +
+find "$REPO_ROOT" -type f -name '*.sh' -exec shellcheck -x "$@" {} +
