@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 # Use this script to test if a given TCP host/port are available
 
 WAITFORIT_cmdname=${0##*/}
