@@ -24,6 +24,7 @@ BRIEF_OUTPUT=false
 VERBOSE=false
 LOG_FILE="/dev/null"
 EXIT_CODE=0
+TCPDUMP_CMD=()
 
 #=====================================================================
 # USAGE AND HELP
@@ -222,73 +223,69 @@ get_docker_container_id() {
 }
 
 build_tcpdump_command() {
-  local cmd="tcpdump -nn"
-  
+  local -a cmd=("tcpdump" "-nn")
+
   # Add level of detail options
   if [ "$BRIEF_OUTPUT" = true ]; then
-    cmd="$cmd -q"
+    cmd+=("-q")
   elif [ "$VERBOSE" = true ]; then
-    cmd="$cmd -vvv"
+    cmd+=("-vvv")
   fi
-  
+
   # Add interface
   if [ -n "$INTERFACE" ]; then
-    cmd="$cmd -i $INTERFACE"
+    cmd+=("-i" "$INTERFACE")
   fi
-  
+
   # Add packet count limit if specified
   if [ "$CAPTURE_COUNT" -gt 0 ]; then
-    cmd="$cmd -c $CAPTURE_COUNT"
+    cmd+=("-c" "$CAPTURE_COUNT")
   fi
-  
+
   # Add capture file if specified
   if [ -n "$CAPTURE_FILE" ]; then
-    cmd="$cmd -w $CAPTURE_FILE"
+    cmd+=("-w" "$CAPTURE_FILE")
   fi
-  
-  # Start building the filter expression
-  local filter=""
-  
-  # Add port filter
+
+  # Build filter components
+  local -a filter_parts=()
+
   if [ -n "$PORT_FILTER" ]; then
-    [ -n "$filter" ] && filter="$filter and "
-    filter="${filter}port $PORT_FILTER"
+    filter_parts+=("port $PORT_FILTER")
   fi
-  
-  # Add host filter
+
   if [ -n "$HOST_FILTER" ]; then
-    [ -n "$filter" ] && filter="$filter and "
-    filter="${filter}host $HOST_FILTER"
+    filter_parts+=("host $HOST_FILTER")
   fi
-  
-  # Add protocol filter
+
   if [ -n "$PROTOCOL_FILTER" ]; then
-    [ -n "$filter" ] && filter="$filter and "
-    filter="${filter}$PROTOCOL_FILTER"
+    filter_parts+=("$PROTOCOL_FILTER")
   fi
-  
-  # Add the filter expression if any filters were specified
-  if [ -n "$filter" ]; then
-    cmd="$cmd '$filter'"
+
+  if [ "${#filter_parts[@]}" -gt 0 ]; then
+    local filter_expr
+    filter_expr=$(IFS=' and '; echo "${filter_parts[*]}")
+    cmd+=("$filter_expr")
   fi
-  
-  echo "$cmd"
+
+  TCPDUMP_CMD=("${cmd[@]}")
 }
 
 monitor_interface() {
   local interface="$1"
-  local cmd
+  local -a cmd
   
   format-echo "INFO" "Starting network traffic monitoring on interface $interface..."
   format-echo "INFO" "Press Ctrl+C to stop monitoring."
   
-  cmd=$(build_tcpdump_command)
+  build_tcpdump_command
+  cmd=("${TCPDUMP_CMD[@]}")
   
   if [ "$DURATION" -gt 0 ]; then
     format-echo "INFO" "Monitoring will run for $DURATION seconds."
-    timeout "$DURATION" bash -c "$cmd" || true
+    timeout "$DURATION" "${cmd[@]}" || true
   else
-    eval "$cmd"
+    "${cmd[@]}"
   fi
 }
 
