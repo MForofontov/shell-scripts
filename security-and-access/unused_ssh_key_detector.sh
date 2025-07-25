@@ -17,6 +17,7 @@ else
   SSH_DIR="/home"
   SSH_LOG_FILES=("/var/log/auth.log" "/var/log/secure" "/var/log/audit/audit.log")
 fi
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 SINGLE_USER=""
 AGE_THRESHOLD=90  # Keys unused for 90+ days are considered old

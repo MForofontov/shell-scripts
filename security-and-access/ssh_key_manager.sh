@@ -11,6 +11,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 #=====================================================================
 USERNAME=""
 REMOTE_SERVERS=()
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 KEY_TYPE="ed25519"  # Default to more secure ed25519
 KEY_BITS="4096"     # Used for RSA

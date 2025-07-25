@@ -15,6 +15,7 @@ PROVIDER="auto"
 STATE_FILE=""
 STATE_DIR="$HOME/.kube/cluster-states"
 WAIT_TIMEOUT=300
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 VERBOSE=false
 RESTORE_WORKLOADS=false

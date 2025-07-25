@@ -17,6 +17,7 @@ TEMPLATE=""
 OVERWRITE=false
 DRY_RUN=false
 FORCE=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 IMPORT_FILE=""
 EXPORT_FILE=""

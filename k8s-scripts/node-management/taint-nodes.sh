@@ -17,6 +17,7 @@ REMOVE_ALL=false
 PRESET=""
 FORCE=false
 DRY_RUN=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 SELECTOR=""
 TEST_COMPATIBILITY=false

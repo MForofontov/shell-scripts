@@ -9,6 +9,7 @@ set -euo pipefail
 source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FILES=()
 DIRECTORIES=()

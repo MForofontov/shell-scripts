@@ -11,6 +11,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 ADDITIONAL_PORTS=()
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 DRY_RUN=false
 FORCE_YES=false

@@ -34,6 +34,7 @@ INTERACTIVE=false
 FORCE=false
 TIMEOUT=600
 BACKUP_DIR=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

@@ -17,6 +17,7 @@ NODE_COUNT=1
 K8S_VERSION="latest"
 CONFIG_FILE=""
 WAIT_TIMEOUT=300 # 5 minutes timeout
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

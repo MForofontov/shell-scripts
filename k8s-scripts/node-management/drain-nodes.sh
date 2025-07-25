@@ -24,6 +24,7 @@ UNCORDON_DELAY=0
 NAMESPACE_FILTER=""
 SELECTOR_FILTER=""
 MAX_UNAVAILABLE_PODS=0
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

@@ -13,6 +13,7 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 NODE_COUNT=0         # Target node count (0 means show current count)
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FORCE=false
 WAIT_TIMEOUT=300     # 5 minutes timeout for operation to complete

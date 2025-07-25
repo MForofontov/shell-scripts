@@ -12,6 +12,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 #=====================================================================
 THRESHOLD=""
 EMAIL=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 INTERVAL=5   # Check interval in seconds
 DURATION=60  # Total monitoring duration in seconds

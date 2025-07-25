@@ -14,6 +14,7 @@ DEFAULT_WEBSITES=("google.com" "github.com" "stackoverflow.com")
 PING_COUNT=3
 TIMEOUT=5
 WEBSITES=()
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 SHOW_DETAILS=false
 

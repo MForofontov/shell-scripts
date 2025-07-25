@@ -13,6 +13,7 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
 K8S_VERSION=""       # Target Kubernetes version for upgrade
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FORCE=false
 BACKUP=true          # Create backup/snapshot before upgrading if possible

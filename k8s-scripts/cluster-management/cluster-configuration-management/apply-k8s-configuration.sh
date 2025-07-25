@@ -14,6 +14,7 @@ source "$(dirname "$0")/../../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 MANIFEST_ROOT="k8s"
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

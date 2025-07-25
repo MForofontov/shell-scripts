@@ -12,6 +12,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 #=====================================================================
 SOURCE_DIR=""
 DEST_DIR=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

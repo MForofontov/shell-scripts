@@ -21,6 +21,7 @@ EXPIRY=""
 NAMESPACE=""
 USER_ONLY=""
 MERGE=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 INTERACTIVE=false
 
