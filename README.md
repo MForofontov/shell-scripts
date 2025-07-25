@@ -2,6 +2,9 @@
 
 A curated collection of standalone shell scripts for system administration, development workflows, network diagnostics and more. Each script lives in its own file and can be executed directly or via the provided wrapper script.
 
+## Disclaimer
+Some scripts modify system configuration, require root privileges or perform operations that can be destructive. **Review each script before running it and execute at your own risk.**
+
 ## Getting Started
 
 ### Clone the repository
