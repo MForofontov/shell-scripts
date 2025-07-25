@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared utility functions
 
 # Check if a command exists

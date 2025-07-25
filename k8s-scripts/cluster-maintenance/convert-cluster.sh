@@ -1230,7 +1230,6 @@ main() {
   print_with_separator "Kubernetes Cluster Conversion Script"
   
   setup_log_file
-  fi
   
   format-echo "INFO" "Starting cluster conversion from $SOURCE_PROVIDER to $TARGET_PROVIDER..."
   

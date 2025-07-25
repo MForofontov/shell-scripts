@@ -305,7 +305,6 @@ main() {
   # LOG CONFIGURATION
   #---------------------------------------------------------------------
   setup_log_file
-  fi
 
   print_with_separator "Build and Load Images Script"
   
