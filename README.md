@@ -1,5 +1,7 @@
 # Shell Scripts
 
+[![Shellcheck](https://github.com/MForofontov/shell-scripts/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/MForofontov/shell-scripts/actions/workflows/shellcheck.yml)
+
 A curated collection of standalone shell scripts for system administration, development workflows, network diagnostics and more. Each script lives in its own file and can be executed directly or via the provided wrapper script.
 
 ## Getting Started
@@ -21,6 +23,7 @@ Run shellcheck on all scripts:
 ./utils/run-shellcheck.sh
 ```
 If `shellcheck` is not installed, install it via your package manager (for example, `sudo apt-get install shellcheck`).
+Shellcheck is automatically run on pushes and pull requests via GitHub Actions.
 
 ### Running a script
 List all available scripts:
