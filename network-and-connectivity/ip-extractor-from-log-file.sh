@@ -179,13 +179,15 @@ extract_ips() {
   
   # Extract IPv4 addresses
   ipv4_list=$(extract_ipv4 "$INPUT_LOG")
-  local ipv4_count=$(echo "$ipv4_list" | grep -v '^$' | wc -l | tr -d ' ')
+  local ipv4_count
+  ipv4_count=$(echo "$ipv4_list" | grep -vc '^$')
   extracted_count=$ipv4_count
   
   # Extract IPv6 addresses if requested
   if [[ "$INCLUDE_IPV6" == true ]]; then
     ipv6_list=$(extract_ipv6 "$INPUT_LOG")
-    local ipv6_count=$(echo "$ipv6_list" | grep -v '^$' | wc -l | tr -d ' ')
+    local ipv6_count
+    ipv6_count=$(echo "$ipv6_list" | grep -vc '^$')
     extracted_count=$((extracted_count + ipv6_count))
   fi
   

@@ -21,11 +21,14 @@ chmod +x shell-scripts.sh */*.sh */*/*.sh
 ```
 
 ### Lint scripts with shellcheck
-Run shellcheck on all scripts:
+`shellcheck` **must** be installed to run the lint script:
 ```bash
 ./utils/run-shellcheck.sh
 ```
-If `shellcheck` is not installed, install it via your package manager (for example, `sudo apt-get install shellcheck`).
+Install it via your package manager if needed:
+```bash
+sudo apt-get install shellcheck
+```
 Shellcheck is automatically run on pushes and pull requests via GitHub Actions.
 
 ### Running a script

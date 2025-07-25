@@ -510,7 +510,6 @@ main() {
   parse_args "$@"
 
   setup_log_file
-  fi
   
   print_with_separator "Kubernetes Node Drain Script"
   

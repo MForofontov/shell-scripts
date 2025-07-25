@@ -363,7 +363,6 @@ main() {
   # LOG CONFIGURATION
   #---------------------------------------------------------------------
   setup_log_file
-  fi
   
   print_with_separator "Kubernetes Context Switcher Script"
 

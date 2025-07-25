@@ -906,7 +906,6 @@ main() {
   print_with_separator "Kubernetes Certificate Rotation Script"
   
   setup_log_file
-  fi
   
   format-echo "INFO" "Starting certificate rotation process..."
   

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # common-init.sh
 # Determine repository root relative to the caller and source shared functions.
 

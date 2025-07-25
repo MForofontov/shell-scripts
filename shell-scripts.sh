@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # shell-scripts.sh
 # A wrapper script to manage and execute all shell scripts in the same directory as this script
 

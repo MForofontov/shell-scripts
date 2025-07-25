@@ -114,7 +114,6 @@ main() {
   parse_args "$@"
 
   setup_log_file
-  fi
 
   print_with_separator "DNS Resolver Script"
   format-echo "INFO" "Starting DNS Resolver Script..."

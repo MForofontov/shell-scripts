@@ -1,11 +1,13 @@
 #!/bin/bash
+set -euo pipefail
 # Utility script to log messages with log levels, timestamps, and optional file logging.
 
 # Function to log messages with log levels and timestamps
 format-echo() {
   local LEVEL=$1
   local MESSAGE=$2
-  local TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+  local TIMESTAMP
+  TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
   local LEVEL_COLOR=""
 
   # Set color based on log level
@@ -35,7 +37,8 @@ format-echo() {
   local FORMATTED_MESSAGE="$TIMESTAMP [${LEVEL_COLOR}${LEVEL}\033[0m] $MESSAGE"
 
   # Remove color codes for the log file
-  local PLAIN_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
+  local PLAIN_MESSAGE
+  PLAIN_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | sed 's/\x1b\[[0-9;]*m//g')
 
   # Log to file and console using tee
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
