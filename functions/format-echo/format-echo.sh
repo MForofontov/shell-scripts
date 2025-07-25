@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Utility script to log messages with log levels, timestamps, and optional file logging.
 
 # Function to log messages with log levels and timestamps
