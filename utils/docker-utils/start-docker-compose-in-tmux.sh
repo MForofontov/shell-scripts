@@ -7,11 +7,14 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 DOCKER_COMPOSE_DIR=""
 SESSION_NAME=""
+# LOG file path used by utility functions
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 usage() {
@@ -102,7 +105,7 @@ main() {
   # Check if the tmux session already exists
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
     format-echo "INFO" "Tmux session '$SESSION_NAME' already exists."
-    read -p "Do you want to attach to the existing session? (y/n) " ATTACH_EXISTING
+    read -r -p "Do you want to attach to the existing session? (y/n) " ATTACH_EXISTING
     if [ "$ATTACH_EXISTING" = "y" ]; then
       tmux attach-session -t "$SESSION_NAME"
       print_with_separator "End of Start Docker Compose in Tmux Script"
@@ -125,7 +128,7 @@ main() {
   fi
 
   # Optionally, attach to the tmux session
-  read -p "Do you want to attach to the tmux session? (y/n) " ATTACH
+  read -r -p "Do you want to attach to the tmux session? (y/n) " ATTACH
   if [ "$ATTACH" = "y" ]; then
     tmux attach-session -t "$SESSION_NAME"
   fi

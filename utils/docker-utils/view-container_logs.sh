@@ -7,6 +7,7 @@ set -euo pipefail
 #=====================================================================
 # CONFIGURATION AND DEPENDENCIES
 #=====================================================================
+# shellcheck source=functions/common-init.sh
 source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
@@ -14,6 +15,8 @@ CONTAINER_NAME=""
 FOLLOW=""
 SINCE=""
 UNTIL=""
+# LOG file path used by utility functions
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 usage() {
@@ -117,7 +120,7 @@ main() {
 
   format-echo "INFO" "Viewing logs for container: $CONTAINER_NAME"
   format-echo "INFO" "Executing: docker logs $FOLLOW $SINCE $UNTIL $CONTAINER_NAME"
-  docker logs $FOLLOW $SINCE $UNTIL "$CONTAINER_NAME"
+  docker logs "$FOLLOW" "$SINCE" "$UNTIL" "$CONTAINER_NAME"
 
   print_with_separator "End of View Docker Container Logs Script"
   if [ -n "$LOG_FILE" ] && [ "$LOG_FILE" != "/dev/null" ]; then
