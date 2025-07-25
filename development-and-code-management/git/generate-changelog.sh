@@ -11,6 +11,7 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 OUTPUT_FILE=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 #=====================================================================

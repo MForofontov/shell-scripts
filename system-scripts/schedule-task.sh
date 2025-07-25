@@ -13,6 +13,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 #=====================================================================
 SCRIPT_PATH=""
 CRON_SCHEDULE=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 TASK_NAME=""
 USE_LAUNCHD=false

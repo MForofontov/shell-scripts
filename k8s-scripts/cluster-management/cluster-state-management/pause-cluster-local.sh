@@ -17,6 +17,7 @@ PROVIDER="auto"  # auto-detect provider if not specified
 FORCE=false
 WAIT_TIMEOUT=300  # 5 minutes timeout
 STATE_DIR="$HOME/.kube/cluster-states"
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 DRAIN_NODES=true
 BACKUP_WORKLOADS=true

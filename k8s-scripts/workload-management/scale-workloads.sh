@@ -38,6 +38,7 @@ TIMEOUT=300                         # Timeout for operations in seconds
 VERIFY_TIMEOUT=120                  # Timeout for verification in seconds
 DRY_RUN=false                       # Whether to perform a dry run
 FORCE=false                         # Whether to force scaling without confirmation
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"                # Log file location
 
 #=====================================================================

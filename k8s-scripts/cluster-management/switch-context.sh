@@ -14,6 +14,7 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 CONTEXT=""
 PROVIDER=""
 INTERACTIVE=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FILTER=""
 SHOW_ALL=false

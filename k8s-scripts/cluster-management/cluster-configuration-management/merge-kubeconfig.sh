@@ -19,6 +19,7 @@ ORGANIZE=true
 DEDUPLICATE=true
 VALIDATE=true
 TEMP_DIR=$(mktemp -d)
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FORCE=false
 

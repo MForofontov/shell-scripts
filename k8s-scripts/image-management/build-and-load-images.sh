@@ -14,6 +14,7 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 IMAGE_LIST=""         # File containing list of images to build and load
 CLUSTER_NAME="k8s-cluster"  # Default cluster name
 PROVIDER="minikube"   # Default Kubernetes provider
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"  # Default log file location
 
 #=====================================================================

@@ -13,6 +13,7 @@ source "$(dirname "$0")/../../../functions/common-init.sh"
 #=====================================================================
 CLUSTER_NAME=""
 PROVIDER="minikube"  # Default provider is minikube
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FORCE=false
 

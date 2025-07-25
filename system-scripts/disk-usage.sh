@@ -13,6 +13,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 #=====================================================================
 THRESHOLD=""
 EMAIL=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FILESYSTEM="/"
 CHECK_ALL=false

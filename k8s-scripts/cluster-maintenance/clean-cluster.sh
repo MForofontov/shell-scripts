@@ -18,6 +18,7 @@ CLEAN_VOLUMES=false
 CLEAN_CONFIG=false
 FORCE=false
 DRY_RUN=false
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 TIMEOUT=300
 ADDITIONAL_PRESERVED_NS=()

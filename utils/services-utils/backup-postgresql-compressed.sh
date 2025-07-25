@@ -15,6 +15,7 @@ DB_NAME=""
 DB_USER=""
 DB_PASSWORD=""
 BACKUP_DIR=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 
 usage() {

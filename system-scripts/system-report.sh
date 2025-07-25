@@ -12,6 +12,7 @@ source "$(dirname "$0")/../functions/common-init.sh"
 # DEFAULT VALUES
 #=====================================================================
 REPORT_FILE=""
+# shellcheck disable=SC2034
 LOG_FILE="/dev/null"
 FORMAT="text"
 INCLUDE_NETWORK=true
