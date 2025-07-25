@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Source common utilities so that helper functions are available wherever this
 # file is sourced.
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"

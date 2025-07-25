@@ -333,7 +333,6 @@ main() {
   # LOG CONFIGURATION
   #---------------------------------------------------------------------
   setup_log_file
-  fi
 
   print_with_separator "Docker Registry Setup and Image Push Script"
   

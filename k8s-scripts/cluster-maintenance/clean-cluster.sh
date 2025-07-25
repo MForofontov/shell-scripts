@@ -695,7 +695,6 @@ main() {
   print_with_separator "Kubernetes Cluster Cleaning Script"
   
   setup_log_file
-  fi
   
   format-echo "INFO" "Starting cluster cleaning process..."
   
