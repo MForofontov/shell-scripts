@@ -173,7 +173,7 @@ check_status_codes() {
     # Store headers if requested
     if [[ "$SHOW_HEADERS" == true && -n "$headers" ]]; then
       header_messages+=("$(format-echo "INFO" "Headers for $URL:" 2>&1)")
-      header_messages+=("$(echo "$headers" | sed 's/^/    /')")
+      header_messages+=("    ${headers//$'\n'/$'\n    '}")
     fi
   done
   

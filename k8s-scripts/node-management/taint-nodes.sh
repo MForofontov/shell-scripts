@@ -348,7 +348,7 @@ validate_taints() {
   if [[ $valid_count -lt ${#TAINTS[@]} ]]; then
     format-echo "WARNING" "Some taints have invalid format"
     if [[ "$FORCE" != true ]]; then
-      read -p "Continue anyway? (y/n): " confirm
+        read -r -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 1
@@ -437,7 +437,7 @@ test_pod_compatibility() {
   if [[ "$has_incompatible" == true ]]; then
     format-echo "WARNING" "Some pods will be evicted when these taints are applied"
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
-      read -p "Continue anyway? (y/n): " confirm
+        read -r -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 1
@@ -640,7 +640,7 @@ parse_args() {
   #---------------------------------------------------------------------
   # Get nodes by selector if specified
   if [[ -n "$SELECTOR" ]]; then
-    NODES=($(get_nodes_by_selector "$SELECTOR"))
+    mapfile -t NODES < <(get_nodes_by_selector "$SELECTOR")
   fi
 }
 
@@ -725,7 +725,7 @@ main() {
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
     format-echo "WARNING" "You are about to modify taints on the following nodes: ${NODES[*]}"
-    read -p "Do you want to continue? (y/n): " confirm
+    read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

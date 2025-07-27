@@ -88,8 +88,8 @@ monitor_bandwidth() {
   while true; do
     # Get current statistics based on OS
     if [[ "$(uname)" == "Linux" ]]; then
-      RX_CURRENT=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes 2>/dev/null)
-      TX_CURRENT=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes 2>/dev/null)
+      RX_CURRENT=$(cat "/sys/class/net/${INTERFACE}/statistics/rx_bytes" 2>/dev/null)
+      TX_CURRENT=$(cat "/sys/class/net/${INTERFACE}/statistics/tx_bytes" 2>/dev/null)
     elif [[ "$(uname)" == "Darwin" ]]; then
       RX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $7}' | head -n 1)
       TX_CURRENT=$(netstat -ib | awk -v iface="$INTERFACE" '$1 == iface {print $10}' | head -n 1)

@@ -233,7 +233,6 @@ get_service_name() {
     9000) echo "SonarQube/Prometheus" ;;
     9090) echo "Prometheus" ;;
     9091) echo "Prometheus-Push" ;;
-    9092) echo "Prometheus-Alt" ;;
     9093) echo "Alertmanager" ;;
     9100) echo "Node-Exporter" ;;
     9200) echo "Elasticsearch" ;;
@@ -254,8 +253,6 @@ get_service_name() {
     547) echo "DHCPv6-Server" ;;
     636) echo "LDAPS" ;;
     873) echo "rsync" ;;
-    989) echo "FTPS-data" ;;
-    990) echo "FTPS" ;;
     1194) echo "OpenVPN" ;;
     1701) echo "L2TP" ;;
     1723) echo "PPTP" ;;
@@ -267,13 +264,7 @@ get_service_name() {
     4369) echo "Erlang Port Mapper" ;;
     5000) echo "Dev Server/UPnP" ;;
     5001) echo "Dev Server Alt" ;;
-    5222) echo "XMPP" ;;
-    5269) echo "XMPP Server" ;;
-    5353) echo "mDNS" ;;
     5355) echo "LLMNR" ;;
-    5432) echo "PostgreSQL" ;;
-    5672) echo "AMQP" ;;
-    5683) echo "CoAP" ;;
     5684) echo "CoAPS" ;;
     6000) echo "X11" ;;
     6443) echo "Kubernetes API" ;;
@@ -309,7 +300,6 @@ get_service_name() {
     5269) echo "XMPP Server" ;;
     5671) echo "AMQP-TLS" ;;
     5672) echo "AMQP" ;;
-    6379) echo "Redis" ;;
     6667) echo "IRC" ;;
     8883) echo "MQTT-TLS" ;;
     9092) echo "Kafka" ;;
@@ -321,20 +311,17 @@ get_service_name() {
     25565) echo "Minecraft" ;;
     27015) echo "Source Engine" ;;
     27016) echo "Source HLTV" ;;
-    27017) echo "Source TV" ;;
     27031) echo "Steam In-Home" ;;
     27036) echo "Steam" ;;
     3724) echo "World of Warcraft" ;;
     6112) echo "Battle.net" ;;
     6113) echo "Battle.net Chat" ;;
-    8086) echo "FACEIT" ;;
     9987) echo "TeamSpeak 3" ;;
     30000) echo "Minecraft Bedrock" ;;
     
     # IoT and Smart Home
     5683) echo "CoAP" ;;
     8123) echo "Home Assistant" ;;
-    8888) echo "SmartThings" ;;
     8889) echo "Homey" ;;
     9001) echo "Phillips Hue" ;;
     
@@ -368,10 +355,12 @@ scan_ports() {
   
   # Create or clear output file if specified
   if [ -n "$OUTPUT_FILE" ]; then
-    echo "# Port scan results for $SERVER" > "$OUTPUT_FILE"
-    echo "# Scan started at $(date)" >> "$OUTPUT_FILE"
-    echo "# Port | Status | Service" >> "$OUTPUT_FILE"
-    echo "# ---- | ------ | -------" >> "$OUTPUT_FILE"
+    {
+      echo "# Port scan results for $SERVER"
+      echo "# Scan started at $(date)"
+      echo "# Port | Status | Service"
+      echo "# ---- | ------ | -------"
+    } > "$OUTPUT_FILE"
   fi
   
   local port_count=0
@@ -458,27 +447,29 @@ scan_ports() {
   
   # Append summary to output file if specified
   if [ -n "$OUTPUT_FILE" ]; then
-    echo "" >> "$OUTPUT_FILE"
-    echo "# Summary" >> "$OUTPUT_FILE"
-    echo "# -------" >> "$OUTPUT_FILE"
-    echo "# Server: $SERVER" >> "$OUTPUT_FILE"
-    echo "# Ports scanned: $total_ports" >> "$OUTPUT_FILE"
-    echo "# Open ports found: $open_count" >> "$OUTPUT_FILE"
-    
-    if [ ${#open_ports[@]} -gt 0 ]; then
-      echo -n "# Open ports: " >> "$OUTPUT_FILE"
-      for i in "${!open_ports[@]}"; do
-        if [ "$i" -gt 0 ]; then
-          echo -n ", " >> "$OUTPUT_FILE"
-        fi
-        echo -n "${open_ports[$i]} (${open_services[$i]})" >> "$OUTPUT_FILE"
-      done
-      echo "" >> "$OUTPUT_FILE"
-    else
-      echo "# No open ports found." >> "$OUTPUT_FILE"
-    fi
-    
-    echo "# Scan completed at $(date)" >> "$OUTPUT_FILE"
+    {
+      echo ""
+      echo "# Summary"
+      echo "# -------"
+      echo "# Server: $SERVER"
+      echo "# Ports scanned: $total_ports"
+      echo "# Open ports found: $open_count"
+
+      if [ ${#open_ports[@]} -gt 0 ]; then
+        echo -n "# Open ports: "
+        for i in "${!open_ports[@]}"; do
+          if [ "$i" -gt 0 ]; then
+            echo -n ", "
+          fi
+          echo -n "${open_ports[$i]} (${open_services[$i]})"
+        done
+        echo ""
+      else
+        echo "# No open ports found."
+      fi
+
+      echo "# Scan completed at $(date)"
+    } >> "$OUTPUT_FILE"
   fi
   
   return 0
