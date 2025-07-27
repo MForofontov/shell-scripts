@@ -16,6 +16,7 @@ PROVIDER="minikube"
 NODE_COUNT=1
 K8S_VERSION="latest"
 CONFIG_FILE=""
+# shellcheck disable=SC2034
 WAIT_TIMEOUT=300
 LOG_FILE=""
 IMAGE_LIST=""
@@ -54,8 +55,8 @@ usage() {
   echo
   echo -e "\033[1;34mNotes:\033[0m"
   echo "  - All options are optional unless you want to build/load images or apply manifests."
-  echo "  - \033[1;36m-i, --images\033[0m is required only if you want to build/load images."
-  echo "  - \033[1;36m-m, --manifests\033[0m is required only if you want to apply manifests."
+  printf '  - \033[1;36m-i, --images\033[0m is required only if you want to build/load images.\n'
+  printf '  - \033[1;36m-m, --manifests\033[0m is required only if you want to apply manifests.\n'
   echo "  - For multi-node clusters (NODE_COUNT > 1), a registry is automatically enabled."
   echo "  - For single-node clusters, direct image loading is used by default (faster)."
   echo "  - Use --use-registry with single-node clusters if you specifically need registry functionality."

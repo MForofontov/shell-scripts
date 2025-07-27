@@ -640,7 +640,7 @@ parse_args() {
   #---------------------------------------------------------------------
   # Get nodes by selector if specified
   if [[ -n "$SELECTOR" ]]; then
-    NODES=($(get_nodes_by_selector "$SELECTOR"))
+    mapfile -t NODES < <(get_nodes_by_selector "$SELECTOR")
   fi
 }
 

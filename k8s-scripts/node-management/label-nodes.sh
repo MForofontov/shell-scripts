@@ -532,7 +532,7 @@ apply_labels() {
     return 0
   fi
   
-  if kubectl label node "$node" $all_args --overwrite="$OVERWRITE"; then
+  if kubectl label node "$node" "$all_args" --overwrite="$OVERWRITE"; then
     format-echo "SUCCESS" "Labels applied to node $node successfully."
     return 0
   else
@@ -586,7 +586,7 @@ import_labels_from_file() {
     
     *)
       # Assume it's a simple text file with one label per line
-      imported_labels=$(cat "$file" | tr '\n' ' ')
+      imported_labels=$(tr '\n' ' ' < "$file")
       ;;
   esac
   
@@ -744,7 +744,7 @@ parse_args() {
   #---------------------------------------------------------------------
   # Get nodes by selector if specified
   if [[ -n "$SELECTOR" ]]; then
-    NODES=($(get_nodes_by_selector "$SELECTOR"))
+    mapfile -t NODES < <(get_nodes_by_selector "$SELECTOR")
   fi
 }
 
