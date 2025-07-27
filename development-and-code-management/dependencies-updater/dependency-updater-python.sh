@@ -14,6 +14,9 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 REQUIREMENTS_FILE=""
 # shellcheck disable=SC2034
 LOG_FILE="/dev/null"
+DRY_RUN=false
+LIST_ONLY=false
+UPDATE_REQUIREMENTS=false
 
 #=====================================================================
 # USAGE AND HELP
@@ -25,16 +28,22 @@ usage() {
   echo "  It must be run in an environment where 'pip' is installed and accessible."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 <requirements_file> [--log <log_file>] [--help]"
+  echo "  $0 <requirements_file> [--log <log_file>] [--dry-run] [--list-outdated] [--update-requirements] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
   echo -e "  \033[1;36m<requirements_file>\033[0m       (Required) Path to the requirements file."
   echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--dry-run\033[0m                (Optional) Show what would be updated without installing."
+  echo -e "  \033[1;33m--list-outdated\033[0m          (Optional) Only list outdated packages and exit."
+  echo -e "  \033[1;33m--update-requirements\033[0m    (Optional) Rewrite requirements file with installed versions."
   echo -e "  \033[1;33m--help\033[0m                    (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 requirements.txt               # Update dependencies without logging."
   echo "  $0 requirements.txt --log log.txt # Update dependencies and log output to 'log.txt'."
+  echo "  $0 requirements.txt --dry-run     # Show packages that would be updated"
+  echo "  $0 requirements.txt --list-outdated # Only list outdated packages"
+  echo "  $0 requirements.txt --update-requirements # Update the requirements file"
   print_with_separator
   exit 1
 }
@@ -53,6 +62,18 @@ parse_args() {
           format-echo "ERROR" "Missing argument for --log"
           usage
         fi
+        ;;
+      --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+      --list-outdated)
+        LIST_ONLY=true
+        shift
+        ;;
+      --update-requirements)
+        UPDATE_REQUIREMENTS=true
+        shift
         ;;
       --help)
         usage
@@ -108,17 +129,42 @@ main() {
   fi
 
   #---------------------------------------------------------------------
+  # LIST OUTDATED PACKAGES
+  #---------------------------------------------------------------------
+  if [ "$LIST_ONLY" = true ]; then
+    format-echo "INFO" "Listing outdated packages..."
+    pip list --outdated
+    print_with_separator "End of Python Dependency Updater Script"
+    exit 0
+  fi
+
+  #---------------------------------------------------------------------
   # DEPENDENCY UPDATES
   #---------------------------------------------------------------------
   format-echo "INFO" "Updating Python dependencies from '$REQUIREMENTS_FILE'..."
   format-echo "INFO" "Starting dependency update process..."
 
-  if pip install --upgrade -r "$REQUIREMENTS_FILE"; then
-    format-echo "SUCCESS" "Dependencies updated successfully!"
+  INSTALL_CMD=(pip install --upgrade -r "$REQUIREMENTS_FILE")
+  if [ "$DRY_RUN" = true ]; then
+    INSTALL_CMD+=(--dry-run)
+  fi
+
+  if "${INSTALL_CMD[@]}"; then
+    if [ "$DRY_RUN" = true ]; then
+      format-echo "INFO" "Dry run complete. No packages were installed."
+    else
+      format-echo "SUCCESS" "Dependencies updated successfully!"
+    fi
   else
     format-echo "ERROR" "Failed to update dependencies!"
     print_with_separator "End of Python Dependency Updater Script"
     exit 1
+  fi
+
+  # Update requirements file with installed versions if requested
+  if [ "$UPDATE_REQUIREMENTS" = true ] && [ "$DRY_RUN" = false ]; then
+    format-echo "INFO" "Writing installed package versions back to '$REQUIREMENTS_FILE'..."
+    pip freeze > "$REQUIREMENTS_FILE"
   fi
 
   #---------------------------------------------------------------------
