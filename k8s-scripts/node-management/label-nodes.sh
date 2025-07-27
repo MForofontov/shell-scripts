@@ -383,7 +383,7 @@ validate_labels() {
   if [[ $valid_count -lt ${#LABELS[@]} ]]; then
     format-echo "WARNING" "Some labels have invalid format"
     if [[ "$FORCE" != true ]]; then
-      read -p "Continue anyway? (y/n): " confirm
+        read -r -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 1
@@ -413,9 +413,11 @@ check_label_consistency() {
   
   # Get current labels for all nodes
   for node in "${NODES[@]}"; do
-    echo "Node: $node" >> "$temp_file"
-    kubectl get node "$node" -o jsonpath='{.metadata.labels}' | jq . >> "$temp_file"
-    echo "" >> "$temp_file"
+    {
+      echo "Node: $node"
+      kubectl get node "$node" -o jsonpath='{.metadata.labels}' | jq .
+      echo ""
+    } >> "$temp_file"
   done
   
   #---------------------------------------------------------------------
@@ -465,7 +467,7 @@ check_label_consistency() {
   if [[ "$has_conflicts" == true ]]; then
     format-echo "WARNING" "Label conflicts detected"
     if [[ "$FORCE" != true ]]; then
-      read -p "Continue anyway? (y/n): " confirm
+        read -r -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         rm -f "$temp_file"
@@ -833,7 +835,7 @@ main() {
   # Confirm operation if not dry-run or forced
   if [[ "$DRY_RUN" != true && "$FORCE" != true ]]; then
     format-echo "WARNING" "You are about to modify labels on the following nodes: ${NODES[*]}"
-    read -p "Do you want to continue? (y/n): " confirm
+      read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0
