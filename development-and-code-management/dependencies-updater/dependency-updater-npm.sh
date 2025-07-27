@@ -13,6 +13,9 @@ source "$(dirname "$0")/../../functions/common-init.sh"
 #=====================================================================
 # shellcheck disable=SC2034
 LOG_FILE="/dev/null"
+DRY_RUN=false
+LIST_ONLY=false
+UPDATE_PACKAGE_JSON=false
 
 #=====================================================================
 # USAGE AND HELP
@@ -26,14 +29,20 @@ usage() {
   echo "  The 'jq' utility must be installed to parse npm output."
   echo
   echo -e "\033[1;34mUsage:\033[0m"
-  echo "  $0 [--log <log_file>] [--help]"
+  echo "  $0 [--log <log_file>] [--dry-run] [--list-outdated] [--update-package-json] [--help]"
   echo
   echo -e "\033[1;34mOptions:\033[0m"
-  echo -e "  \033[1;33m--log <log_file>\033[0m    (Optional) Log output to the specified file."
-  echo -e "  \033[1;33m--help\033[0m              (Optional) Display this help message."
+  echo -e "  \033[1;33m--log <log_file>\033[0m          (Optional) Log output to the specified file."
+  echo -e "  \033[1;33m--dry-run\033[0m                (Optional) Show what would be updated without installing."
+  echo -e "  \033[1;33m--list-outdated\033[0m          (Optional) Only list outdated packages and exit."
+  echo -e "  \033[1;33m--update-package-json\033[0m    (Optional) Update package.json with latest versions."
+  echo -e "  \033[1;33m--help\033[0m                  (Optional) Display this help message."
   echo
   echo -e "\033[1;34mExamples:\033[0m"
   echo "  $0 --log custom_log.log   # Run the script and log output to 'custom_log.log'"
+  echo "  $0 --dry-run             # Show packages that would be updated"
+  echo "  $0 --list-outdated       # Only list outdated packages"
+  echo "  $0 --update-package-json # Update package.json and install"
   echo "  $0                        # Run the script without logging to a file"
   print_with_separator
   exit 1
@@ -53,6 +62,18 @@ parse_args() {
           format-echo "ERROR" "Missing argument for --log"
           usage
         fi
+        ;;
+      --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+      --list-outdated)
+        LIST_ONLY=true
+        shift
+        ;;
+      --update-package-json)
+        UPDATE_PACKAGE_JSON=true
+        shift
         ;;
       --help)
         usage
@@ -97,6 +118,16 @@ main() {
   fi
 
   #---------------------------------------------------------------------
+  # LIST OUTDATED PACKAGES
+  #---------------------------------------------------------------------
+  if [ "$LIST_ONLY" = true ]; then
+    format-echo "INFO" "Listing outdated packages..."
+    npm outdated
+    print_with_separator "End of NPM Dependency Updater Script"
+    exit 0
+  fi
+
+  #---------------------------------------------------------------------
   # DEPENDENCY UPDATES
   #---------------------------------------------------------------------
   format-echo "INFO" "Updating npm dependencies..."
@@ -104,13 +135,31 @@ main() {
   TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
   format-echo "INFO" "$TIMESTAMP: Running npm update..."
 
-  # Update npm dependencies
-  if npm update; then
-    format-echo "SUCCESS" "Dependencies updated successfully!"
+  UPDATE_CMD=(npm update)
+  if [ "$DRY_RUN" = true ]; then
+    UPDATE_CMD+=(--dry-run)
+  fi
+
+  if "${UPDATE_CMD[@]}"; then
+    if [ "$DRY_RUN" = true ]; then
+      format-echo "INFO" "Dry run complete. No packages were installed."
+    else
+      format-echo "SUCCESS" "Dependencies updated successfully!"
+    fi
   else
     format-echo "ERROR" "Failed to update dependencies!"
     print_with_separator "End of NPM Dependency Updater Script"
     exit 1
+  fi
+
+  # Update package.json with latest versions if requested
+  if [ "$UPDATE_PACKAGE_JSON" = true ] && [ "$DRY_RUN" = false ]; then
+    format-echo "INFO" "Updating package.json with latest versions using npm-check-updates..."
+    if npx npm-check-updates -u; then
+      npm install
+    else
+      format-echo "ERROR" "npm-check-updates failed."
+    fi
   fi
 
   #---------------------------------------------------------------------
