@@ -169,7 +169,8 @@ main() {
   
   # List extracted files (top level only)
   format-echo "INFO" "Files extracted:"
-  ls -la "$DEST_DIR" | head -n 20
+  # Use find to safely list files, handling special characters
+  find "$DEST_DIR" -mindepth 1 -maxdepth 1 -exec ls -la {} + | head -n 20
   
   # Show more details if there are many files
   FILE_COUNT=$(find "$DEST_DIR" -type f | wc -l | tr -d ' ')

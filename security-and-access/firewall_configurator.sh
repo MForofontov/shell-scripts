@@ -199,7 +199,8 @@ apply_firewall_rules() {
   if [ ${#ADDITIONAL_PORTS[@]} -gt 0 ]; then
     format-echo "INFO" "Allowing additional ports..."
     for port in "${ADDITIONAL_PORTS[@]}"; do
-      local service=$(get_service_name "$port")
+      local service
+      service=$(get_service_name "$port")
       if [ "$service" != "Unknown" ]; then
         run_ufw_cmd ufw allow "$port/tcp" comment "$service"
         format-echo "INFO" "Allowed port $port ($service)."
@@ -446,7 +447,8 @@ summarize_rules() {
     if [ ${#ADDITIONAL_PORTS[@]} -gt 0 ]; then
       echo "Additional allowed ports:"
       for port in "${ADDITIONAL_PORTS[@]}"; do
-        local service=$(get_service_name "$port")
+        local service
+        service=$(get_service_name "$port")
         if [ "$service" != "Unknown" ]; then
           echo "- $port ($service)"
         else

@@ -77,7 +77,6 @@ resolve_domains() {
   echo "----------------------------------------------------------------------------------------"
   
   for DOMAIN in "${DOMAINS[@]}"; do
-    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
     
     # A record (IPv4)
     IPv4=$(dig +short A "$DOMAIN" | head -n 1)

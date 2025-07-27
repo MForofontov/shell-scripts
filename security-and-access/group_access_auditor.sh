@@ -350,7 +350,7 @@ output_text_format() {
         members="(none)"
       else
         # Replace commas with space-comma-space for better readability
-        members=$(echo "$members" | sed 's/,/, /g')
+        members="${members//,/, }"
       fi
       
       printf "%-20s %-10s %-6s %-40s\n" "$group_name" "$gid" "$sudo_access" "$members"
@@ -388,8 +388,8 @@ output_csv_format() {
       fi
       
       # CSV needs proper escaping - wrap in quotes and escape existing quotes
-      escaped_group_name=$(echo "$group_name" | sed 's/"/""/g')
-      escaped_members=$(echo "$members" | sed 's/"/""/g')
+      escaped_group_name="${group_name//\"/\"\"}"
+      escaped_members="${members//\"/\"\"}"
       
       echo "\"$escaped_group_name\",\"$gid\",\"$escaped_members\",\"$member_count\",\"$sudo_access\""
     done < "$groups_file"
@@ -429,7 +429,7 @@ output_json_format() {
       # Split members string into an array
       local member_array="[]"
       if [[ -n "$members" ]]; then
-        member_array="[\"$(echo "$members" | sed 's/,/","/g')\"]"
+        member_array="[\"${members//,/","}\"]"
       fi
       
       # Add comma separator between entries (except for first)
@@ -478,11 +478,13 @@ output_statistics() {
     print_with_separator "Group Membership Statistics"
     
     # Total groups
-    local total_groups=$(wc -l < "$groups_file")
+    local total_groups
+    total_groups=$(wc -l < "$groups_file")
     echo "Total Groups: $total_groups"
     
     # Empty groups
-    local empty_groups=$(grep -c ':$' "$groups_file" || true)
+    local empty_groups
+    empty_groups=$(grep -c ':$' "$groups_file" || true)
     # Avoid division by zero
     if [ "$total_groups" -gt 0 ]; then
       local empty_percentage=$((empty_groups * 100 / total_groups))
@@ -537,8 +539,10 @@ find_user_in_groups() {
   fi
   
   # Get primary group
-  local primary_gid=$(id -g "$username")
-  local primary_group=$(getent group "$primary_gid" | cut -d: -f1)
+  local primary_gid
+  primary_gid=$(id -g "$username")
+  local primary_group
+  primary_group=$(getent group "$primary_gid" | cut -d: -f1)
   
   echo "User: $username"
   echo "UID: $(id -u "$username")"
@@ -554,7 +558,8 @@ find_user_in_groups() {
       
       # Check sudo access if requested
       if [[ "$SHOW_SUDO_INFO" == "true" ]]; then
-        local sudo_access=$(check_sudo_access "$group_name")
+        local sudo_access
+        sudo_access=$(check_sudo_access "$group_name")
         echo "  Sudo Access: $sudo_access"
       fi
       
