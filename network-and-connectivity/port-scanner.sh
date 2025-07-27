@@ -368,10 +368,12 @@ scan_ports() {
   
   # Create or clear output file if specified
   if [ -n "$OUTPUT_FILE" ]; then
-    echo "# Port scan results for $SERVER" > "$OUTPUT_FILE"
-    echo "# Scan started at $(date)" >> "$OUTPUT_FILE"
-    echo "# Port | Status | Service" >> "$OUTPUT_FILE"
-    echo "# ---- | ------ | -------" >> "$OUTPUT_FILE"
+    {
+      echo "# Port scan results for $SERVER"
+      echo "# Scan started at $(date)"
+      echo "# Port | Status | Service"
+      echo "# ---- | ------ | -------"
+    } > "$OUTPUT_FILE"
   fi
   
   local port_count=0
@@ -458,27 +460,29 @@ scan_ports() {
   
   # Append summary to output file if specified
   if [ -n "$OUTPUT_FILE" ]; then
-    echo "" >> "$OUTPUT_FILE"
-    echo "# Summary" >> "$OUTPUT_FILE"
-    echo "# -------" >> "$OUTPUT_FILE"
-    echo "# Server: $SERVER" >> "$OUTPUT_FILE"
-    echo "# Ports scanned: $total_ports" >> "$OUTPUT_FILE"
-    echo "# Open ports found: $open_count" >> "$OUTPUT_FILE"
-    
-    if [ ${#open_ports[@]} -gt 0 ]; then
-      echo -n "# Open ports: " >> "$OUTPUT_FILE"
-      for i in "${!open_ports[@]}"; do
-        if [ "$i" -gt 0 ]; then
-          echo -n ", " >> "$OUTPUT_FILE"
-        fi
-        echo -n "${open_ports[$i]} (${open_services[$i]})" >> "$OUTPUT_FILE"
-      done
-      echo "" >> "$OUTPUT_FILE"
-    else
-      echo "# No open ports found." >> "$OUTPUT_FILE"
-    fi
-    
-    echo "# Scan completed at $(date)" >> "$OUTPUT_FILE"
+    {
+      echo ""
+      echo "# Summary"
+      echo "# -------"
+      echo "# Server: $SERVER"
+      echo "# Ports scanned: $total_ports"
+      echo "# Open ports found: $open_count"
+
+      if [ ${#open_ports[@]} -gt 0 ]; then
+        echo -n "# Open ports: "
+        for i in "${!open_ports[@]}"; do
+          if [ "$i" -gt 0 ]; then
+            echo -n ", "
+          fi
+          echo -n "${open_ports[$i]} (${open_services[$i]})"
+        done
+        echo ""
+      else
+        echo "# No open ports found."
+      fi
+
+      echo "# Scan completed at $(date)"
+    } >> "$OUTPUT_FILE"
   fi
   
   return 0
