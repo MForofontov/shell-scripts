@@ -421,7 +421,7 @@ parse_args() {
         ;;
       --selector)
         SELECTOR="$2"
-        NODES=($(get_nodes_by_selector "$SELECTOR"))
+        mapfile -t NODES < <(get_nodes_by_selector "$SELECTOR")
         shift 2
         ;;
       --cordon-only)
