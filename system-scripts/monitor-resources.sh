@@ -198,8 +198,16 @@ get_cpu_usage() {
 # Function to get memory usage
 get_memory_usage() {
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS approach
-    top -l 1 -n 0 | grep "PhysMem" | awk '{print $2}' | sed 's/M//' | awk -v total=$(sysctl -n hw.memsize | awk '{print $1/1024/1024}') '{print $1*100/total}'
+    # Improved macOS memory usage calculation using vm_stat and sysctl
+    local total_mem=$(sysctl -n hw.memsize)
+    local page_size=$(vm_stat | grep "page size of" | awk '{print $8}')
+    local active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.')
+    local wired=$(vm_stat | grep "Pages wired down" | awk '{print $4}' | tr -d '.')
+    local compressed=$(vm_stat | grep "Pages occupied by compressor" | awk '{print $5}' | tr -d '.')
+    local used_mem=$(( (active + wired + compressed) * page_size ))
+    local total_mem_mb=$((total_mem / 1024 / 1024))
+    local used_mem_mb=$((used_mem / 1024 / 1024))
+    awk "BEGIN {printf \"%.2f\", ($used_mem_mb/$total_mem_mb)*100}"
   else
     # Linux approach
     free -m | awk 'NR==2{printf "%.2f", $3*100/$2 }'
