@@ -121,9 +121,15 @@ check_status_codes() {
       verbose_messages+=("$(format-echo "INFO" "Checking URL: $URL (Timeout: ${TIMEOUT}s, Retries: $RETRY_COUNT)" 2>&1)")
     fi
     
-    # Use curl with retries and timeout
-    local curl_cmd="curl -o /dev/null -s -w \"%{http_code} %{time_total} %{size_download}\" "
-    curl_cmd+="--connect-timeout $TIMEOUT --retry $RETRY_COUNT "
+    # Prepare curl arguments for status check
+    local -a curl_args=(
+      -o /dev/null
+      -s
+      -w "%{http_code} %{time_total} %{size_download}"
+      --connect-timeout "$TIMEOUT"
+      --retry "$RETRY_COUNT"
+      "$URL"
+    )
     
     # If headers requested, get them too
     local headers=""
@@ -131,9 +137,9 @@ check_status_codes() {
       headers=$(curl -sI "$URL" | head -n 20)
     fi
     
-    # Execute the curl command
+    # Execute curl with the prepared arguments
     local result
-    result=$(eval "$curl_cmd \"$URL\"")
+    result=$(curl "${curl_args[@]}")
     
     # Parse the results
     STATUS_CODE=$(echo "$result" | cut -d' ' -f1)
