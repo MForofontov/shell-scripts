@@ -530,3 +530,4 @@ main() {
 
 # Run the main function
 main "$@"
+exit $?

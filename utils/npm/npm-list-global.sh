@@ -88,3 +88,4 @@ main() {
 }
 
 main "$@"
+exit $?
