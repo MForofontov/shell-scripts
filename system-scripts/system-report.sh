@@ -470,35 +470,35 @@ generate_report_text() {
     print_with_separator
     
     format_section_header "SYSTEM INFORMATION"
-    get_system_info
+    format_command_output "System Information" "$(get_system_info)"
     
     format_section_header "CPU INFORMATION"
-    get_cpu_info
+    format_command_output "CPU Information" "$(get_cpu_info)"
     
     format_section_header "MEMORY INFORMATION"
-    get_memory_info
+    format_command_output "Memory Information" "$(get_memory_info)"
     
     format_section_header "DISK INFORMATION"
-    get_disk_info
+    format_command_output "Disk Information" "$(get_disk_info)"
     
     if $INCLUDE_NETWORK; then
       format_section_header "NETWORK INFORMATION"
-      get_network_info
+      format_command_output "Network Information" "$(get_network_info)"
     fi
     
     if $INCLUDE_PROCESSES; then
       format_section_header "PROCESS INFORMATION"
-      get_process_info
+      format_command_output "Process Information" "$(get_process_info)"
     fi
     
     if $INCLUDE_PACKAGES; then
       format_section_header "PACKAGE INFORMATION"
-      get_package_info
+      format_command_output "Package Information" "$(get_package_info)"
     fi
     
     if $INCLUDE_DOCKER; then
       format_section_header "DOCKER INFORMATION"
-      get_docker_info
+      format_command_output "Docker Information" "$(get_docker_info)"
     fi
     
     echo ""

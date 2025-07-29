@@ -8,7 +8,7 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Function to display usage instructions with organized folder structure
 usage() {
-    TERMINAL_WIDTH=$(tput cols)
+    TERMINAL_WIDTH=$(tput cols 2>/dev/null || echo 80)
     SEPARATOR=$(printf '%*s' "$TERMINAL_WIDTH" '' | tr ' ' '-')
 
     echo
