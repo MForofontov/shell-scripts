@@ -272,7 +272,7 @@ validate_args() {
   if [[ "$DISTRIBUTE" == "true" && ${#REMOTE_SERVERS[@]} -eq 0 ]]; then
     format-echo "WARNING" "Distribution enabled but no remote servers specified."
     if [[ "$NON_INTERACTIVE" == "false" ]]; then
-      read -p "Continue with key generation only? (y/n): " confirm
+      read -r -p "Continue with key generation only? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0
@@ -292,7 +292,7 @@ validate_args() {
     if [[ "$NON_INTERACTIVE" == "true" ]]; then
       exit 1
     else
-      read -p "Continue without GitHub upload? (y/n): " confirm
+      read -r -p "Continue without GitHub upload? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0
@@ -307,7 +307,7 @@ validate_args() {
     if [[ "$NON_INTERACTIVE" == "true" ]]; then
       exit 1
     else
-      read -p "Continue without GitLab upload? (y/n): " confirm
+      read -r -p "Continue without GitLab upload? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0
@@ -321,7 +321,7 @@ validate_args() {
     if [[ "$NON_INTERACTIVE" == "true" ]]; then
       exit 1
     else
-      read -p "Continue without Bitbucket upload? (y/n): " confirm
+      read -r -p "Continue without Bitbucket upload? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0
@@ -457,7 +457,7 @@ generate_ssh_key() {
       exit 1
     else
       format-echo "WARNING" "SSH key already exists: $key_path"
-      read -p "Overwrite this key? (y/n): " confirm
+      read -r -p "Overwrite this key? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Key generation cancelled by user."
         return 1

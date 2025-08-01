@@ -400,7 +400,7 @@ write_output_file() {
   # Check if output file exists and we're not forcing overwrite
   if [[ -f "$OUTPUT_FILE" && "$FORCE" != true ]]; then
     format-echo "WARNING" "Output file already exists: $OUTPUT_FILE"
-    read -p "Do you want to overwrite it? (y/n): " confirm
+    read -r -p "Do you want to overwrite it? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0
