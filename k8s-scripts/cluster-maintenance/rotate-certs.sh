@@ -339,7 +339,7 @@ check_certificate_expiration() {
       # Check the API server certificate
       if [[ -n "$api_server" ]]; then
         local host_port
-        host_port=$(echo "$api_server" | sed 's|https://||')
+        host_port=${api_server#https://}
         
         echo "Certificate Expiration Check:" > "$temp_file"
         echo "---------------------------" >> "$temp_file"
@@ -396,7 +396,7 @@ check_certificate_expiration() {
       # Check the API server certificate
       if [[ -n "$api_server" ]]; then
         local host_port
-        host_port=$(echo "$api_server" | sed 's|https://||')
+        host_port=${api_server#https://}
         
         echo "Certificate Expiration Check:" > "$temp_file"
         echo "---------------------------" >> "$temp_file"
