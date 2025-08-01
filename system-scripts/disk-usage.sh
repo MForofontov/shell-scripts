@@ -111,11 +111,16 @@ parse_args() {
 # Function to check disk usage for a specific filesystem
 check_fs_usage() {
   local fs="$1"
-  local mount_point=$(df "$fs" | tail -1 | awk '{print $6}')
-  local usage=$(df "$fs" | tail -1 | awk '{print $5}' | sed 's/%//g')
-  local size=$(df -h "$fs" | tail -1 | awk '{print $2}')
-  local used=$(df -h "$fs" | tail -1 | awk '{print $3}')
-  local avail=$(df -h "$fs" | tail -1 | awk '{print $4}')
+  local mount_point
+  mount_point=$(df "$fs" | tail -1 | awk '{print $6}')
+  local usage
+  usage=$(df "$fs" | tail -1 | awk '{print $5}' | sed 's/%//g')
+  local size
+  size=$(df -h "$fs" | tail -1 | awk '{print $2}')
+  local used
+  used=$(df -h "$fs" | tail -1 | awk '{print $3}')
+  local avail
+  avail=$(df -h "$fs" | tail -1 | awk '{print $4}')
   
   if [[ "$VERBOSE" == "true" ]]; then
     format-echo "INFO" "Filesystem: $fs (mounted at $mount_point)"
@@ -152,7 +157,8 @@ check_fs_usage() {
 
 # Function to check all mounted filesystems
 check_all_filesystems() {
-  local fs_list=$(df -t ext2 -t ext3 -t ext4 -t xfs -t btrfs -t hfs -t apfs 2>/dev/null | tail -n +2 | awk '{print $6}' || echo "/")
+  local fs_list
+  fs_list=$(df -t ext2 -t ext3 -t ext4 -t xfs -t btrfs -t hfs -t apfs 2>/dev/null | tail -n +2 | awk '{print $6}' || echo "/")
   
   # On macOS, fallback to simpler approach if the above fails
   if [ -z "$fs_list" ]; then

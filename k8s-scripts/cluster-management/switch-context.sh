@@ -75,8 +75,10 @@ check_requirements() {
 list_contexts() {
   format-echo "INFO" "Listing available Kubernetes contexts..."
   
-  local contexts=($(kubectl config get-contexts -o name))
-  local current_context=$(kubectl config current-context 2>/dev/null || echo "none")
+  local contexts
+  read -r -a contexts <<<"$(kubectl config get-contexts -o name)"
+  local current_context
+  current_context=$(kubectl config current-context 2>/dev/null || echo "none")
   
   if [[ ${#contexts[@]} -eq 0 ]]; then
     format-echo "ERROR" "No Kubernetes contexts found."
@@ -123,7 +125,8 @@ list_contexts() {
     # Exclude non-cluster contexts unless --all is specified
     if [[ "$SHOW_ALL" == false ]]; then
       # Get cluster name for this context
-      local cluster=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$ctx\")].context.cluster}")
+      local cluster
+      cluster=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$ctx\")].context.cluster}")
       if [[ -z "$cluster" || "$cluster" == "none" ]]; then
         include=false
       fi
@@ -144,7 +147,8 @@ list_contexts() {
       filtered_providers+=("$provider")
       
       # Get cluster name
-      local cluster=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$ctx\")].context.cluster}")
+      local cluster
+      cluster=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$ctx\")].context.cluster}")
       filtered_clusters+=("$cluster")
     fi
   done
@@ -195,7 +199,8 @@ switch_context() {
   fi
   
   # Get current context for comparison
-  local current_context=$(kubectl config current-context 2>/dev/null || echo "none")
+  local current_context
+  current_context=$(kubectl config current-context 2>/dev/null || echo "none")
   
   # Don't switch if already on the target context
   if [[ "$current_context" == "$target_context" ]]; then
