@@ -781,7 +781,8 @@ validate_certificates() {
   #---------------------------------------------------------------------
   # Check API server connectivity
   format-echo "INFO" "Checking API server connectivity..."
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s)
   local end_time=$((start_time + 60))  # 60 second timeout
   local connected=false
   
