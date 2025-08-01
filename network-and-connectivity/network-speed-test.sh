@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # network-speed-test.sh
 # Script to run a network speed test using speedtest-cli
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create-cluster-local.sh
 # Script to create Kubernetes clusters with various providers
 

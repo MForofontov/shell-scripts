@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # start-docker-containers.sh
 # Script to start multiple Docker containers in detached mode.
 

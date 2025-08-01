@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # monitor-resources.sh
 # Script to monitor system resources (CPU, memory, disk) and log the usage.
 

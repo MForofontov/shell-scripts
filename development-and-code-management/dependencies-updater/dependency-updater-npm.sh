@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # dependency-updater-npm.sh
 # Script to update npm dependencies and generate a summary of updated packages
 

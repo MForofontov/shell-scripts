@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # apply-k8s-configuration.sh
 # Script to apply Kubernetes manifests in order (no cluster creation)
 

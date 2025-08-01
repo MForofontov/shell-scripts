@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # resume-cluster.sh
 # Script to resume paused Kubernetes clusters with additional validation
 

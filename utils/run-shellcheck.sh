@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # run-shellcheck.sh
 # Script to run shellcheck on all .sh files in the repository
 

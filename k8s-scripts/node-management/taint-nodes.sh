@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # taint-nodes.sh
 # Script to manage Kubernetes node taints with batch operations and presets
 

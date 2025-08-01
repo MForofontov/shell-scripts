@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 # Utility script to log messages with log levels, timestamps, and optional file logging.
 

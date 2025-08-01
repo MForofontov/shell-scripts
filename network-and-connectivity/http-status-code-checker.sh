@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # http-status-code-checker.sh
 # Script to check HTTP status codes for a list of URLs
 

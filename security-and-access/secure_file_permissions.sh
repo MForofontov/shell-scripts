@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Script to set secure permissions for sensitive files.
 
 set -euo pipefail

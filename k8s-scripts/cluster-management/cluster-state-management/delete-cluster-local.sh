@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # delete-cluster.sh
 # Script to delete Kubernetes clusters from various providers
 

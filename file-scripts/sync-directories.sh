@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # sync-directories.sh
 # Script to synchronize two directories using rsync
 

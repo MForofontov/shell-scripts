@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # restart-cluster.sh
 # Script to restart Kubernetes clusters across various providers
 

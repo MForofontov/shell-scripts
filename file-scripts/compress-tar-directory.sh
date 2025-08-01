@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # compress-tar-directory.sh
 # Script to compress a directory into a tar.gz file
 

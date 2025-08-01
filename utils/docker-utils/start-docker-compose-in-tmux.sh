@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # start-docker-compose-in-tmux.sh
 # Script to start Docker Compose in a new tmux session.
 

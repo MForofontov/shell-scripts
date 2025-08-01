@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # restore-postgresql.sh
 # Script to restore a PostgreSQL database from a backup file.
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # convert-cluster.sh
 # Script to convert/migrate between Kubernetes cluster providers
 

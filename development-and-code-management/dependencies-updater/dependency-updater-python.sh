@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # dependency-updater-python.sh
 # Script to update Python dependencies listed in a requirements file
 

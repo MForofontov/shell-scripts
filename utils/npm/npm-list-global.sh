@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # npm-list-global.sh
 # Script to list all globally installed NPM packages.
 

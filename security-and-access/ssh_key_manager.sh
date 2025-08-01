@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Script to generate, manage and distribute SSH keys with advanced features.
 
 set -euo pipefail
