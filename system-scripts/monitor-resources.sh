@@ -199,11 +199,16 @@ get_cpu_usage() {
 get_memory_usage() {
   if [[ "$OSTYPE" == "darwin"* ]]; then
     # Improved macOS memory usage calculation using vm_stat and sysctl
-    local total_mem=$(sysctl -n hw.memsize)
-    local page_size=$(vm_stat | grep "page size of" | awk '{print $8}')
-    local active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.')
-    local wired=$(vm_stat | grep "Pages wired down" | awk '{print $4}' | tr -d '.')
-    local compressed=$(vm_stat | grep "Pages occupied by compressor" | awk '{print $5}' | tr -d '.')
+    local total_mem
+    total_mem=$(sysctl -n hw.memsize)
+    local page_size
+    page_size=$(vm_stat | grep "page size of" | awk '{print $8}')
+    local active
+    active=$(vm_stat | grep "Pages active" | awk '{print $3}' | tr -d '.')
+    local wired
+    wired=$(vm_stat | grep "Pages wired down" | awk '{print $4}' | tr -d '.')
+    local compressed
+    compressed=$(vm_stat | grep "Pages occupied by compressor" | awk '{print $5}' | tr -d '.')
     local used_mem=$(( (active + wired + compressed) * page_size ))
     local total_mem_mb=$((total_mem / 1024 / 1024))
     local used_mem_mb=$((used_mem / 1024 / 1024))
