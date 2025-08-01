@@ -339,7 +339,7 @@ check_certificate_expiration() {
       # Check the API server certificate
       if [[ -n "$api_server" ]]; then
         local host_port
-        host_port=$(echo "$api_server" | sed 's|https://||')
+        host_port=${api_server#https://}
         
         echo "Certificate Expiration Check:" > "$temp_file"
         echo "---------------------------" >> "$temp_file"
@@ -396,7 +396,7 @@ check_certificate_expiration() {
       # Check the API server certificate
       if [[ -n "$api_server" ]]; then
         local host_port
-        host_port=$(echo "$api_server" | sed 's|https://||')
+        host_port=${api_server#https://}
         
         echo "Certificate Expiration Check:" > "$temp_file"
         echo "---------------------------" >> "$temp_file"
@@ -781,7 +781,8 @@ validate_certificates() {
   #---------------------------------------------------------------------
   # Check API server connectivity
   format-echo "INFO" "Checking API server connectivity..."
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s)
   local end_time=$((start_time + 60))  # 60 second timeout
   local connected=false
   
@@ -982,7 +983,7 @@ main() {
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
       format-echo "WARNING" "You are about to rotate certificates for your Kubernetes cluster"
       format-echo "WARNING" "This may cause temporary disruption to cluster operations"
-      read -p "Do you want to continue? (y/n): " confirm
+      read -r -p "Do you want to continue? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0

@@ -191,7 +191,7 @@ resume_cluster() {
   if [[ "$CLUSTER_NAME" != "$cluster" || "$PROVIDER" != "$provider" ]]; then
     format-echo "WARNING" "State file contains different cluster info: $CLUSTER_NAME/$PROVIDER"
     if [[ "$FORCE" != true ]]; then
-      read -p "Continue anyway? (y/n): " confirm
+      read -r -p "Continue anyway? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         return 1
@@ -334,7 +334,7 @@ restore_workloads() {
     format-echo "INFO" "Found ${#backup_files[@]} backup files"
     
     if [[ "$FORCE" != true ]]; then
-      read -p "Do you want to restore all workloads? (y/n): " confirm
+      read -r -p "Do you want to restore all workloads? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Workload restoration skipped by user"
         return 0

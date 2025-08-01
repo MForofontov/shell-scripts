@@ -199,7 +199,7 @@ validate_args() {
   # Check if we have destructive action but dry-run is not enabled
   if [[ "$ACTION" =~ ^(disable|remove)$ && "$DRY_RUN" == "false" ]]; then
     format-echo "WARNING" "You selected a potentially destructive action ($ACTION) without --dry-run"
-    read -p "Are you sure you want to continue? (y/n): " confirm
+    read -r -p "Are you sure you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

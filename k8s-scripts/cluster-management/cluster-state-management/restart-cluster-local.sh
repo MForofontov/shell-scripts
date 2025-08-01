@@ -328,7 +328,7 @@ confirm_restart() {
   
   echo -e "\033[1;33mWarning:\033[0m You are about to restart the cluster '${CLUSTER_NAME}' (provider: ${PROVIDER})."
   echo "This may cause temporary downtime for any applications running on the cluster."
-  read -p "Are you sure you want to continue? [y/N]: " answer
+  read -r -p "Are you sure you want to continue? [y/N]: " answer
   
   case "$answer" in
     [Yy]|[Yy][Ee][Ss])

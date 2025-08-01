@@ -164,7 +164,7 @@ confirm_action() {
     prompt="$message [y/N]: "
   fi
   
-  read -p "$prompt" response
+  read -r -p "$prompt" response
   response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
   
   if [ -z "$response" ]; then

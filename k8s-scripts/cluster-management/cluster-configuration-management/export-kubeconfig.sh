@@ -317,7 +317,7 @@ interactive_selection() {
   
   echo
   echo -e "Enter the number of the context to export, or 'q' to quit:"
-  read -p "> " selection
+  read -r -p "> " selection
   
   # Validate input
   if [[ "$selection" == "q" || "$selection" == "Q" ]]; then

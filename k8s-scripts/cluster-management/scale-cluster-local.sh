@@ -503,7 +503,7 @@ confirm_scaling() {
   #---------------------------------------------------------------------
   # USER CONFIRMATION
   #---------------------------------------------------------------------
-  read -p "Are you sure you want to continue? [y/N]: " answer
+  read -r -p "Are you sure you want to continue? [y/N]: " answer
   
   case "$answer" in
     [Yy]|[Yy][Ee][Ss])
