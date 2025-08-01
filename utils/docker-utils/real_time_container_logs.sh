@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # real_time_container_logs.sh
 # Script to follow logs of a specified Docker container in real-time.
 

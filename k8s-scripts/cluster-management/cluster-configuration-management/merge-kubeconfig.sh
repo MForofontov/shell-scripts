@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # merge-kubeconfig.sh
 # Script to merge multiple kubeconfig files into a single file
 

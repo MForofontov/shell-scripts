@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # monitor-network.sh
 # Script to monitor network traffic on a specified interface or Docker container.
 

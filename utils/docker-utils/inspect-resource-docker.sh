@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # inspect-resource-docker.sh
 # Script to inspect Docker resources (containers, networks, volumes).
 

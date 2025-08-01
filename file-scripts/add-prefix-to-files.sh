@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # add-prefix-to-files.sh
 # Script to add a prefix to all files in a specified directory
 

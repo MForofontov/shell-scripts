@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # find-large-files.sh
 # Script to find and list files larger than a specified size
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # disk-usage.sh
 # Script to check disk usage and alert if it exceeds a threshold.
 

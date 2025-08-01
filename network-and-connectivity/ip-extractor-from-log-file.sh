@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ip-extractor-from-log-file.sh
 # Script to extract unique IP addresses from a log file
 

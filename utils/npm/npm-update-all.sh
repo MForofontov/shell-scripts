@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # npm-update-all.sh
 # Script to update all NPM packages to the latest version.
 

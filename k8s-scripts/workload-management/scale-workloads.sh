@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # scale-workloads.sh
 # Script to intelligently scale Kubernetes workloads based on metrics or schedules
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Advanced script to generate strong, random passwords with various options.
 
 set -euo pipefail

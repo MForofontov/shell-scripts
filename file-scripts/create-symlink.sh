@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # create-symlink.sh
 # Script to create a symbolic link
 

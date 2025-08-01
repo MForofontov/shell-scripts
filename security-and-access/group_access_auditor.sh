@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # group_access_auditor.sh
 # Script to audit groups and user memberships on the system.
 

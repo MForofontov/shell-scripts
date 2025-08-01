@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # dns-resolver.sh
 # Script to test DNS resolution for a list of domains
 
