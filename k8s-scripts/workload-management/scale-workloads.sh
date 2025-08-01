@@ -1168,7 +1168,7 @@ main() {
   # Confirm operation if not forced and not dry run
   if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
     format-echo "WARNING" "This operation will scale Kubernetes workloads."
-    read -p "Do you want to continue? (y/n): " confirm
+    read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

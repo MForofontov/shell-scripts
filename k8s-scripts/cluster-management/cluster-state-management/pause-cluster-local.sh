@@ -891,7 +891,7 @@ main() {
     
     # If not forcing, ask for confirmation to continue
     if [[ "$FORCE" != true ]]; then
-      read -p "Would you like to continue with saving the state? (y/n): " confirm
+      read -r -p "Would you like to continue with saving the state? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0
@@ -919,7 +919,7 @@ main() {
     
     # Confirm before pausing if not forced
     if [[ "$FORCE" != true ]]; then
-      read -p "Are you sure you want to pause cluster '$CLUSTER_NAME'? (y/n): " confirm
+      read -r -p "Are you sure you want to pause cluster '$CLUSTER_NAME'? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0

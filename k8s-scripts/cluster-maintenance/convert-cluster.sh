@@ -1287,7 +1287,7 @@ main() {
   if [[ "$INTERACTIVE" == true && "$FORCE" != true && "$DRY_RUN" != true ]]; then
     format-echo "WARNING" "This operation will export resources from the source cluster and import them to the target cluster."
     format-echo "WARNING" "It may affect running workloads and services."
-    read -p "Do you want to continue? (y/n): " confirm
+    read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

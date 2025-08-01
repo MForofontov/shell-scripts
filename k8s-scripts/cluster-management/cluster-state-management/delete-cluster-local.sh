@@ -177,7 +177,7 @@ confirm_deletion() {
   fi
   
   echo -e "\033[1;33mWarning:\033[0m You are about to delete the cluster '${CLUSTER_NAME}' (provider: ${PROVIDER})."
-  read -p "Are you sure you want to continue? [y/N]: " answer
+  read -r -p "Are you sure you want to continue? [y/N]: " answer
   
   case "$answer" in
     [Yy]|[Yy][Ee][Ss])

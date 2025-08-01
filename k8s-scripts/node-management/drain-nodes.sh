@@ -564,7 +564,7 @@ main() {
   if [[ "$DRY_RUN" != true ]]; then
     format-echo "WARNING" "You are about to ${CORDON_ONLY:+cordon}${CORDON_ONLY:-drain} the following nodes: ${NODES[*]}"
     format-echo "WARNING" "This might cause pod disruption and service unavailability."
-    read -p "Do you want to continue? (y/n): " confirm
+    read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

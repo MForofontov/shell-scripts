@@ -755,7 +755,7 @@ main() {
       format-echo "WARNING" "All namespaces including default will be cleaned"
     fi
     
-    read -p "Do you want to continue? (y/n): " confirm
+    read -r -p "Do you want to continue? (y/n): " confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
       format-echo "INFO" "Operation cancelled by user."
       exit 0

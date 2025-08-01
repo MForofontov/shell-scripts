@@ -982,7 +982,7 @@ main() {
     if [[ "$FORCE" != true && "$DRY_RUN" != true ]]; then
       format-echo "WARNING" "You are about to rotate certificates for your Kubernetes cluster"
       format-echo "WARNING" "This may cause temporary disruption to cluster operations"
-      read -p "Do you want to continue? (y/n): " confirm
+      read -r -p "Do you want to continue? (y/n): " confirm
       if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         format-echo "INFO" "Operation cancelled by user."
         exit 0

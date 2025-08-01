@@ -268,7 +268,7 @@ interactive_selection() {
   #---------------------------------------------------------------------
   echo
   echo -e "Enter the number of the context to switch to, or 'q' to quit:"
-  read -p "> " selection
+  read -r -p "> " selection
   
   #---------------------------------------------------------------------
   # INPUT VALIDATION

@@ -197,7 +197,7 @@ get_cluster_info() {
   # Check if the versions are the same
   if [[ "$current_version" == "$K8S_VERSION" ]]; then
     format-echo "WARNING" "Cluster is already running Kubernetes version $K8S_VERSION."
-    read -p "Continue anyway? [y/N]: " continue_anyway
+    read -r -p "Continue anyway? [y/N]: " continue_anyway
     
     case "$continue_anyway" in
       [Yy]|[Yy][Ee][Ss])
@@ -219,7 +219,7 @@ get_cluster_info() {
     format-echo "WARNING" "Downgrading Kubernetes clusters is not recommended and may cause issues."
     
     if [ "$FORCE" != true ]; then
-      read -p "Continue with downgrade anyway? [y/N]: " continue_anyway
+      read -r -p "Continue with downgrade anyway? [y/N]: " continue_anyway
       
       case "$continue_anyway" in
         [Yy]|[Yy][Ee][Ss])
@@ -658,7 +658,7 @@ confirm_upgrade() {
   echo
   echo "This operation may cause downtime and data loss. Make sure you have backups."
   echo
-  read -p "Are you sure you want to continue? [y/N]: " answer
+  read -r -p "Are you sure you want to continue? [y/N]: " answer
   
   #---------------------------------------------------------------------
   # USER RESPONSE HANDLING
