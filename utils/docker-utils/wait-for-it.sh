@@ -1,5 +1,6 @@
 #!/bin/sh
-set -euo pipefail
+# Remove errexit to prevent early exit on nc failures
+set -u
 # Use this script to test if a given TCP host/port are available
 
 WAITFORIT_cmdname=${0##*/}
@@ -31,39 +32,42 @@ wait_for()
         echoerr "$WAITFORIT_cmdname: waiting for $WAITFORIT_HOST:$WAITFORIT_PORT without a timeout"
     fi
     WAITFORIT_start_ts=$(date +%s)
-    while :
+    
+    while true
     do
-        if [ "$WAITFORIT_ISBUSY" -eq 1 ]; then
-            nc -z "$WAITFORIT_HOST" "$WAITFORIT_PORT"
-            WAITFORIT_result=$?
-        else
-            (echo > "/dev/tcp/$WAITFORIT_HOST/$WAITFORIT_PORT") >/dev/null 2>&1
-            WAITFORIT_result=$?
-        fi
+        # Try netcat first (most reliable)
+        nc -z "$WAITFORIT_HOST" "$WAITFORIT_PORT" >/dev/null 2>&1
+        WAITFORIT_result=$?
+        
         if [ "$WAITFORIT_result" -eq 0 ]; then
             WAITFORIT_end_ts=$(date +%s)
             echoerr "$WAITFORIT_cmdname: $WAITFORIT_HOST:$WAITFORIT_PORT is available after $((WAITFORIT_end_ts - WAITFORIT_start_ts)) seconds"
-            break
+            return 0
         fi
+        
+        # Check timeout
+        if [ "$WAITFORIT_TIMEOUT" -gt 0 ]; then
+            WAITFORIT_current_ts=$(date +%s)
+            WAITFORIT_elapsed=$((WAITFORIT_current_ts - WAITFORIT_start_ts))
+            if [ "$WAITFORIT_elapsed" -ge "$WAITFORIT_TIMEOUT" ]; then
+                echoerr "$WAITFORIT_cmdname: timeout occurred after waiting $WAITFORIT_TIMEOUT seconds for $WAITFORIT_HOST:$WAITFORIT_PORT"
+                return 1
+            fi
+        fi
+        
         sleep 1
     done
-    return "$WAITFORIT_result"
 }
 
 wait_for_wrapper()
 {
-    # In order to support SIGINT during timeout: http://unix.stackexchange.com/a/57692
-    if [ "$WAITFORIT_QUIET" -eq 1 ]; then
-        timeout $WAITFORIT_BUSYTIMEFLAG "$WAITFORIT_TIMEOUT" "$0" --quiet --child --host="$WAITFORIT_HOST" --port="$WAITFORIT_PORT" --timeout="$WAITFORIT_TIMEOUT" &
+    # Simplified wrapper without external timeout dependency
+    if [ "$WAITFORIT_TIMEOUT" -gt 0 ]; then
+        wait_for
+        WAITFORIT_RESULT=$?
     else
-        timeout $WAITFORIT_BUSYTIMEFLAG "$WAITFORIT_TIMEOUT" "$0" --child --host="$WAITFORIT_HOST" --port="$WAITFORIT_PORT" --timeout="$WAITFORIT_TIMEOUT" &
-    fi
-    WAITFORIT_PID=$!
-    trap 'kill -INT -$WAITFORIT_PID' INT
-    wait $WAITFORIT_PID
-    WAITFORIT_RESULT=$?
-    if [ "$WAITFORIT_RESULT" -ne 0 ]; then
-        echoerr "$WAITFORIT_cmdname: timeout occurred after waiting $WAITFORIT_TIMEOUT seconds for $WAITFORIT_HOST:$WAITFORIT_PORT"
+        wait_for
+        WAITFORIT_RESULT=$?
     fi
     return $WAITFORIT_RESULT
 }
@@ -143,20 +147,8 @@ if [ -z "$WAITFORIT_HOST" ] || [ -z "$WAITFORIT_PORT" ]; then
     usage
 fi
 
-# Check to see if timeout is from busybox?
-WAITFORIT_TIMEOUT_PATH=$(command -v timeout || true)
+# Initialize variables
 WAITFORIT_ISBUSY=0
-WAITFORIT_BUSYTIMEFLAG=""
-if [ -n "$WAITFORIT_TIMEOUT_PATH" ]; then
-    case "$($WAITFORIT_TIMEOUT_PATH --help 2>&1)" in
-        *busybox*) WAITFORIT_ISBUSY=1 ;;
-    esac
-    if [ "$WAITFORIT_ISBUSY" -eq 1 ]; then
-        if timeout 2>&1 | grep -q -e '-t '; then
-            WAITFORIT_BUSYTIMEFLAG="-t"
-        fi
-    fi
-fi
 
 if [ "$WAITFORIT_CHILD" -gt 0 ]; then
     wait_for
