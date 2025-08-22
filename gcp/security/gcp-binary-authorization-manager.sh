@@ -16,7 +16,7 @@ ZONE=""
 
 # Function to display usage
 usage() {
-    print_header "GCP Binary Authorization Manager"
+    print_with_separator "GCP Binary Authorization Manager"
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"

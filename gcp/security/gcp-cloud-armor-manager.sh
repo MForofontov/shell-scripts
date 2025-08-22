@@ -16,7 +16,7 @@ RULE_DESCRIPTION=""
 
 # Function to display usage
 usage() {
-    print_header "GCP Cloud Armor Manager"
+    print_with_separator "GCP Cloud Armor Manager"
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"

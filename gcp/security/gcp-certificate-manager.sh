@@ -16,7 +16,7 @@ DNS_AUTHORIZATION=""
 
 # Function to display usage
 usage() {
-    print_header "GCP Certificate Manager"
+    print_with_separator "GCP Certificate Manager"
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"

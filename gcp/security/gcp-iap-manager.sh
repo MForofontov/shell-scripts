@@ -17,7 +17,7 @@ ZONE=""
 
 # Function to display usage
 usage() {
-    print_header "GCP Identity-Aware Proxy (IAP) Manager"
+    print_with_separator "GCP Identity-Aware Proxy (IAP) Manager"
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"

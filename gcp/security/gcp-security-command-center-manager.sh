@@ -16,7 +16,7 @@ ASSET_NAME=""
 
 # Function to display usage
 usage() {
-    print_header "GCP Security Command Center Manager"
+    print_with_separator "GCP Security Command Center Manager"
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
