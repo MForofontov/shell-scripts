@@ -68,9 +68,9 @@ Miscellaneous helpers: Docker management (`docker-cleanup.sh`), npm utilities an
 ## Contributing
 Contributions are welcome. Add new scripts in the appropriate folder and include clear usage instructions in the script file.
 
-## License
-This project is licensed under the terms of the [GNU General Public License v3.0](LICENSE).
-
 ## Authors
 
 - MForofontov
+
+## License
+This project is licensed under the terms of the [GNU General Public License v3.0](LICENSE).
