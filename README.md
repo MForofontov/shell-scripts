@@ -70,7 +70,7 @@ Contributions are welcome. Add new scripts in the appropriate folder and include
 
 ## Authors
 
-- MForofontov
+- [Mykyta Forofontov](https://github.com/MForofontov)
 
 ## License
 This project is licensed under the terms of the [GNU General Public License v3.0](LICENSE).
