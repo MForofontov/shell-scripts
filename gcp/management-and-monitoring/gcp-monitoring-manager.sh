@@ -576,7 +576,7 @@ list_metrics() {
   
   if ! gcloud logging metrics list \
     --project="$project" \
-    $filter \
+    "$filter" \
     --format="table(name,description,filter)"; then
     format-echo "WARNING" "Failed to list custom metrics, trying built-in metrics"
     

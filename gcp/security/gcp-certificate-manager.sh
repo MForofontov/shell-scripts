@@ -110,6 +110,8 @@ create_certificate() {
         DOMAIN_FLAGS="$DOMAIN_FLAGS --domains=$(echo "$domain" | xargs)"
     done
     
+    # Intentional word splitting for multiple --domains flags
+    # shellcheck disable=SC2086
     if [[ "$LOCATION" == "global" ]]; then
         gcloud certificate-manager certificates create "$CERTIFICATE_NAME" \
             --global \

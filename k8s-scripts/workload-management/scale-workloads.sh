@@ -192,13 +192,14 @@ validate_workload() {
   format-echo "INFO" "Validating $workload_type '$workload_name' in namespace '$namespace'..."
   
   # Check if workload exists
-  if ! kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace &>/dev/null; then
+  if ! kubectl "$CONTEXT_FLAG" get "$workload_type" "$workload_name" -n "$namespace" &>/dev/null; then
     format-echo "ERROR" "$workload_type '$workload_name' not found in namespace '$namespace'."
     return 1
   fi
   
   # Get current replica count
-  local current_replicas=$(kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace -o jsonpath='{.spec.replicas}')
+  local current_replicas
+  current_replicas=$(kubectl "$CONTEXT_FLAG" get "$workload_type" "$workload_name" -n "$namespace" -o jsonpath='{.spec.replicas}')
   
   format-echo "SUCCESS" "Found $workload_type '$workload_name' in namespace '$namespace' with $current_replicas replicas."
   echo "$current_replicas"
@@ -222,7 +223,7 @@ scale_workload() {
   fi
   
   # Scale the workload
-  if ! kubectl $CONTEXT_FLAG scale $workload_type $workload_name -n $namespace --replicas=$replicas; then
+  if ! kubectl "$CONTEXT_FLAG" scale "$workload_type" "$workload_name" -n "$namespace" --replicas="$replicas"; then
     format-echo "ERROR" "Failed to scale $workload_type '$workload_name' in namespace '$namespace'."
     return 1
   fi
@@ -253,7 +254,7 @@ verify_workload_health() {
   
   while [[ $(date +%s) -lt $end_time ]]; do
     # Check if the workload exists
-    if ! kubectl $CONTEXT_FLAG get $workload_type $workload_name -n $namespace &>/dev/null; then
+    if ! kubectl "$CONTEXT_FLAG" get "$workload_type" "$workload_name" -n "$namespace" &>/dev/null; then
       format-echo "ERROR" "$workload_type '$workload_name' not found during verification."
       return 1
     fi
@@ -261,13 +262,13 @@ verify_workload_health() {
     # Get available/ready replicas based on workload type
     case "$workload_type" in
       deployment)
-        ready_replicas=$(kubectl $CONTEXT_FLAG get deployment $workload_name -n $namespace -o jsonpath='{.status.readyReplicas}')
+        ready_replicas=$(kubectl "$CONTEXT_FLAG" get deployment "$workload_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}')
         ;;
       statefulset)
-        ready_replicas=$(kubectl $CONTEXT_FLAG get statefulset $workload_name -n $namespace -o jsonpath='{.status.readyReplicas}')
+        ready_replicas=$(kubectl "$CONTEXT_FLAG" get statefulset "$workload_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}')
         ;;
       replicaset)
-        ready_replicas=$(kubectl $CONTEXT_FLAG get replicaset $workload_name -n $namespace -o jsonpath='{.status.readyReplicas}')
+        ready_replicas=$(kubectl "$CONTEXT_FLAG" get replicaset "$workload_name" -n "$namespace" -o jsonpath='{.status.readyReplicas}')
         ;;
     esac
     
@@ -283,7 +284,8 @@ verify_workload_health() {
       format-echo "SUCCESS" "$workload_type '$workload_name' is healthy with $ready_replicas ready replicas."
       
       # Check for pod status issues
-      local pod_issues=$(kubectl $CONTEXT_FLAG get pods -n $namespace -l "app=$workload_name" --no-headers | grep -v "Running" || true)
+      local pod_issues
+      pod_issues=$(kubectl "$CONTEXT_FLAG" get pods -n "$namespace" -l "app=$workload_name" --no-headers | grep -v "Running" || true)
       if [[ -n "$pod_issues" ]]; then
         format-echo "WARNING" "Some pods may have issues:"
         echo "$pod_issues"
@@ -347,7 +349,8 @@ get_workload_metrics() {
     fi
     
     # Get metrics for all pods matching the selector
-    local pod_metrics=$(kubectl $CONTEXT_FLAG top pods -n $namespace -l "$pod_selector" --no-headers 2>/dev/null)
+    local pod_metrics
+    pod_metrics=$(kubectl "$CONTEXT_FLAG" top pods -n "$namespace" -l "$pod_selector" --no-headers 2>/dev/null)
     if [[ -z "$pod_metrics" ]]; then
       format-echo "WARNING" "No metrics available for pods with selector '$pod_selector'."
       echo "0 0" # Return zero metrics
@@ -813,7 +816,8 @@ process_selector() {
   fi
   
   # Get all workloads matching the selector
-  local workloads=$(kubectl $CONTEXT_FLAG get $type -A -l "$selector" --no-headers 2>/dev/null)
+  local workloads
+  workloads=$(kubectl "$CONTEXT_FLAG" get "$type" -A -l "$selector" --no-headers 2>/dev/null)
   
   if [[ -z "$workloads" ]]; then
     format-echo "ERROR" "No $type found matching selector: $selector"

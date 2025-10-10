@@ -460,7 +460,7 @@ generate_memorable_password() {
   
   # Capitalize the first letter if uppercase is enabled
   if [ "$UPPERCASE" == "true" ]; then
-    password="$(tr '[:lower:]' '[:upper:]' <<< ${password:0:1})${password:1}"
+    password="$(tr '[:lower:]' '[:upper:]' <<< "${password:0:1}")${password:1}"
   fi
   
   echo "$password"
@@ -514,7 +514,7 @@ generate_passphrase() {
     
     # Capitalize if uppercase is enabled (50% chance per word)
     if [[ "$UPPERCASE" == "true" && $(( RANDOM % 2 )) -eq 0 ]]; then
-      word="$(tr '[:lower:]' '[:upper:]' <<< ${word:0:1})${word:1}"
+      word="$(tr '[:lower:]' '[:upper:]' <<< "${word:0:1}")${word:1}"
     fi
     
     # Add a random number at the end if numbers are enabled (25% chance per word)
