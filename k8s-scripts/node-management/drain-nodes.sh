@@ -184,7 +184,8 @@ check_pods_on_node() {
     pod_filter+=" -l $SELECTOR_FILTER"
   fi
   
-  # Count pods on node
+  # Count pods on node (intentional word splitting for filter flags)
+  # shellcheck disable=SC2086
   pod_count=$(kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | wc -l)
   
   format-echo "INFO" "Found $pod_count pods on node $node"
@@ -195,10 +196,12 @@ check_pods_on_node() {
   # Show critical pods that might prevent drain
   format-echo "INFO" "Checking for critical pods (no controllers)..."
   local critical_pods
+  # shellcheck disable=SC2086
   critical_pods=$(kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | awk '{print $1 " " $2}' | grep "1/1" | wc -l)
   
   if [[ $critical_pods -gt 0 && "$FORCE" != true ]]; then
     format-echo "WARNING" "Found $critical_pods critical pods on node $node"
+    # shellcheck disable=SC2086
     kubectl get pods $pod_filter -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME"
     
     if [[ "$DRY_RUN" != true ]]; then
@@ -340,7 +343,7 @@ drain_node() {
     remaining_pods=$(kubectl get pods --all-namespaces -o wide --field-selector="spec.nodeName=$node" | grep -v "^NAME" | wc -l)
     format-echo "INFO" "Draining in progress: $remaining_pods pods remaining (${elapsed_time}s elapsed, ${remaining_time}s remaining)"
     
-    sleep $POLL_INTERVAL
+    sleep "$POLL_INTERVAL"
   done
   
   #---------------------------------------------------------------------
@@ -392,7 +395,7 @@ process_node() {
       if [[ "$DRY_RUN" != true ]]; then
         # Schedule uncordon in background
         (
-          sleep $UNCORDON_DELAY
+          sleep "$UNCORDON_DELAY"
           format-echo "INFO" "Delay complete, uncordoning node $node"
           uncordon_node "$node"
         ) &

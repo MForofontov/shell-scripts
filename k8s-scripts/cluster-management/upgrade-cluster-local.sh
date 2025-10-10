@@ -468,6 +468,8 @@ upgrade_k3d_cluster() {
   
   local k3d_args="--servers $node_count_server --agents $node_count_agent --image rancher/k3s:v${K8S_VERSION}-k3s1"
   
+  # Intentional word splitting for k3d arguments
+  # shellcheck disable=SC2086
   if k3d cluster create "${CLUSTER_NAME}" $k3d_args; then
     format-echo "SUCCESS" "k3d cluster '${CLUSTER_NAME}' upgraded successfully to Kubernetes ${K8S_VERSION}."
   else
@@ -478,6 +480,7 @@ upgrade_k3d_cluster() {
     # Try to recreate with the previous version
     format-echo "INFO" "Attempting to recreate cluster with previous Kubernetes version ${CURRENT_VERSION}..."
     local prev_k3d_args="--servers $node_count_server --agents $node_count_agent --image rancher/k3s:v${CURRENT_VERSION}-k3s1"
+    # shellcheck disable=SC2086
     if ! k3d cluster create "${CLUSTER_NAME}" $prev_k3d_args; then
       format-echo "ERROR" "Failed to recreate cluster with previous version. Resources may be lost."
     else
