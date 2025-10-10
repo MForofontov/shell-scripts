@@ -860,8 +860,7 @@ main() {
   
   # Auto-detect provider if not specified
   if [[ "$PROVIDER" == "auto" ]]; then
-    PROVIDER=$(detect_provider "$CLUSTER_NAME")
-    if [[ $? -ne 0 ]]; then
+    if ! PROVIDER=$(detect_provider "$CLUSTER_NAME"); then
       format-echo "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
       exit 1
     fi

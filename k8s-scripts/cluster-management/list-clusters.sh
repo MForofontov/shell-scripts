@@ -204,22 +204,25 @@ get_eks_clusters() {
       continue
     fi
     
-    local status=$(echo "$cluster_details" | jq -r '.cluster.status')
-    local k8s_version=$(echo "$cluster_details" | jq -r '.cluster.version')
-    local region=$(echo "$cluster_details" | jq -r '.cluster.arn' | cut -d':' -f4)
+    local status
+    status=$(echo "$cluster_details" | jq -r '.cluster.status')
+    local k8s_version
+    k8s_version=$(echo "$cluster_details" | jq -r '.cluster.version')
+    local region
+    region=$(echo "$cluster_details" | jq -r '.cluster.arn' | cut -d':' -f4)
     
     # Get node count
     local node_count=0
     if [[ "$status" == "ACTIVE" ]]; then
       # Build command to get node groups
-      local nodegroups_cmd="aws eks list-nodegroups --cluster-name $name"
+      local nodegroups_cmd="aws eks list-nodegroups --cluster-name \"$name\""
       
       if [[ -n "$REGION" ]]; then
-        nodegroups_cmd+=" --region $REGION"
+        nodegroups_cmd+=" --region \"$REGION\""
       fi
       
       if [[ -n "$PROFILE" ]]; then
-        nodegroups_cmd+=" --profile $PROFILE"
+        nodegroups_cmd+=" --profile \"$PROFILE\""
       fi
       
       # Get node groups
@@ -227,20 +230,21 @@ get_eks_clusters() {
       if nodegroups=$(eval "$nodegroups_cmd" 2>/dev/null); then
         for ng in $(echo "$nodegroups" | jq -r '.nodegroups[]'); do
           # Build command to describe node group
-          local describe_ng_cmd="aws eks describe-nodegroup --cluster-name $name --nodegroup-name $ng"
+          local describe_ng_cmd="aws eks describe-nodegroup --cluster-name \"$name\" --nodegroup-name \"$ng\""
           
           if [[ -n "$REGION" ]]; then
-            describe_ng_cmd+=" --region $REGION"
+            describe_ng_cmd+=" --region \"$REGION\""
           fi
           
           if [[ -n "$PROFILE" ]]; then
-            describe_ng_cmd+=" --profile $PROFILE"
+            describe_ng_cmd+=" --profile \"$PROFILE\""
           fi
           
           # Get node group details
           local ng_details=""
           if ng_details=$(eval "$describe_ng_cmd" 2>/dev/null); then
-            local ng_count=$(echo "$ng_details" | jq -r '.nodegroup.scalingConfig.desiredSize')
+            local ng_count
+            ng_count=$(echo "$ng_details" | jq -r '.nodegroup.scalingConfig.desiredSize')
             node_count=$((node_count + ng_count))
           fi
         done

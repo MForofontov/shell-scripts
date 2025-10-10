@@ -368,6 +368,8 @@ enable_apis() {
     format-echo "INFO" "APIs to enable: $api_list"
   fi
   
+  # Intentional word splitting for multiple API names
+  # shellcheck disable=SC2086
   if ! gcloud services enable $api_list --project="$project" >/dev/null 2>&1; then
     format-echo "ERROR" "Failed to enable APIs"
     return 1

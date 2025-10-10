@@ -815,7 +815,8 @@ validate_certificates() {
   # Re-check certificate expiration
   format-echo "INFO" "Verifying certificate expiration dates..."
   if ! check_certificate_expiration "$provider" "$DAYS_WARNING"; then
-    if [[ $? -eq 10 ]]; then
+    local exit_code=$?
+    if [[ $exit_code -eq 10 ]]; then
       format-echo "WARNING" "Some certificates still appear to be expiring soon"
     else
       format-echo "ERROR" "Failed to verify certificate expiration dates"

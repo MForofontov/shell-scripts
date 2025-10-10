@@ -598,9 +598,7 @@ EOF
     ssh "$remote_server" "mkdir -p ~/.ssh && chmod 700 ~/.ssh"
     
     # Append the public key to authorized_keys
-    cat "$key_path.pub" | ssh "$remote_server" "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
-    
-    if [[ $? -ne 0 ]]; then
+    if ! cat "$key_path.pub" | ssh "$remote_server" "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"; then
       format-echo "ERROR" "Failed to distribute SSH key to: $remote_server"
       return 1
     fi
@@ -828,9 +826,7 @@ rotate_ssh_keys() {
       old_public_key=${old_public_key//\./\\.}
       
       # Remove the key from authorized_keys
-      ssh "$server" "sed -i.bak '/$old_public_key/d' ~/.ssh/authorized_keys"
-      
-      if [[ $? -ne 0 ]]; then
+      if ! ssh "$server" "sed -i.bak '/$old_public_key/d' ~/.ssh/authorized_keys"; then
         format-echo "WARNING" "Could not automatically remove old key from: $server"
       else
         format-echo "SUCCESS" "Old key removed from: $server"

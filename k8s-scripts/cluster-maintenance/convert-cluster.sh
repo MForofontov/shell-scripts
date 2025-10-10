@@ -341,6 +341,8 @@ create_target_cluster() {
   case "$TARGET_PROVIDER" in
     minikube)
       format-echo "INFO" "Creating minikube cluster '$TARGET_CLUSTER'..."
+      # Intentional word splitting for optional version flag
+      # shellcheck disable=SC2086
       if ! minikube start -p "$TARGET_CLUSTER" $version_flag --nodes="$TARGET_NODES"; then
         format-echo "ERROR" "Failed to create minikube cluster '$TARGET_CLUSTER'."
         exit 1
@@ -357,6 +359,8 @@ create_target_cluster() {
       ;;
     k3d)
       format-echo "INFO" "Creating k3d cluster '$TARGET_CLUSTER'..."
+      # Intentional word splitting for optional version flag
+      # shellcheck disable=SC2086
       if ! k3d cluster create "$TARGET_CLUSTER" $version_flag --agents "$TARGET_NODES"; then
         format-echo "ERROR" "Failed to create k3d cluster '$TARGET_CLUSTER'."
         exit 1
@@ -946,7 +950,7 @@ verify_import() {
       # Get resource count in target
       local target_count=0
       target_count=$(kubectl get "$resource" "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
-      target_count=$(echo $target_count) # Trim whitespace
+      target_count=$(echo "$target_count" | xargs) # Trim whitespace
       
       format-echo "INFO" "Found $target_count of $source_count $resource resources in namespace $ns."
       
@@ -966,7 +970,7 @@ verify_import() {
     local pods_running=0
     
     pods_total=$(kubectl get pods "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | wc -l || echo 0)
-    pods_total=$(echo $pods_total) # Trim whitespace
+    pods_total=$(echo "$pods_total" | xargs) # Trim whitespace
     
     if [[ "$pods_total" -gt 0 ]]; then
       pods_running=$(kubectl get pods "$kubeconfig_flag" -n "$ns" --no-headers 2>/dev/null | grep -c "Running" || echo 0)
@@ -1303,8 +1307,7 @@ main() {
   # Validate source cluster and get context if not provided
   format-echo "INFO" "Validating source cluster..."
   if [[ -z "$SOURCE_CONTEXT" ]]; then
-    SOURCE_CONTEXT=$(validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "" "$SOURCE_KUBECONFIG")
-    if [[ $? -ne 0 ]]; then
+    if ! SOURCE_CONTEXT=$(validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "" "$SOURCE_KUBECONFIG"); then
       format-echo "ERROR" "Failed to validate source cluster."
       exit 1
     fi
@@ -1322,8 +1325,7 @@ main() {
     # Validate target cluster and get context if not provided
     format-echo "INFO" "Validating target cluster..."
     if [[ -z "$TARGET_CONTEXT" ]]; then
-      TARGET_CONTEXT=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "" "$TARGET_KUBECONFIG")
-      if [[ $? -ne 0 ]]; then
+      if ! TARGET_CONTEXT=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "" "$TARGET_KUBECONFIG"); then
         format-echo "ERROR" "Failed to validate target cluster."
         exit 1
       fi

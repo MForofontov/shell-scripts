@@ -247,7 +247,7 @@ should_preserve_namespace() {
   
   # Check against patterns
   for pattern in "${PRESERVE_PATTERNS[@]}"; do
-    if [[ "$ns" == ${pattern} ]]; then
+    if [[ "$ns" == "${pattern}" ]]; then
       return 0
     fi
   done
