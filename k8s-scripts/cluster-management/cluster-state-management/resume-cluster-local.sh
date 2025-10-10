@@ -206,8 +206,7 @@ resume_cluster() {
   case "$provider" in
     minikube)
       format-echo "INFO" "Starting minikube cluster: $cluster"
-      minikube start -p "$cluster"
-      if [[ $? -ne 0 ]]; then
+      if ! minikube start -p "$cluster"; then
         format-echo "ERROR" "Failed to start minikube cluster: $cluster"
         return 1
       fi
@@ -230,9 +229,7 @@ resume_cluster() {
         container_name=$(docker inspect --format "{{.Name}}" "$container_id" | sed 's|^/||')
         
         format-echo "INFO" "Starting container: $container_name"
-        docker start "$container_id" > /dev/null
-        
-        if [[ $? -ne 0 ]]; then
+        if ! docker start "$container_id" > /dev/null; then
           format-echo "ERROR" "Failed to start container: $container_name"
           return 1
         fi
@@ -241,8 +238,7 @@ resume_cluster() {
       
     k3d)
       format-echo "INFO" "Starting k3d cluster: $cluster"
-      k3d cluster start "$cluster"
-      if [[ $? -ne 0 ]]; then
+      if ! k3d cluster start "$cluster"; then
         format-echo "ERROR" "Failed to start k3d cluster: $cluster"
         return 1
       fi
@@ -657,16 +653,14 @@ main() {
   else
     # Auto-detect provider if not specified
     if [[ "$PROVIDER" == "auto" ]]; then
-      PROVIDER=$(detect_provider "$CLUSTER_NAME")
-      if [[ $? -ne 0 ]]; then
+      if ! PROVIDER=$(detect_provider "$CLUSTER_NAME"); then
         format-echo "ERROR" "Failed to auto-detect provider for cluster '$CLUSTER_NAME'"
         exit 1
       fi
     fi
     
     # Find the state file
-    STATE_FILE=$(find_state_file "$CLUSTER_NAME" "$PROVIDER")
-    if [[ $? -ne 0 ]]; then
+    if ! STATE_FILE=$(find_state_file "$CLUSTER_NAME" "$PROVIDER"); then
       format-echo "ERROR" "Failed to find state file for cluster '$CLUSTER_NAME'"
       exit 1
     fi

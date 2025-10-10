@@ -1307,8 +1307,7 @@ main() {
   # Validate source cluster and get context if not provided
   format-echo "INFO" "Validating source cluster..."
   if [[ -z "$SOURCE_CONTEXT" ]]; then
-    SOURCE_CONTEXT=$(validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "" "$SOURCE_KUBECONFIG")
-    if [[ $? -ne 0 ]]; then
+    if ! SOURCE_CONTEXT=$(validate_cluster "$SOURCE_PROVIDER" "$SOURCE_CLUSTER" "" "$SOURCE_KUBECONFIG"); then
       format-echo "ERROR" "Failed to validate source cluster."
       exit 1
     fi
@@ -1326,8 +1325,7 @@ main() {
     # Validate target cluster and get context if not provided
     format-echo "INFO" "Validating target cluster..."
     if [[ -z "$TARGET_CONTEXT" ]]; then
-      TARGET_CONTEXT=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "" "$TARGET_KUBECONFIG")
-      if [[ $? -ne 0 ]]; then
+      if ! TARGET_CONTEXT=$(validate_cluster "$TARGET_PROVIDER" "$TARGET_CLUSTER" "" "$TARGET_KUBECONFIG"); then
         format-echo "ERROR" "Failed to validate target cluster."
         exit 1
       fi
